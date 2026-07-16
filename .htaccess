@@ -1,0 +1,19 @@
+# .htaccess (racine du projet)
+# À utiliser uniquement si le DocumentRoot Apache pointe vers la
+# racine du projet plutôt que vers le dossier public/. Dans ce cas,
+# ce fichier redirige toute requête vers public/. La configuration
+# recommandée pour la production reste de définir directement
+# public/ comme DocumentRoot du site (voir docs/README.md).
+
+<IfModule mod_rewrite.c>
+    RewriteEngine On
+
+    # Bloque l'accès HTTP direct aux dossiers applicatifs sensibles.
+    RewriteRule ^(app|config|database|storage|mqtt)(/|$) - [F,L]
+
+    # Si la requête vise déjà public/, laisse Apache continuer dans ce dossier.
+    RewriteRule ^public/ - [L]
+
+    # Sinon, route vers public/ sans supposer que le projet est à la racine du vhost.
+    RewriteRule ^(.*)$ public/$1 [L]
+</IfModule>
