@@ -11,9 +11,9 @@ use App\Core\Database;
  * ou par le module de cybersécurité : messages Telegram (via l'API
  * Bot HTTP) et e-mails d'alerte (via la classe Mailer).
  *
- * Les identifiants Telegram (jeton de bot et identifiant de
- * discussion) sont lus dans la table `settings`, configurable depuis
- * le module Paramètres de la plateforme.
+ * Le jeton du bot Telegram reste global, tandis que les destinations
+ * Telegram et e-mail peuvent être définies par chaque utilisateur
+ * depuis son profil.
  */
 class Notifier
 {
@@ -21,48 +21,56 @@ class Notifier
     {
         $settings = self::settings();
         $token  = $settings['telegram_bot_token'] ?? '';
-        $chatId = $settings['telegram_chat_id'] ?? '';
+        $chatIds = self::telegramRecipients($settings);
 
-        if (!$token || !$chatId) {
-            app_log('[Notifier] Notification Telegram ignorée : jeton ou identifiant de discussion non configuré.');
+        if (!$token || empty($chatIds)) {
+            app_log('[Notifier] Notification Telegram ignorée : jeton ou destinataire Telegram non configuré.');
             return false;
         }
 
         $url = "https://api.telegram.org/bot{$token}/sendMessage";
-        $payload = http_build_query([
-            'chat_id' => $chatId,
-            'text'    => "🏠 Vicia Home\n" . $message,
-        ]);
+        $sent = false;
 
-        $context = stream_context_create([
-            'http' => [
-                'method'  => 'POST',
-                'header'  => "Content-Type: application/x-www-form-urlencoded\r\n",
-                'content' => $payload,
-                'timeout' => 5,
-            ],
-        ]);
+        foreach ($chatIds as $chatId) {
+            $payload = http_build_query([
+                'chat_id' => $chatId,
+                'text'    => "🏠 Vicia Home\n" . $message,
+            ]);
 
-        $result = @file_get_contents($url, false, $context);
+            $context = stream_context_create([
+                'http' => [
+                    'method'  => 'POST',
+                    'header'  => "Content-Type: application/x-www-form-urlencoded\r\n",
+                    'content' => $payload,
+                    'timeout' => 5,
+                ],
+            ]);
 
-        if ($result === false) {
-            app_log('[Notifier] Échec de l’envoi de la notification Telegram.');
-            return false;
+            $result = @file_get_contents($url, false, $context);
+            $sent = $sent || $result !== false;
         }
 
-        return true;
+        if (!$sent) {
+            app_log('[Notifier] Échec de l’envoi des notifications Telegram.');
+        }
+
+        return $sent;
     }
 
     public static function sendAlertEmail(string $subject, string $message): bool
     {
-        $settings = self::settings();
-        $to = $settings['smtp_from'] ?? null;
+        $recipients = self::emailRecipients();
 
-        if (!$to) {
+        if (empty($recipients)) {
             return false;
         }
 
-        return Mailer::send($to, "[Vicia Home] $subject", $message);
+        $sent = false;
+        foreach ($recipients as $to) {
+            $sent = Mailer::send($to, "[Vicia Home] $subject", $message) || $sent;
+        }
+
+        return $sent;
     }
 
     private static function settings(): array
@@ -73,5 +81,44 @@ class Notifier
             $cache = array_column($rows, 'setting_value', 'setting_key');
         }
         return $cache;
+    }
+
+    private static function telegramRecipients(array $settings): array
+    {
+        $recipients = [];
+
+        if (!empty($settings['telegram_chat_id'])) {
+            $recipients[] = $settings['telegram_chat_id'];
+        }
+
+        foreach ($settings as $key => $value) {
+            if (str_ends_with($key, '_telegram_chat_id') && trim((string) $value) !== '') {
+                $recipients[] = trim((string) $value);
+            }
+        }
+
+        return array_values(array_unique($recipients));
+    }
+
+    private static function emailRecipients(): array
+    {
+        $rows = Database::query(
+            "SELECT u.email,
+                    se.setting_value AS notification_email
+             FROM users u
+             LEFT JOIN settings se
+               ON se.setting_key = CONCAT('user_', u.id, '_notification_email')
+             WHERE u.status = 'active'"
+        )->fetchAll();
+
+        $emails = [];
+        foreach ($rows as $row) {
+            $email = trim((string) ($row['notification_email'] ?: $row['email']));
+            if ($email !== '') {
+                $emails[] = $email;
+            }
+        }
+
+        return array_values(array_unique($emails));
     }
 }

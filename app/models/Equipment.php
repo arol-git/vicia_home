@@ -28,6 +28,14 @@ class Equipment extends Model
         return Database::query($sql)->fetchAll();
     }
 
+    /**
+     * Retourne les équipements activés dans le système.
+     */
+    public static function active(): array
+    {
+        return Database::query('SELECT * FROM equipments WHERE is_active = 1 ORDER BY name ASC')->fetchAll();
+    }
+
     public static function findWithRoom(int $id): ?array
     {
         $sql = "SELECT eq.*, r.name AS room_name
@@ -50,6 +58,11 @@ class Equipment extends Model
         $newState = $equipment['state'] ? 0 : 1;
         self::update($id, ['state' => $newState]);
         return $newState;
+    }
+
+    public static function setState(int $id, int $state): void
+    {
+        self::update($id, ['state' => $state ? 1 : 0]);
     }
 
     /**

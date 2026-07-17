@@ -7,6 +7,7 @@ use App\Core\Controller;
 use App\Core\Response;
 use App\Core\Validator;
 use App\Models\ActivityLog;
+use App\Models\Setting;
 use App\Models\User;
 
 /**
@@ -20,7 +21,17 @@ class ProfileController extends Controller
     public function show(): void
     {
         Auth::requireLogin();
-        $this->render('profile/index', ['title' => 'Mon profil', 'user' => Auth::user()]);
+        $user = Auth::user();
+        $notificationSettings = [
+            'notification_email' => Setting::get('user_' . $user['id'] . '_notification_email', $user['email']),
+            'telegram_chat_id' => Setting::get('user_' . $user['id'] . '_telegram_chat_id', ''),
+        ];
+
+        $this->render('profile/index', [
+            'title' => 'Mon profil',
+            'user' => $user,
+            'notificationSettings' => $notificationSettings,
+        ]);
     }
 
     public function update(): void
@@ -45,6 +56,36 @@ class ProfileController extends Controller
         ActivityLog::record(Auth::id(), 'modification_profil', 'Mise à jour des informations de profil', $this->request->ip());
 
         Response::success('Profil mis à jour avec succès.');
+    }
+
+    public function updateNotifications(): void
+    {
+        Auth::requireLogin();
+        $this->verifyCsrf();
+
+        $data = [
+            'notification_email' => trim((string) $this->request->input('notification_email')),
+            'telegram_chat_id' => trim((string) $this->request->input('telegram_chat_id', '')),
+        ];
+
+        $validator = new Validator($data);
+        $validator->rules([
+            'notification_email' => 'required|email|max:150',
+            'telegram_chat_id' => 'max:100',
+        ]);
+
+        if ($validator->fails()) {
+            Response::error($validator->firstError(), 422, ['errors' => $validator->errors()]);
+            return;
+        }
+
+        $userId = Auth::id();
+        Setting::set('user_' . $userId . '_notification_email', $data['notification_email']);
+        Setting::set('user_' . $userId . '_telegram_chat_id', $data['telegram_chat_id']);
+
+        ActivityLog::record($userId, 'modification_notifications', 'Mise à jour des préférences de notification', $this->request->ip());
+
+        Response::success('Préférences de notification mises à jour.');
     }
 
     /**

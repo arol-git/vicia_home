@@ -379,6 +379,7 @@ INSERT INTO `automation_rules`
 INSERT INTO `settings` (`setting_key`, `setting_value`) VALUES
 ('site_name', 'Vicia Home'),
 ('theme_mode', 'light'),
+('dashboard_mode', 'comfort'),
 ('telegram_bot_token', ''),
 ('telegram_chat_id', ''),
 ('smtp_host', ''),

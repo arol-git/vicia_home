@@ -46,6 +46,7 @@ $router->post('/reset-password', 'AuthController@resetPassword');
 
 // ------------------------- Tableau de bord --------------------------------
 $router->get('/dashboard', 'DashboardController@index');
+$router->post('/dashboard/mode', 'DashboardController@setMode');
 
 // ------------------------- Pièces -----------------------------------------
 $router->get('/rooms', 'RoomController@index');
@@ -107,6 +108,7 @@ $router->post('/settings', 'SettingsController@update');
 // ------------------------- Profil ---------------------------------------------------
 $router->get('/profile', 'ProfileController@show');
 $router->post('/profile', 'ProfileController@update');
+$router->post('/profile/notifications', 'ProfileController@updateNotifications');
 $router->post('/profile/password', 'ProfileController@updatePassword');
 
 $router->dispatch(new Request());

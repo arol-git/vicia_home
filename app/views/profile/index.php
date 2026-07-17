@@ -6,6 +6,7 @@
  * changement de mot de passe.
  */
 $pageScripts = [];
+$notificationSettings = $notificationSettings ?? [];
 ?>
 
 <div class="page-header">
@@ -15,7 +16,7 @@ $pageScripts = [];
     </div>
 </div>
 
-<div class="grid grid-cols-2">
+<div class="grid grid-cols-2 mb-4">
     <div class="card">
         <div class="card__header"><div class="card__title">Informations personnelles</div></div>
         <form id="profile-form">
@@ -60,6 +61,29 @@ $pageScripts = [];
     </div>
 </div>
 
+<div class="card">
+    <div class="card__header">
+        <div>
+            <div class="card__title">Notifications</div>
+            <div class="card__subtitle">Choisissez où recevoir vos alertes personnelles.</div>
+        </div>
+    </div>
+    <form id="notifications-form">
+        <div class="form-row">
+            <div class="form-group">
+                <label class="form-label">E-mail de réception</label>
+                <input type="email" name="notification_email" class="form-control" value="<?= e($notificationSettings['notification_email'] ?? $user['email']) ?>" required>
+            </div>
+            <div class="form-group">
+                <label class="form-label">Identifiant Telegram</label>
+                <input type="text" name="telegram_chat_id" class="form-control" value="<?= e($notificationSettings['telegram_chat_id'] ?? '') ?>" placeholder="Ex. 123456789">
+                <div class="form-hint">Le bot Telegram global doit être configuré par l'administrateur.</div>
+            </div>
+        </div>
+        <button type="submit" class="btn btn-primary"><i class="fa-solid fa-bell"></i> Enregistrer les notifications</button>
+    </form>
+</div>
+
 <script>
 document.getElementById('profile-form').addEventListener('submit', (e) => {
     e.preventDefault();
@@ -78,5 +102,12 @@ document.getElementById('password-form').addEventListener('submit', (e) => {
     ViciaAjax.post('<?= url('/profile/password') ?>', new FormData(form))
         .then((res) => { ViciaApp.toast(res.message, 'success'); form.reset(); })
         .catch((err) => ViciaApp.toast(err.message || 'Erreur lors du changement de mot de passe.', 'error'));
+});
+
+document.getElementById('notifications-form').addEventListener('submit', (e) => {
+    e.preventDefault();
+    ViciaAjax.post('<?= url('/profile/notifications') ?>', new FormData(e.target))
+        .then((res) => ViciaApp.toast(res.message, 'success'))
+        .catch((err) => ViciaApp.toast(err.message || 'Erreur lors de la mise à jour des notifications.', 'error'));
 });
 </script>

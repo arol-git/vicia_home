@@ -49,7 +49,7 @@ function handle_automation(string $method, ?string $id, ?string $subaction): voi
                 'condition_event'     => $input['condition_event'] ?? null,
                 'action_equipment_id' => $input['action_equipment_id'] ?? null,
                 'action_state'        => $input['action_state'] ?? null,
-                'notify_telegram'     => !empty($input['notify_telegram']) ? 1 : 0,
+                'notify_telegram'     => !empty($input['notify_telegram']) ? 1 : 0,//cette ligne est pour le bot telegram on doit y mettre le token du bot dans le fichier de config
                 'notify_email'        => !empty($input['notify_email']) ? 1 : 0,
                 'is_active'           => 1,
                 'created_by'          => $user['id'],
