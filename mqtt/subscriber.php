@@ -31,14 +31,37 @@ if (!$client->connect()) {
     exit(1);
 }
 
+// Chaque topic est de la forme home/<slug-maison>/<domaine>/<zone>/<grandeur>
+// (voir database/sql/schema.sql) : le segment <slug-maison> isole les
+// messages de chaque maison sur le broker partagé.
 $baseTopic = $config['base_topic'];
 $client->subscribe([
-    "$baseTopic/+/+/+",        // télémétrie des capteurs (home/<domaine>/<zone>/<grandeur>)
-    "$baseTopic/security/#",   // événements de sécurité
-    "$baseTopic/network/#",    // événements réseau (module cybersécurité)
+    "$baseTopic/+/+/+/+",        // télémétrie des capteurs
+    "$baseTopic/+/security/#",   // événements de sécurité
+    "$baseTopic/+/network/#",    // événements réseau (module cybersécurité)
 ]);
 
 echo "Abonnement actif. En attente de messages...\n";
+
+/**
+ * Résout la maison propriétaire d'un message à partir du deuxième
+ * segment de son topic (le slug), avec mise en cache mémoire pour
+ * éviter une requête base de données par message reçu.
+ */
+function resolveHouseIdFromTopic(string $topic): ?int
+{
+    static $cache = [];
+    $segments = explode('/', $topic);
+    $slug = $segments[1] ?? null;
+    if (!$slug) {
+        return null;
+    }
+    if (!array_key_exists($slug, $cache)) {
+        $house = Database::query('SELECT id FROM houses WHERE slug = :slug LIMIT 1', ['slug' => $slug])->fetch();
+        $cache[$slug] = $house ? (int) $house['id'] : null;
+    }
+    return $cache[$slug];
+}
 
 $client->loop(function (string $topic, string $payload) {
     app_log("[MQTT Subscriber] Message reçu — topic: $topic | payload: $payload");
@@ -49,6 +72,8 @@ $client->loop(function (string $topic, string $payload) {
     );
 
     // --- Cas 1 : message de télémétrie d'un capteur connu ---
+    // Le capteur est retrouvé par son topic complet, ce qui détermine
+    // sans ambiguïté sa maison par transitivité (capteur -> pièce -> maison).
     $sensor = Sensor::findByTopic($topic);
     if ($sensor && is_numeric($payload)) {
         Sensor::recordReading((int) $sensor['id'], (float) $payload);
@@ -58,13 +83,20 @@ $client->loop(function (string $topic, string $payload) {
 
     // --- Cas 2 : événement de sécurité (intrusion, PIR déclenché...) ---
     if (str_contains($topic, '/security/') && $payload === '1') {
+        $houseId = resolveHouseIdFromTopic($topic);
+        if ($houseId === null) {
+            app_log("[MQTT Subscriber] Topic $topic ignoré : aucune maison ne correspond à ce slug.");
+            return;
+        }
+
         \App\Models\Alert::create([
+            'house_id' => $houseId,
             'type'     => 'intrusion',
             'severity' => 'critical',
             'source'   => $topic,
             'message'  => "Détection de mouvement / intrusion sur le topic $topic",
         ]);
-        evaluateEventRules('intrusion');
+        evaluateEventRules($houseId, 'intrusion');
     }
 }, 0);
 
@@ -96,12 +128,12 @@ function evaluateSensorRules(int $sensorId, float $value): void
 }
 
 /**
- * Évalue les règles d'automatisation déclenchées par un événement
- * système (ex. intrusion, appareil réseau inconnu).
+ * Évalue les règles d'automatisation d'UNE maison déclenchées par un
+ * événement système (ex. intrusion, appareil réseau inconnu).
  */
-function evaluateEventRules(string $event): void
+function evaluateEventRules(int $houseId, string $event): void
 {
-    $rules = AutomationRule::activeForEvent($event);
+    $rules = AutomationRule::activeForEvent($houseId, $event);
     foreach ($rules as $rule) {
         executeRule($rule, "Événement « $event » détecté");
     }
@@ -125,12 +157,12 @@ function executeRule(array $rule, string $reason): void
     }
 
     if ($rule['notify_telegram']) {
-        \App\Helpers\Notifier::sendTelegram("Règle « {$rule['name']} » déclenchée : $reason");
+        \App\Helpers\Notifier::sendTelegram((int) $rule['house_id'], "Règle « {$rule['name']} » déclenchée : $reason");
         $resultParts[] = 'Notification Telegram envoyée';
     }
 
     if ($rule['notify_email']) {
-        \App\Helpers\Notifier::sendAlertEmail("Règle « {$rule['name']} » déclenchée", $reason);
+        \App\Helpers\Notifier::sendAlertEmail((int) $rule['house_id'], "Règle « {$rule['name']} » déclenchée", $reason);
         $resultParts[] = 'Notification e-mail envoyée';
     }
 

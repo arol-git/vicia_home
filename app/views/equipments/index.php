@@ -5,13 +5,18 @@
  * Gestion des équipements (actionneurs) : listage tabulaire avec
  * interrupteur d'état en direct, création et suppression.
  */
+use App\Core\Auth;
+
 $pageScripts = ['equipments.js'];
+$house = $house ?? [];
 
 $equipmentTypes = [
     'led' => 'LED', 'relais' => 'Relais', 'ventilateur' => 'Ventilateur', 'pompe' => 'Pompe',
     'servo' => 'Servo-moteur', 'porte' => 'Porte', 'fenetre' => 'Fenêtre', 'sirene' => 'Sirène', 'camera' => 'Caméra',
 ];
-$canManage = in_array($currentUser['role'], ['admin', 'technicien'], true);
+$houseRole = Auth::roleOnHouse(Auth::currentHouseId() ?? 0);
+$canManage = in_array($houseRole, ['admin', 'owner', 'technician'], true);
+$canDelete = in_array($houseRole, ['admin', 'owner'], true);
 ?>
 
 <div class="page-header">
@@ -64,7 +69,7 @@ $canManage = in_array($currentUser['role'], ['admin', 'technicien'], true);
                     </label>
                 </td>
                 <td>
-                    <?php if ($currentUser['role'] === 'admin'): ?>
+                    <?php if ($canDelete): ?>
                     <div class="table-actions">
                         <button type="button" class="btn btn-icon btn-secondary" title="Supprimer"
                                 data-delete-equipment data-id="<?= (int) $eq['id'] ?>" data-name="<?= e($eq['name']) ?>">
@@ -85,7 +90,7 @@ $canManage = in_array($currentUser['role'], ['admin', 'technicien'], true);
             <div class="modal__title">Ajouter un équipement</div>
             <button type="button" class="modal__close" data-close-modal><i class="fa-solid fa-xmark"></i></button>
         </div>
-        <form id="equipment-create-form">
+        <form id="equipment-create-form" data-house-slug="<?= e($house['slug'] ?? '') ?>">
             <div class="modal__body">
                 <div class="form-group">
                     <label class="form-label">Nom de l'équipement</label>
@@ -111,7 +116,7 @@ $canManage = in_array($currentUser['role'], ['admin', 'technicien'], true);
                 </div>
                 <div class="form-group">
                     <label class="form-label">Topic MQTT</label>
-                    <input type="text" name="mqtt_topic" class="form-control" placeholder="home/lighting/salon/led1" required>
+                    <input type="text" name="mqtt_topic" class="form-control" placeholder="home/<?= e($house['slug'] ?? 'maison') ?>/lighting/salon/led1" required>
                     <div class="form-hint">Suggéré automatiquement à partir du type et de la pièce ; modifiable.</div>
                 </div>
             </div>

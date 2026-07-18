@@ -4,37 +4,42 @@ namespace App\Controllers;
 
 use App\Core\Auth;
 use App\Core\Controller;
+use App\Core\Database;
 use App\Models\ActivityLog;
-use App\Models\LoginLog;
 
 /**
  * Class HistoryController
  *
- * Affiche l'historique complet des activités de la plateforme
- * (journal d'audit) et des connexions, avec pagination simple.
+ * Affiche l'historique des activités de la maison actuellement
+ * sélectionnée (journal d'audit), avec pagination simple. Les
+ * connexions restent affichées au niveau du compte utilisateur
+ * (elles ne sont pas rattachées à une maison en particulier).
  */
 class HistoryController extends Controller
 {
     public function index(): void
     {
-        Auth::requireLogin();
+        $houseId = Auth::requireHouseRole(['admin', 'owner', 'resident', 'technician']);
 
         $page   = max(1, (int) $this->request->query('page', 1));
         $limit  = 20;
         $offset = ($page - 1) * $limit;
 
-        $activities = ActivityLog::paginated($limit, $offset);
-        $totalCount = ActivityLog::count();
+        $activities = ActivityLog::paginatedForHouse($houseId, $limit, $offset);
+        $totalCount = Database::query(
+            'SELECT COUNT(*) AS c FROM activity_logs WHERE house_id = :house_id',
+            ['house_id' => $houseId]
+        )->fetch()['c'];
         $totalPages = (int) ceil($totalCount / $limit);
 
-        $logins = LoginLog::recent(15);
+        $logins = \App\Models\LoginLog::recent(15);
 
         $this->render('history/index', [
             'title'      => 'Historique',
             'activities' => $activities,
             'logins'     => $logins,
             'page'       => $page,
-            'totalPages' => $totalPages,
+            'totalPages' => max(1, $totalPages),
         ]);
     }
 }

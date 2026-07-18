@@ -27,6 +27,8 @@ class User extends Model
      */
     public static function register(string $name, string $email, string $password, string $role = 'user'): int
     {
+        self::ensurePlatformRoleColumn();
+
         return self::create([
             'name'          => $name,
             'email'         => $email,
@@ -35,10 +37,38 @@ class User extends Model
         ]);
     }
 
+    public static function update(int $id, array $data): bool
+    {
+        self::ensurePlatformRoleColumn();
+
+        return parent::update($id, $data);
+    }
+
     public static function updatePassword(int $id, string $newPassword): bool
     {
         return self::update($id, [
             'password_hash' => password_hash($newPassword, PASSWORD_BCRYPT),
+        ]);
+    }
+
+    public static function notificationSettings(int $id): array
+    {
+        self::ensureNotificationColumns();
+        $user = self::find($id) ?: [];
+
+        return [
+            'notification_email' => ($user['notification_email'] ?? '') ?: Setting::get('user_' . $id . '_notification_email', $user['email'] ?? ''),
+            'telegram_name' => ($user['telegram_name'] ?? '') ?: ($user['telegram_chat_id'] ?? '') ?: Setting::get('user_' . $id . '_telegram_name', Setting::get('user_' . $id . '_telegram_chat_id', '')),
+        ];
+    }
+
+    public static function updateNotificationSettings(int $id, array $data): bool
+    {
+        self::ensureNotificationColumns();
+
+        return self::update($id, [
+            'notification_email' => $data['notification_email'],
+            'telegram_name' => $data['telegram_name'] ?? '',
         ]);
     }
 
@@ -53,6 +83,43 @@ class User extends Model
             'token' => $hashedToken,
             'id'    => $id,
         ]);
+    }
+
+    private static function ensureNotificationColumns(): void
+    {
+        static $checked = false;
+        if ($checked) {
+            return;
+        }
+
+        $columns = Database::query('SHOW COLUMNS FROM users')->fetchAll();
+        $names = array_column($columns, 'Field');
+        $missing = array_diff(['notification_email', 'telegram_name'], $names);
+
+        foreach ($missing as $column) {
+            $definition = match ($column) {
+                'notification_email' => 'VARCHAR(150) NULL',
+                default => 'VARCHAR(100) NULL',
+            };
+            Database::query("ALTER TABLE users ADD COLUMN `$column` $definition");
+        }
+
+        $checked = true;
+    }
+
+    private static function ensurePlatformRoleColumn(): void
+    {
+        static $checked = false;
+        if ($checked) {
+            return;
+        }
+
+        $row = Database::query("SHOW COLUMNS FROM users LIKE 'role'")->fetch();
+        if ($row && !str_contains((string) $row['Type'], 'technicien')) {
+            Database::query("ALTER TABLE users MODIFY role ENUM('admin','user','technicien') NOT NULL DEFAULT 'user' COMMENT 'rôle de plateforme (admin = support Vicia Home)'");
+        }
+
+        $checked = true;
     }
 
     /**

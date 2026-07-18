@@ -22,10 +22,7 @@ class ProfileController extends Controller
     {
         Auth::requireLogin();
         $user = Auth::user();
-        $notificationSettings = [
-            'notification_email' => Setting::get('user_' . $user['id'] . '_notification_email', $user['email']),
-            'telegram_chat_id' => Setting::get('user_' . $user['id'] . '_telegram_chat_id', ''),
-        ];
+        $notificationSettings = User::notificationSettings((int) $user['id']);
 
         $this->render('profile/index', [
             'title' => 'Mon profil',
@@ -65,13 +62,13 @@ class ProfileController extends Controller
 
         $data = [
             'notification_email' => trim((string) $this->request->input('notification_email')),
-            'telegram_chat_id' => trim((string) $this->request->input('telegram_chat_id', '')),
+            'telegram_name' => trim((string) $this->request->input('telegram_name', '')),
         ];
 
         $validator = new Validator($data);
         $validator->rules([
             'notification_email' => 'required|email|max:150',
-            'telegram_chat_id' => 'max:100',
+            'telegram_name' => 'max:100',
         ]);
 
         if ($validator->fails()) {
@@ -80,8 +77,10 @@ class ProfileController extends Controller
         }
 
         $userId = Auth::id();
+        User::updateNotificationSettings($userId, $data);
         Setting::set('user_' . $userId . '_notification_email', $data['notification_email']);
-        Setting::set('user_' . $userId . '_telegram_chat_id', $data['telegram_chat_id']);
+        Setting::set('user_' . $userId . '_telegram_name', $data['telegram_name']);
+        Setting::set('user_' . $userId . '_telegram_chat_id', $data['telegram_name']);
 
         ActivityLog::record($userId, 'modification_notifications', 'Mise à jour des préférences de notification', $this->request->ip());
 

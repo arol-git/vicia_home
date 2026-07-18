@@ -13,27 +13,30 @@ use App\Models\NetworkDevice;
 /**
  * Class SecurityController
  *
- * Module de cybersécurité : surveillance du réseau domestique,
- * détection d'appareils inconnus, gestion des listes blanche/noire,
- * journal des événements réseau et état du Wi-Fi.
+ * Module de cybersécurité, scopé à la maison actuellement
+ * sélectionnée : chaque maison a son propre réseau domestique et son
+ * propre VLAN IoT, les appareils détectés ne sont donc jamais
+ * partagés entre maisons.
  */
 class SecurityController extends Controller
 {
     public function index(): void
     {
-        Auth::requireLogin();
+        $houseId = Auth::requireHouseRole(['admin', 'owner', 'resident', 'technician']);
 
-        $devices = NetworkDevice::all('last_seen DESC');
+        $devices = NetworkDevice::forHouse($houseId);
         $logs    = Database::query(
             "SELECT nl.*, nd.mac_address, nd.hostname
              FROM network_logs nl
-             LEFT JOIN network_devices nd ON nd.id = nl.device_id
-             ORDER BY nl.created_at DESC LIMIT 30"
+             INNER JOIN network_devices nd ON nd.id = nl.device_id
+             WHERE nd.house_id = :house_id
+             ORDER BY nl.created_at DESC LIMIT 30",
+            ['house_id' => $houseId]
         )->fetchAll();
 
         $stats = [
             'total_devices'   => count($devices),
-            'unknown_devices' => NetworkDevice::countUnknown(),
+            'unknown_devices' => NetworkDevice::countUnknown($houseId),
             'blocked_devices' => count(array_filter($devices, fn($d) => (int) $d['is_blocked'] === 1)),
             'whitelisted'     => count(array_filter($devices, fn($d) => $d['list_status'] === 'whitelisted')),
         ];
@@ -46,73 +49,67 @@ class SecurityController extends Controller
         ]);
     }
 
-    /**
-     * Place un appareil sur liste blanche (appareil de confiance).
-     */
     public function whitelist(int $id): void
     {
-        Auth::requireRole(['admin', 'technicien']);
+        $houseId = Auth::requireHouseRole(['admin', 'owner', 'technician']);
         $this->verifyCsrf();
 
-        $device = NetworkDevice::find($id);
-        if (!$device) {
+        if (!NetworkDevice::belongsToHouse($id, $houseId)) {
             Response::error('Appareil introuvable.', 404);
             return;
         }
+        $device = NetworkDevice::find($id);
 
         NetworkDevice::setListStatus($id, 'whitelisted');
         NetworkDevice::setBlocked($id, false);
         $this->logNetworkEvent($id, 'whitelist', "Appareil {$device['mac_address']} ajouté à la liste blanche");
-        ActivityLog::record(Auth::id(), 'securite_whitelist', "Appareil {$device['mac_address']} placé en liste blanche", $this->request->ip());
+        ActivityLog::record(Auth::id(), 'securite_whitelist', "Appareil {$device['mac_address']} placé en liste blanche", $this->request->ip(), $houseId);
 
         Response::success('Appareil ajouté à la liste blanche.');
     }
 
-    /**
-     * Place un appareil sur liste noire et bloque son accès réseau.
-     */
     public function blacklist(int $id): void
     {
-        Auth::requireRole(['admin', 'technicien']);
+        $houseId = Auth::requireHouseRole(['admin', 'owner', 'technician']);
         $this->verifyCsrf();
 
-        $device = NetworkDevice::find($id);
-        if (!$device) {
+        if (!NetworkDevice::belongsToHouse($id, $houseId)) {
             Response::error('Appareil introuvable.', 404);
             return;
         }
+        $device = NetworkDevice::find($id);
 
         NetworkDevice::setListStatus($id, 'blacklisted');
         NetworkDevice::setBlocked($id, true);
         $this->logNetworkEvent($id, 'blacklist', "Appareil {$device['mac_address']} bloqué et ajouté à la liste noire");
 
         Alert::create([
+            'house_id' => $houseId,
             'type'     => 'reseau',
             'severity' => 'critical',
             'source'   => $device['mac_address'],
             'message'  => "Appareil {$device['mac_address']} bloqué suite à une action administrateur",
         ]);
 
-        ActivityLog::record(Auth::id(), 'securite_blacklist', "Appareil {$device['mac_address']} bloqué (liste noire)", $this->request->ip());
+        ActivityLog::record(Auth::id(), 'securite_blacklist', "Appareil {$device['mac_address']} bloqué (liste noire)", $this->request->ip(), $houseId);
 
         Response::success('Appareil bloqué et ajouté à la liste noire.');
     }
 
     /**
-     * Simule la détection d'un nouvel appareil sur le réseau (utilisé
-     * à des fins de démonstration ; en production, cette détection
-     * est réalisée par la sonde réseau décrite dans le cahier des
-     * charges et publiée sur le topic MQTT home/network/scan).
+     * Simule la détection d'un nouvel appareil sur le réseau de la
+     * maison sélectionnée (démonstration ; en production, la
+     * détection provient de la sonde réseau propre à chaque maison).
      */
     public function simulateScan(): void
     {
-        Auth::requireRole(['admin', 'technicien']);
+        $houseId = Auth::requireHouseRole(['admin', 'owner', 'technician']);
         $this->verifyCsrf();
 
         $mac = strtoupper(implode(':', str_split(bin2hex(random_bytes(6)), 2)));
         $ip  = '192.168.20.' . random_int(60, 250);
 
-        $device = NetworkDevice::upsertSighting($mac, $ip, 'appareil-inconnu', null);
+        $device = NetworkDevice::upsertSighting($houseId, $mac, $ip, 'appareil-inconnu', null);
         $this->logNetworkEvent($device['id'], 'scan', "Nouvel appareil détecté sur le réseau IoT : $mac ($ip)");
 
         Response::success('Scan simulé : un nouvel appareil a été détecté.', ['device' => $device]);

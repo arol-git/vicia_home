@@ -5,8 +5,11 @@
  * Module de cybersécurité : appareils réseau, listes blanche/noire,
  * journal des événements réseau.
  */
+use App\Core\Auth;
+
 $pageScripts = ['security.js'];
-$canManage = in_array($currentUser['role'], ['admin', 'technicien'], true);
+$houseRole = Auth::roleOnHouse(Auth::currentHouseId() ?? 0);
+$canManage = in_array($houseRole, ['admin', 'owner', 'technician'], true);
 
 $statusLabels = [
     'unknown'     => ['label' => 'Inconnu', 'class' => 'badge-warning'],

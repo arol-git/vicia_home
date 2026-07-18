@@ -7,16 +7,14 @@ use App\Core\Controller;
 use App\Core\Response;
 use App\Core\Validator;
 use App\Models\ActivityLog;
+use App\Models\House;
 use App\Models\Room;
 use App\Models\Sensor;
 
 /**
  * Class SensorController
  *
- * Gère le module "Capteurs" : PIR, DHT22 (température/humidité),
- * MQ-2, MQ-135, LDR, RFID, humidité du sol. Fournit également le
- * point d'entrée AJAX utilisé par Chart.js pour tracer l'historique
- * des mesures d'un capteur.
+ * Gère le module "Capteurs" pour la maison actuellement sélectionnée.
  */
 class SensorController extends Controller
 {
@@ -24,23 +22,32 @@ class SensorController extends Controller
 
     public function index(): void
     {
-        Auth::requireLogin();
-        $sensors = Sensor::allWithRoom();
-        $rooms   = Room::all('name ASC');
+        $houseId = Auth::requireHouseRole(['admin', 'owner', 'resident', 'technician']);
+        $sensors = Sensor::allWithRoom($houseId);
+        $rooms   = Room::forHouse($houseId);
+        $house   = House::find($houseId);
         $this->render('sensors/index', [
             'title'   => 'Capteurs',
             'sensors' => $sensors,
             'rooms'   => $rooms,
+            'house'   => $house,
         ]);
     }
 
     public function store(): void
     {
-        Auth::requireRole(['admin', 'technicien']);
+        $houseId = Auth::requireHouseRole(['admin', 'owner', 'technician']);
         $this->verifyCsrf();
 
+        $roomId = (int) $this->request->input('room_id');
+        if (!Room::belongsToHouse($roomId, $houseId)) {
+            Response::error('Pièce invalide pour cette maison.', 422);
+            return;
+        }
+        $house = House::find($houseId);
+
         $data = [
-            'room_id'         => (int) $this->request->input('room_id'),
+            'room_id'         => $roomId,
             'name'            => trim((string) $this->request->input('name')),
             'type'            => (string) $this->request->input('type'),
             'unit'            => trim((string) $this->request->input('unit', '')),
@@ -61,20 +68,23 @@ class SensorController extends Controller
             Response::error($validator->firstError(), 422, ['errors' => $validator->errors()]);
             return;
         }
+        if (!str_starts_with($data['mqtt_topic'], 'home/' . $house['slug'] . '/')) {
+            Response::error('Le topic MQTT doit commencer par home/' . $house['slug'] . '/.', 422);
+            return;
+        }
 
         $id = Sensor::create($data);
-        ActivityLog::record(Auth::id(), 'creation_capteur', "Ajout du capteur « {$data['name']} »", $this->request->ip());
+        ActivityLog::record(Auth::id(), 'creation_capteur', "Ajout du capteur « {$data['name']} »", $this->request->ip(), $houseId);
 
         Response::success('Capteur ajouté avec succès.', ['id' => $id]);
     }
 
     public function update(int $id): void
     {
-        Auth::requireRole(['admin', 'technicien']);
+        $houseId = Auth::requireHouseRole(['admin', 'owner', 'technician']);
         $this->verifyCsrf();
 
-        $sensor = Sensor::find($id);
-        if (!$sensor) {
+        if (!Sensor::belongsToHouse($id, $houseId)) {
             Response::error('Capteur introuvable.', 404);
             return;
         }
@@ -87,6 +97,12 @@ class SensorController extends Controller
             'alert_threshold' => $this->request->input('alert_threshold') !== '' ? $this->request->input('alert_threshold') : null,
         ];
 
+        if (!Room::belongsToHouse($data['room_id'], $houseId)) {
+            Response::error('Pièce invalide pour cette maison.', 422);
+            return;
+        }
+        $house = House::find($houseId);
+
         $validator = new Validator($data);
         $validator->rules([
             'room_id'    => 'required|numeric',
@@ -98,26 +114,30 @@ class SensorController extends Controller
             Response::error($validator->firstError(), 422, ['errors' => $validator->errors()]);
             return;
         }
+        if (!str_starts_with($data['mqtt_topic'], 'home/' . $house['slug'] . '/')) {
+            Response::error('Le topic MQTT doit commencer par home/' . $house['slug'] . '/.', 422);
+            return;
+        }
 
         Sensor::update($id, $data);
-        ActivityLog::record(Auth::id(), 'modification_capteur', "Modification du capteur « {$data['name']} »", $this->request->ip());
+        ActivityLog::record(Auth::id(), 'modification_capteur', "Modification du capteur « {$data['name']} »", $this->request->ip(), $houseId);
 
         Response::success('Capteur mis à jour avec succès.');
     }
 
     public function destroy(int $id): void
     {
-        Auth::requireRole(['admin']);
+        $houseId = Auth::requireHouseRole(['admin', 'owner']);
         $this->verifyCsrf();
 
-        $sensor = Sensor::find($id);
-        if (!$sensor) {
+        if (!Sensor::belongsToHouse($id, $houseId)) {
             Response::error('Capteur introuvable.', 404);
             return;
         }
+        $sensor = Sensor::find($id);
 
         Sensor::delete($id);
-        ActivityLog::record(Auth::id(), 'suppression_capteur', "Suppression du capteur « {$sensor['name']} »", $this->request->ip());
+        ActivityLog::record(Auth::id(), 'suppression_capteur', "Suppression du capteur « {$sensor['name']} »", $this->request->ip(), $houseId);
 
         Response::success('Capteur supprimé avec succès.');
     }
@@ -128,12 +148,13 @@ class SensorController extends Controller
      */
     public function history(int $id): void
     {
-        Auth::requireLogin();
-        $sensor = Sensor::find($id);
-        if (!$sensor) {
+        $houseId = Auth::requireHouseRole(['admin', 'owner', 'resident', 'technician']);
+
+        if (!Sensor::belongsToHouse($id, $houseId)) {
             Response::error('Capteur introuvable.', 404);
             return;
         }
+        $sensor = Sensor::find($id);
 
         $hours    = (int) $this->request->query('hours', 24);
         $readings = Sensor::history($id, $hours);

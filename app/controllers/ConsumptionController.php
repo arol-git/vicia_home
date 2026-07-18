@@ -4,21 +4,16 @@ namespace App\Controllers;
 
 use App\Core\Auth;
 use App\Core\Controller;
-use App\Core\Database;
 use App\Models\Equipment;
 
 /**
  * Class ConsumptionController
  *
- * Module de suivi de la consommation électrique. Estime la
- * consommation à partir du temps de fonctionnement cumulé des
- * équipements actifs (en l'absence de compteur intelligent dédié,
- * cette estimation peut être remplacée par une mesure réelle
- * remontée via MQTT sur le topic home/power/#).
+ * Module de suivi de la consommation électrique de la maison
+ * actuellement sélectionnée.
  */
 class ConsumptionController extends Controller
 {
-    // Puissance nominale indicative par type d'équipement, en watts.
     private const POWER_WATTS = [
         'led' => 9, 'relais' => 5, 'ventilateur' => 45, 'pompe' => 60,
         'servo' => 3, 'porte' => 3, 'fenetre' => 3, 'sirene' => 4, 'camera' => 6,
@@ -26,9 +21,9 @@ class ConsumptionController extends Controller
 
     public function index(): void
     {
-        Auth::requireLogin();
+        $houseId = Auth::requireHouseRole(['admin', 'owner', 'resident', 'technician']);
 
-        $equipments = Equipment::allWithRoom();
+        $equipments = Equipment::allWithRoom($houseId);
 
         $totalActiveWatts = 0;
         foreach ($equipments as $eq) {
@@ -43,11 +38,11 @@ class ConsumptionController extends Controller
         }
 
         $this->render('consumption/index', [
-            'title'            => 'Consommation électrique',
-            'totalActiveWatts' => $totalActiveWatts,
+            'title'             => 'Consommation électrique',
+            'totalActiveWatts'  => $totalActiveWatts,
             'estimatedDailyKwh' => round(($totalActiveWatts * 24) / 1000, 2),
-            'byType'           => $byType,
-            'equipments'       => $equipments,
+            'byType'            => $byType,
+            'equipments'        => $equipments,
         ]);
     }
 }

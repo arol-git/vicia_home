@@ -17,23 +17,23 @@ use App\Core\Database;
  */
 class Notifier
 {
-    public static function sendTelegram(string $message): bool
+    public static function sendTelegram($houseIdOrMessage, ?string $message = null): bool
     {
-        $settings = self::settings();
-        $token  = $settings['telegram_bot_token'] ?? '';
-        $chatIds = self::telegramRecipients($settings);
+        $houseId = is_int($houseIdOrMessage) ? $houseIdOrMessage : null;
+        $message = $message ?? (string) $houseIdOrMessage;
+        $recipients = self::telegramRecipients(self::settings(), $houseId);
 
-        if (!$token || empty($chatIds)) {
-            app_log('[Notifier] Notification Telegram ignorée : jeton ou destinataire Telegram non configuré.');
+        if (empty($recipients)) {
+            app_log('[Notifier] Notification Telegram ignorée : aucun destinataire Telegram configuré.');
             return false;
         }
 
-        $url = "https://api.telegram.org/bot{$token}/sendMessage";
         $sent = false;
 
-        foreach ($chatIds as $chatId) {
+        foreach ($recipients as $recipient) {
+            $url = "https://api.telegram.org/bot{$recipient['token']}/sendMessage";
             $payload = http_build_query([
-                'chat_id' => $chatId,
+                'chat_id' => $recipient['chat_id'],
                 'text'    => "🏠 Vicia Home\n" . $message,
             ]);
 
@@ -57,9 +57,12 @@ class Notifier
         return $sent;
     }
 
-    public static function sendAlertEmail(string $subject, string $message): bool
+    public static function sendAlertEmail($houseIdOrSubject, string $subjectOrMessage, ?string $message = null): bool
     {
-        $recipients = self::emailRecipients();
+        $houseId = is_int($houseIdOrSubject) ? $houseIdOrSubject : null;
+        $subject = $message === null ? (string) $houseIdOrSubject : $subjectOrMessage;
+        $body = $message ?? $subjectOrMessage;
+        $recipients = self::emailRecipients($houseId);
 
         if (empty($recipients)) {
             return false;
@@ -67,7 +70,7 @@ class Notifier
 
         $sent = false;
         foreach ($recipients as $to) {
-            $sent = Mailer::send($to, "[Vicia Home] $subject", $message) || $sent;
+            $sent = Mailer::send($to, "[Vicia Home] $subject", $body) || $sent;
         }
 
         return $sent;
@@ -77,48 +80,77 @@ class Notifier
     {
         static $cache = null;
         if ($cache === null) {
-            $rows  = Database::query('SELECT setting_key, setting_value FROM settings')->fetchAll();
-            $cache = array_column($rows, 'setting_value', 'setting_key');
+            $cache = \App\Models\Setting::all();
         }
         return $cache;
     }
 
-    private static function telegramRecipients(array $settings): array
+    private static function telegramRecipients(array $settings, ?int $houseId = null): array
     {
+        $defaultToken = $settings['telegram_bot_token'] ?? '';
         $recipients = [];
 
-        if (!empty($settings['telegram_chat_id'])) {
-            $recipients[] = $settings['telegram_chat_id'];
+        if ($houseId === null && $defaultToken && !empty($settings['telegram_chat_id'])) {
+            $recipients[] = ['token' => $defaultToken, 'chat_id' => $settings['telegram_chat_id']];
         }
 
-        foreach ($settings as $key => $value) {
-            if (str_ends_with($key, '_telegram_chat_id') && trim((string) $value) !== '') {
-                $recipients[] = trim((string) $value);
+        foreach (self::notificationUsers($houseId) as $user) {
+            $chatId = trim((string) (($user['telegram_name'] ?? '') ?: ($settings['user_' . $user['id'] . '_telegram_name'] ?? '') ?: ($settings['user_' . $user['id'] . '_telegram_chat_id'] ?? '')));
+            $token = $defaultToken;
+            if ($token && $chatId) {
+                $recipients[] = ['token' => $token, 'chat_id' => $chatId];
             }
         }
 
-        return array_values(array_unique($recipients));
+        if ($houseId === null) {
+            foreach ($settings as $key => $value) {
+                if ($defaultToken && str_ends_with($key, '_telegram_chat_id') && trim((string) $value) !== '') {
+                    $recipients[] = ['token' => $defaultToken, 'chat_id' => trim((string) $value)];
+                }
+            }
+        }
+
+        $unique = [];
+        foreach ($recipients as $recipient) {
+            $unique[$recipient['token'] . '|' . $recipient['chat_id']] = $recipient;
+        }
+
+        return array_values($unique);
     }
 
-    private static function emailRecipients(): array
+    private static function emailRecipients(?int $houseId = null): array
     {
-        $rows = Database::query(
-            "SELECT u.email,
-                    se.setting_value AS notification_email
-             FROM users u
-             LEFT JOIN settings se
-               ON se.setting_key = CONCAT('user_', u.id, '_notification_email')
-             WHERE u.status = 'active'"
-        )->fetchAll();
-
         $emails = [];
-        foreach ($rows as $row) {
-            $email = trim((string) ($row['notification_email'] ?: $row['email']));
+        $settings = self::settings();
+        foreach (self::notificationUsers($houseId) as $user) {
+            $email = trim((string) (($user['notification_email'] ?? '') ?: ($settings['user_' . $user['id'] . '_notification_email'] ?? '') ?: $user['email']));
             if ($email !== '') {
                 $emails[] = $email;
             }
         }
 
         return array_values(array_unique($emails));
+    }
+
+    private static function notificationUsers(?int $houseId): array
+    {
+        self::ensureUserNotificationColumns();
+        $select = 'u.id, u.email, u.notification_email, u.telegram_name';
+        if ($houseId === null) {
+            return Database::query("SELECT $select FROM users u WHERE u.status = 'active'")->fetchAll();
+        }
+
+        return Database::query(
+            "SELECT $select
+             FROM users u
+             INNER JOIN house_user hu ON hu.user_id = u.id
+             WHERE u.status = 'active' AND hu.house_id = :house_id",
+            ['house_id' => $houseId]
+        )->fetchAll();
+    }
+
+    private static function ensureUserNotificationColumns(): void
+    {
+        \App\Models\User::notificationSettings(0);
     }
 }

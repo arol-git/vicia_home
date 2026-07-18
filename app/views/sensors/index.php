@@ -6,14 +6,19 @@
  * consultation de l'historique (modale + Chart.js), création et
  * suppression.
  */
+use App\Core\Auth;
+
 $pageScripts = ['sensors.js'];
+$house = $house ?? [];
 
 $sensorTypes = [
     'pir' => 'PIR (mouvement)', 'dht22_temp' => 'DHT22 — Température', 'dht22_hum' => 'DHT22 — Humidité',
     'mq2' => 'MQ-2 (gaz/fumée)', 'mq135' => 'MQ-135 (qualité air)', 'ldr' => 'LDR (luminosité)',
     'rfid' => 'RFID', 'humidite_sol' => 'Humidité du sol',
 ];
-$canManage = in_array($currentUser['role'], ['admin', 'technicien'], true);
+$houseRole = Auth::roleOnHouse(Auth::currentHouseId() ?? 0);
+$canManage = in_array($houseRole, ['admin', 'owner', 'technician'], true);
+$canDelete = in_array($houseRole, ['admin', 'owner'], true);
 ?>
 
 <div class="page-header">
@@ -66,7 +71,7 @@ $canManage = in_array($currentUser['role'], ['admin', 'technicien'], true);
                                 data-view-history data-id="<?= (int) $sensor['id'] ?>" data-name="<?= e($sensor['name']) ?>">
                             <i class="fa-solid fa-chart-line"></i>
                         </button>
-                        <?php if ($currentUser['role'] === 'admin'): ?>
+                        <?php if ($canDelete): ?>
                         <button type="button" class="btn btn-icon btn-secondary" title="Supprimer"
                                 data-delete-sensor data-id="<?= (int) $sensor['id'] ?>" data-name="<?= e($sensor['name']) ?>">
                             <i class="fa-solid fa-trash"></i>
@@ -86,7 +91,7 @@ $canManage = in_array($currentUser['role'], ['admin', 'technicien'], true);
             <div class="modal__title">Ajouter un capteur</div>
             <button type="button" class="modal__close" data-close-modal><i class="fa-solid fa-xmark"></i></button>
         </div>
-        <form id="sensor-create-form">
+        <form id="sensor-create-form" data-house-slug="<?= e($house['slug'] ?? '') ?>">
             <div class="modal__body">
                 <div class="form-group">
                     <label class="form-label">Nom du capteur</label>
@@ -122,7 +127,7 @@ $canManage = in_array($currentUser['role'], ['admin', 'technicien'], true);
                 </div>
                 <div class="form-group">
                     <label class="form-label">Topic MQTT</label>
-                    <input type="text" name="mqtt_topic" class="form-control" placeholder="home/climate/bureau/temp" required>
+                    <input type="text" name="mqtt_topic" class="form-control" placeholder="home/<?= e($house['slug'] ?? 'maison') ?>/climate/bureau/temp" required>
                 </div>
             </div>
             <div class="modal__footer">

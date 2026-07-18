@@ -38,10 +38,7 @@ $pageScripts = [];
                 <label class="form-label">Jeton du bot (Bot Token)</label>
                 <input type="text" name="telegram_bot_token" class="form-control" value="<?= e($settings['telegram_bot_token'] ?? '') ?>" placeholder="123456789:ABC-...">
             </div>
-            <div class="form-group">
-                <label class="form-label">Identifiant de discussion (Chat ID)</label>
-                <input type="text" name="telegram_chat_id" class="form-control" value="<?= e($settings['telegram_chat_id'] ?? '') ?>">
-            </div>
+            <div class="form-hint">Les utilisateurs renseignent leur nom Telegram depuis leur profil.</div>
         </div>
     </div>
 
@@ -65,7 +62,7 @@ $pageScripts = [];
 <script>
 document.getElementById('settings-form').addEventListener('submit', (e) => {
     e.preventDefault();
-    ViciaAjax.post('<?= url('/settings') ?>', new FormData(e.target))
+    ViciaAjax.post('/settings', new FormData(e.target))
         .then((res) => ViciaApp.toast(res.message, 'success'))
         .catch((err) => ViciaApp.toast(err.message || 'Erreur lors de l’enregistrement.', 'error'));
 });

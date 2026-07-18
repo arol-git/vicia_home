@@ -5,8 +5,12 @@
  * Interface du moteur de règles d'automatisation : « SI <condition>
  * ALORS <action> », configurable sans écrire de code.
  */
+use App\Core\Auth;
+
 $pageScripts = ['automation.js'];
-$canManage = in_array($currentUser['role'], ['admin', 'technicien'], true);
+$houseRole = Auth::roleOnHouse(Auth::currentHouseId() ?? 0);
+$canManage = in_array($houseRole, ['admin', 'owner', 'technician'], true);
+$canDelete = in_array($houseRole, ['admin', 'owner'], true);
 
 $operatorLabels = ['>' => 'supérieur à', '<' => 'inférieur à', '>=' => 'supérieur ou égal à', '<=' => 'inférieur ou égal à', '=' => 'égal à', '!=' => 'différent de'];
 $eventLabels = ['intrusion' => 'Intrusion détectée', 'appareil_inconnu' => 'Appareil inconnu détecté'];
@@ -69,7 +73,7 @@ $eventLabels = ['intrusion' => 'Intrusion détectée', 'appareil_inconnu' => 'Ap
                         </label>
                     </td>
                     <td>
-                        <?php if ($currentUser['role'] === 'admin'): ?>
+                        <?php if ($canDelete): ?>
                         <button type="button" class="btn btn-icon btn-secondary" title="Supprimer"
                                 data-delete-rule data-id="<?= (int) $rule['id'] ?>" data-name="<?= e($rule['name']) ?>">
                             <i class="fa-solid fa-trash"></i>

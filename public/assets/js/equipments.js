@@ -44,12 +44,24 @@ document.addEventListener('DOMContentLoaded', () => {
         const typeSelect = createForm.querySelector('[name="type"]');
         const roomSelect = createForm.querySelector('[name="room_id"]');
         const topicInput = createForm.querySelector('[name="mqtt_topic"]');
+        const houseSlug = createForm.dataset.houseSlug || 'maison';
 
         const suggestTopic = () => {
             if (!typeSelect.value || !roomSelect.value || topicInput.dataset.touched === 'true') return;
             const roomSlug = roomSelect.options[roomSelect.selectedIndex]?.text
                 .toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/\s+/g, '');
-            topicInput.value = `home/equipment/${roomSlug}/${typeSelect.value}`;
+            const domain = {
+                led: 'lighting',
+                relais: 'lighting',
+                ventilateur: 'climate',
+                pompe: 'garden',
+                servo: 'security',
+                porte: 'security',
+                fenetre: 'security',
+                sirene: 'security',
+                camera: 'camera',
+            }[typeSelect.value] || 'equipment';
+            topicInput.value = `home/${houseSlug}/${domain}/${roomSlug}/${typeSelect.value}`;
         };
         typeSelect?.addEventListener('change', suggestTopic);
         roomSelect?.addEventListener('change', suggestTopic);

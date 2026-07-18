@@ -75,9 +75,9 @@ $notificationSettings = $notificationSettings ?? [];
                 <input type="email" name="notification_email" class="form-control" value="<?= e($notificationSettings['notification_email'] ?? $user['email']) ?>" required>
             </div>
             <div class="form-group">
-                <label class="form-label">Identifiant Telegram</label>
-                <input type="text" name="telegram_chat_id" class="form-control" value="<?= e($notificationSettings['telegram_chat_id'] ?? '') ?>" placeholder="Ex. 123456789">
-                <div class="form-hint">Le bot Telegram global doit être configuré par l'administrateur.</div>
+                <label class="form-label">Nom Telegram</label>
+                <input type="text" name="telegram_name" class="form-control" value="<?= e($notificationSettings['telegram_name'] ?? '') ?>" placeholder="Ex. @mon_nom_telegram">
+                <div class="form-hint">Le token du bot est configuré uniquement par l'administrateur.</div>
             </div>
         </div>
         <button type="submit" class="btn btn-primary"><i class="fa-solid fa-bell"></i> Enregistrer les notifications</button>
@@ -87,7 +87,7 @@ $notificationSettings = $notificationSettings ?? [];
 <script>
 document.getElementById('profile-form').addEventListener('submit', (e) => {
     e.preventDefault();
-    ViciaAjax.post('<?= url('/profile') ?>', new FormData(e.target))
+    ViciaAjax.post('/profile', new FormData(e.target))
         .then((res) => ViciaApp.toast(res.message, 'success'))
         .catch((err) => ViciaApp.toast(err.message || 'Erreur lors de la mise à jour.', 'error'));
 });
@@ -99,14 +99,14 @@ document.getElementById('password-form').addEventListener('submit', (e) => {
         ViciaApp.toast('La confirmation ne correspond pas au nouveau mot de passe.', 'error');
         return;
     }
-    ViciaAjax.post('<?= url('/profile/password') ?>', new FormData(form))
+    ViciaAjax.post('/profile/password', new FormData(form))
         .then((res) => { ViciaApp.toast(res.message, 'success'); form.reset(); })
         .catch((err) => ViciaApp.toast(err.message || 'Erreur lors du changement de mot de passe.', 'error'));
 });
 
 document.getElementById('notifications-form').addEventListener('submit', (e) => {
     e.preventDefault();
-    ViciaAjax.post('<?= url('/profile/notifications') ?>', new FormData(e.target))
+    ViciaAjax.post('/profile/notifications', new FormData(e.target))
         .then((res) => ViciaApp.toast(res.message, 'success'))
         .catch((err) => ViciaApp.toast(err.message || 'Erreur lors de la mise à jour des notifications.', 'error'));
 });

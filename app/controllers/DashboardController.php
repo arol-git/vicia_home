@@ -9,6 +9,7 @@ use App\Core\Response;
 use App\Models\Alert;
 use App\Models\ActivityLog;
 use App\Models\Equipment;
+use App\Models\House;
 use App\Models\NetworkDevice;
 use App\Models\Room;
 use App\Models\Sensor;
@@ -18,8 +19,7 @@ use Mqtt\Publisher;
 /**
  * Class DashboardController
  *
- * Affiche le tableau de bord principal : indicateurs clés,
- * graphiques de tendance, dernières activités et alertes.
+ * Affiche le tableau de bord de la maison actuellement sélectionnée.
  */
 class DashboardController extends Controller
 {
@@ -27,38 +27,54 @@ class DashboardController extends Controller
     {
         Auth::requireLogin();
 
-        // Dernière température et humidité mesurées (premier capteur
-        // de chaque type trouvé, à titre de valeur "ambiante" globale)
-        $temp = Database::query("SELECT sr.value FROM sensor_readings sr
-                                  INNER JOIN sensors s ON s.id = sr.sensor_id
-                                  WHERE s.type = 'dht22_temp' ORDER BY sr.recorded_at DESC LIMIT 1")->fetch();
-        $hum  = Database::query("SELECT sr.value FROM sensor_readings sr
-                                  INNER JOIN sensors s ON s.id = sr.sensor_id
-                                  WHERE s.type = 'dht22_hum' ORDER BY sr.recorded_at DESC LIMIT 1")->fetch();
+        if (Auth::currentHouseId() === null) {
+            Response::redirect('/houses');
+        }
+
+        $houseId = Auth::requireHouseRole(['admin', 'owner', 'resident', 'technician']);
+
+        $temp = Database::query(
+            "SELECT sr.value FROM sensor_readings sr
+             INNER JOIN sensors s ON s.id = sr.sensor_id
+             INNER JOIN rooms r ON r.id = s.room_id
+             WHERE s.type = 'dht22_temp' AND r.house_id = :house_id
+             ORDER BY sr.recorded_at DESC LIMIT 1",
+            ['house_id' => $houseId]
+        )->fetch();
+        $hum  = Database::query(
+            "SELECT sr.value FROM sensor_readings sr
+             INNER JOIN sensors s ON s.id = sr.sensor_id
+             INNER JOIN rooms r ON r.id = s.room_id
+             WHERE s.type = 'dht22_hum' AND r.house_id = :house_id
+             ORDER BY sr.recorded_at DESC LIMIT 1",
+            ['house_id' => $houseId]
+        )->fetch();
 
         $stats = [
-            'rooms_count'       => Room::count(),
-            'equipments_count'  => Equipment::count(),
-            'equipments_active' => Equipment::countActive(),
+            'rooms_count'       => count(Room::forHouse($houseId)),
+            'equipments_count'  => Equipment::countForHouse($houseId),
+            'equipments_active' => Equipment::countActive($houseId),
             'temperature'       => $temp['value'] ?? null,
             'humidity'          => $hum['value'] ?? null,
-            'alerts_unread'     => Alert::countUnread(),
-            'devices_unknown'   => NetworkDevice::countUnknown(),
+            'alerts_unread'     => Alert::countUnread($houseId),
+            'devices_unknown'   => NetworkDevice::countUnknown($houseId),
         ];
 
-        $recentAlerts    = Alert::recent(6);
-        $recentActivity  = ActivityLog::recent(8);
-        $rooms           = Room::allWithCounts();
-        $allSensors      = Sensor::allWithRoom();
-        $currentMode     = Setting::get('dashboard_mode', 'comfort');
+        $recentAlerts    = Alert::recent($houseId, 6);
+        $recentActivity  = ActivityLog::recentForHouse($houseId, 8);
+        $rooms           = Room::allWithCounts($houseId);
+        $allSensors      = Sensor::allWithRoom($houseId);
+        $currentHouse    = House::find($houseId);
+        $currentMode     = Setting::get('dashboard_mode_' . $houseId, 'comfort');
 
-        // Historique agrégé des 24 dernières heures, pour le graphique
-        // de consommation / activité, groupé par heure.
         $activityTrend = Database::query(
-            "SELECT DATE_FORMAT(recorded_at, '%H:00') AS hour_label, COUNT(*) AS readings
-             FROM sensor_readings
-             WHERE recorded_at >= (NOW() - INTERVAL 24 HOUR)
-             GROUP BY hour_label ORDER BY hour_label ASC"
+            "SELECT DATE_FORMAT(sr.recorded_at, '%H:00') AS hour_label, COUNT(*) AS readings
+             FROM sensor_readings sr
+             INNER JOIN sensors s ON s.id = sr.sensor_id
+             INNER JOIN rooms r ON r.id = s.room_id
+             WHERE r.house_id = :house_id AND sr.recorded_at >= (NOW() - INTERVAL 24 HOUR)
+             GROUP BY hour_label ORDER BY hour_label ASC",
+            ['house_id' => $houseId]
         )->fetchAll();
 
         $this->render('dashboard/index', [
@@ -70,12 +86,13 @@ class DashboardController extends Controller
             'allSensors'     => $allSensors,
             'activityTrend'  => $activityTrend,
             'currentMode'    => $currentMode,
+            'currentHouse'   => $currentHouse,
         ]);
     }
 
     public function setMode(): void
     {
-        Auth::requireLogin();
+        $houseId = Auth::requireHouseRole(['admin', 'owner', 'technician']);
         $this->verifyCsrf();
 
         $mode = (string) $this->request->input('mode', '');
@@ -91,26 +108,27 @@ class DashboardController extends Controller
             return;
         }
 
-        $changed = $this->applyMode($mode);
-        Setting::set('dashboard_mode', $mode);
+        $changed = $this->applyMode($houseId, $mode);
+        Setting::set('dashboard_mode_' . $houseId, $mode);
 
         ActivityLog::record(
             Auth::id(),
             'changement_mode',
             "Activation du mode {$labels[$mode]} ({$changed} équipement(s) ajusté(s))",
-            $this->request->ip()
+            $this->request->ip(),
+            $houseId
         );
 
         Response::success("Mode {$labels[$mode]} activé.", [
             'mode' => $mode,
             'label' => $labels[$mode],
             'changed' => $changed,
-            'equipmentsActive' => Equipment::countActive(),
-            'equipmentsCount' => Equipment::count(),
+            'equipmentsActive' => Equipment::countActive($houseId),
+            'equipmentsCount' => Equipment::countForHouse($houseId),
         ]);
     }
 
-    private function applyMode(string $mode): int
+    private function applyMode(int $houseId, string $mode): int
     {
         $targets = [
             'comfort' => [
@@ -156,7 +174,7 @@ class DashboardController extends Controller
         ];
 
         $changed = 0;
-        foreach (Equipment::active() as $equipment) {
+        foreach (Equipment::activeForHouse($houseId) as $equipment) {
             $type = $equipment['type'];
             if (!array_key_exists($type, $targets[$mode])) {
                 continue;

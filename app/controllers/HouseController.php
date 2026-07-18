@@ -71,7 +71,11 @@ class HouseController extends Controller
 
         ActivityLog::record(Auth::id(), 'creation_maison', "Création de la maison « {$data['name']} »", $this->request->ip(), $houseId);
 
-        Response::success('Maison créée avec succès.', ['id' => $houseId, 'slug' => $data['slug']]);
+        Response::success('Maison créée avec succès.', [
+            'id' => $houseId,
+            'slug' => $data['slug'],
+            'redirect' => url('/dashboard'),
+        ]);
     }
 
     public function update(int $id): void
@@ -79,13 +83,19 @@ class HouseController extends Controller
         $this->requireOwnerOrAdmin($id);
         $this->verifyCsrf();
 
+        $house = House::find($id);
+        if (!$house) {
+            Response::error('Maison introuvable.', 404);
+            return;
+        }
+
         $data = [
             'name'               => trim((string) $this->request->input('name')),
             'address'            => trim((string) $this->request->input('address', '')),
             'city'               => trim((string) $this->request->input('city', '')),
-            'telegram_bot_token' => trim((string) $this->request->input('telegram_bot_token', '')),
-            'telegram_chat_id'   => trim((string) $this->request->input('telegram_chat_id', '')),
-            'alert_email'        => trim((string) $this->request->input('alert_email', '')),
+            'telegram_bot_token' => $this->request->input('telegram_bot_token') !== null ? trim((string) $this->request->input('telegram_bot_token')) : ($house['telegram_bot_token'] ?? ''),
+            'telegram_chat_id'   => $this->request->input('telegram_chat_id') !== null ? trim((string) $this->request->input('telegram_chat_id')) : ($house['telegram_chat_id'] ?? ''),
+            'alert_email'        => $this->request->input('alert_email') !== null ? trim((string) $this->request->input('alert_email')) : ($house['alert_email'] ?? ''),
         ];
 
         $validator = new Validator($data);
@@ -107,6 +117,10 @@ class HouseController extends Controller
         $this->verifyCsrf();
 
         $house = House::find($id);
+        if (!$house) {
+            Response::error('Maison introuvable.', 404);
+            return;
+        }
         House::delete($id); // CASCADE en base : pièces, équipements, capteurs, etc.
         ActivityLog::record(Auth::id(), 'suppression_maison', "Suppression de la maison « {$house['name']} »", $this->request->ip());
 
@@ -136,6 +150,10 @@ class HouseController extends Controller
     {
         $this->requireOwnerOrAdmin($id);
         $house = House::find($id);
+        if (!$house) {
+            http_response_code(404);
+            die('Maison introuvable.');
+        }
         $members = House::members($id);
 
         $this->render('houses/members', ['title' => 'Membres — ' . $house['name'], 'house' => $house, 'members' => $members]);

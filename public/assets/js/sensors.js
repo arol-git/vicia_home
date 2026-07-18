@@ -9,6 +9,38 @@
 document.addEventListener('DOMContentLoaded', () => {
     const createForm = document.getElementById('sensor-create-form');
     if (createForm) {
+        const typeSelect = createForm.querySelector('[name="type"]');
+        const roomSelect = createForm.querySelector('[name="room_id"]');
+        const topicInput = createForm.querySelector('[name="mqtt_topic"]');
+        const houseSlug = createForm.dataset.houseSlug || 'maison';
+
+        const suggestTopic = () => {
+            if (!typeSelect.value || !roomSelect.value || topicInput.dataset.touched === 'true') return;
+            const roomSlug = roomSelect.options[roomSelect.selectedIndex]?.text
+                .toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/\s+/g, '');
+            const domain = {
+                pir: 'security',
+                dht22_temp: 'climate',
+                dht22_hum: 'climate',
+                mq2: 'safety',
+                mq135: 'safety',
+                ldr: 'lighting',
+                rfid: 'access',
+                humidite_sol: 'garden',
+            }[typeSelect.value] || 'sensors';
+            const metric = {
+                dht22_temp: 'temp',
+                dht22_hum: 'hum',
+                humidite_sol: 'soil',
+            }[typeSelect.value] || typeSelect.value;
+            topicInput.value = `home/${houseSlug}/${domain}/${roomSlug}/${metric}`;
+        };
+
+        typeSelect?.addEventListener('change', suggestTopic);
+        roomSelect?.addEventListener('change', suggestTopic);
+        topicInput?.addEventListener('input', () => { topicInput.dataset.touched = 'true'; });
+        suggestTopic();
+
         createForm.addEventListener('submit', (e) => {
             e.preventDefault();
             ViciaAjax.post('/sensors', new FormData(createForm))

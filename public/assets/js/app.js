@@ -153,11 +153,42 @@ const ViciaApp = (() => {
         setInterval(refresh, 30000);
     }
 
+    function initHouseSwitcher() {
+        const toggle = document.querySelector('[data-toggle-house-menu]');
+        const menu = document.getElementById('house-switcher-menu');
+        if (!toggle || !menu) return;
+
+        toggle.addEventListener('click', (e) => {
+            e.stopPropagation();
+            menu.classList.toggle('is-open');
+        });
+
+        document.addEventListener('click', (e) => {
+            if (!menu.contains(e.target) && !toggle.contains(e.target)) {
+                menu.classList.remove('is-open');
+            }
+        });
+
+        menu.querySelectorAll('[data-switch-house]').forEach((btn) => {
+            btn.addEventListener('click', () => {
+                ViciaAjax.post(`/houses/switch/${btn.dataset.id}`)
+                    .then((res) => { window.location.href = res.redirect || appUrl('/dashboard'); })
+                    .catch((err) => toast(err.message || 'Sélection impossible.', 'error'));
+            });
+        });
+    }
+
+    function appUrl(path) {
+        const base = document.querySelector('meta[name="app-base-url"]')?.getAttribute('content') || '/';
+        return `${base.replace(/\/+$/, '')}/${String(path).replace(/^\/+/, '')}`;
+    }
+
     function init() {
         initThemeToggle();
         highlightActiveLink();
         initModalTriggers();
         initAlertPolling();
+        initHouseSwitcher();
     }
 
     document.addEventListener('DOMContentLoaded', init);

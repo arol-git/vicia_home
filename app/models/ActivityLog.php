@@ -18,16 +18,49 @@ class ActivityLog extends Model
     /**
      * Enregistre une action utilisateur. Appelée depuis les
      * contrôleurs après toute opération de création, modification ou
-     * suppression significative.
+     * suppression significative. `$houseId` est nullable : certaines
+     * actions (connexion, modification du profil) ne concernent
+     * aucune maison en particulier.
      */
-    public static function record(?int $userId, string $action, string $description, string $ip): int
+    public static function record(?int $userId, string $action, string $description, string $ip, ?int $houseId = null): int
     {
-        return self::create([
+        $data = [
             'user_id'     => $userId,
+            'house_id'    => $houseId,
             'action'      => $action,
             'description' => $description,
             'ip_address'  => $ip,
-        ]);
+        ];
+
+        try {
+            return self::create($data);
+        } catch (\Throwable $e) {
+            try {
+                unset($data['house_id']);
+                return self::create($data);
+            } catch (\Throwable $fallbackError) {
+                app_log('[ActivityLog] Journalisation ignorée : ' . $fallbackError->getMessage());
+                return 0;
+            }
+        }
+    }
+
+    /**
+     * Retourne les activités récentes d'UNE maison (utilisé par le
+     * tableau de bord et le module Historique).
+     */
+    public static function recentForHouse(int $houseId, int $limit = 15): array
+    {
+        $sql = "SELECT al.*, u.name AS user_name
+                FROM activity_logs al
+                LEFT JOIN users u ON u.id = al.user_id
+                WHERE al.house_id = :house_id
+                ORDER BY al.created_at DESC LIMIT :limit";
+        $stmt = Database::getInstance()->prepare($sql);
+        $stmt->bindValue(':house_id', $houseId, \PDO::PARAM_INT);
+        $stmt->bindValue(':limit', $limit, \PDO::PARAM_INT);
+        $stmt->execute();
+        return $stmt->fetchAll();
     }
 
     public static function recent(int $limit = 15): array
@@ -38,6 +71,21 @@ class ActivityLog extends Model
                 ORDER BY al.created_at DESC LIMIT :limit";
         $stmt = Database::getInstance()->prepare($sql);
         $stmt->bindValue(':limit', $limit, \PDO::PARAM_INT);
+        $stmt->execute();
+        return $stmt->fetchAll();
+    }
+
+    public static function paginatedForHouse(int $houseId, int $limit, int $offset): array
+    {
+        $sql = "SELECT al.*, u.name AS user_name
+                FROM activity_logs al
+                LEFT JOIN users u ON u.id = al.user_id
+                WHERE al.house_id = :house_id
+                ORDER BY al.created_at DESC LIMIT :limit OFFSET :offset";
+        $stmt = Database::getInstance()->prepare($sql);
+        $stmt->bindValue(':house_id', $houseId, \PDO::PARAM_INT);
+        $stmt->bindValue(':limit', $limit, \PDO::PARAM_INT);
+        $stmt->bindValue(':offset', $offset, \PDO::PARAM_INT);
         $stmt->execute();
         return $stmt->fetchAll();
     }

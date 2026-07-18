@@ -48,6 +48,16 @@ $router->post('/reset-password', 'AuthController@resetPassword');
 $router->get('/dashboard', 'DashboardController@index');
 $router->post('/dashboard/mode', 'DashboardController@setMode');
 
+// ------------------------- Maisons -----------------------------------------
+$router->get('/houses', 'HouseController@index');
+$router->post('/houses', 'HouseController@store');
+$router->put('/houses/{id}', 'HouseController@update');
+$router->delete('/houses/{id}', 'HouseController@destroy');
+$router->post('/houses/switch/{id}', 'HouseController@switchHouse');
+$router->get('/houses/{id}/members', 'HouseController@members');
+$router->post('/houses/{id}/members', 'HouseController@addMember');
+$router->delete('/houses/{id}/members/{userId}', 'HouseController@removeMember');
+
 // ------------------------- Pièces -----------------------------------------
 $router->get('/rooms', 'RoomController@index');
 $router->post('/rooms', 'RoomController@store');

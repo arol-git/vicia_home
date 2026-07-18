@@ -64,3 +64,26 @@ function api_authenticate(): array
 
     return $user;
 }
+
+/**
+ * Résout et vérifie la maison ciblée par une requête d'API : lue
+ * dans le paramètre "house_id" (query string pour GET, corps JSON
+ * pour POST/PUT/DELETE), puis vérifiée contre les droits de
+ * l'utilisateur authentifié. Interrompt la requête avec un code 400
+ * ou 403 en cas d'absence ou d'accès refusé.
+ */
+function api_authorize_house(array $user, array $input = []): int
+{
+    $houseId = (int) ($input['house_id'] ?? $_GET['house_id'] ?? 0);
+
+    if (!$houseId) {
+        api_response(['success' => false, 'message' => 'Le paramètre « house_id » est obligatoire.'], 400);
+    }
+
+    $role = \App\Models\House::roleOfUser($houseId, $user['id'], $user['role']);
+    if ($role === null) {
+        api_response(['success' => false, 'message' => 'Vous n’avez pas accès à cette maison.'], 403);
+    }
+
+    return $houseId;
+}

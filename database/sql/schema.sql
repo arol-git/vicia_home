@@ -23,11 +23,11 @@
 SET NAMES utf8mb4;
 SET FOREIGN_KEY_CHECKS = 0;
 
-CREATE DATABASE IF NOT EXISTS `vicia_home`
+CREATE DATABASE IF NOT EXISTS `vicia_home2`
     CHARACTER SET utf8mb4
     COLLATE utf8mb4_unicode_ci;
 
-USE `vicia_home`;
+USE `vicia_home2`;
 
 -- ---------------------------------------------------------------------
 -- Table : users
@@ -40,9 +40,11 @@ CREATE TABLE `users` (
     `name`              VARCHAR(100)        NOT NULL,
     `email`             VARCHAR(150)        NOT NULL,
     `password_hash`     VARCHAR(255)        NOT NULL,
-    `role`              ENUM('admin','user') NOT NULL DEFAULT 'user' COMMENT 'rôle de plateforme (admin = support Vicia Home)',
+    `role`              ENUM('admin','user','technicien') NOT NULL DEFAULT 'user' COMMENT 'rôle de plateforme (admin = support Vicia Home)',
     `avatar`            VARCHAR(255)        NULL,
     `phone`             VARCHAR(30)         NULL,
+    `notification_email` VARCHAR(150)       NULL,
+    `telegram_name`      VARCHAR(100)       NULL,
     `remember_token`    VARCHAR(100)        NULL,
     `status`            ENUM('active','suspended') NOT NULL DEFAULT 'active',
     `last_login_at`     DATETIME            NULL,
@@ -212,6 +214,26 @@ CREATE TABLE `alerts` (
     KEY `idx_alerts_severity` (`severity`),
     CONSTRAINT `fk_alerts_house` FOREIGN KEY (`house_id`) REFERENCES `houses` (`id`) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+CREATE TABLE `devices` (
+    `id`                     INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+    `house_id`               INT UNSIGNED NOT NULL,
+    `chip_id`                VARCHAR(50)  NOT NULL COMMENT 'identifiant matériel unique de l’ESP32 (MAC ou chip ID)',
+    `label`                  VARCHAR(100) NOT NULL,
+    `certificate_fingerprint` VARCHAR(150) NULL,
+    `firmware_version`       VARCHAR(30)  NULL,
+    `status`                 ENUM('pending','paired','revoked') NOT NULL DEFAULT 'pending',
+    `last_seen`              DATETIME     NULL,
+    `created_at`             DATETIME     NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    UNIQUE KEY `uq_devices_chip` (`chip_id`),
+    CONSTRAINT `fk_devices_house` FOREIGN KEY (`house_id`) REFERENCES `houses` (`id`) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+ALTER TABLE `equipments` ADD COLUMN `device_id` INT UNSIGNED NULL AFTER `room_id`,
+    ADD CONSTRAINT `fk_equipments_device` FOREIGN KEY (`device_id`) REFERENCES `devices` (`id`) ON DELETE SET NULL;
+
+ALTER TABLE `sensors` ADD COLUMN `device_id` INT UNSIGNED NULL AFTER `room_id`,
+    ADD CONSTRAINT `fk_sensors_device` FOREIGN KEY (`device_id`) REFERENCES `devices` (`id`) ON DELETE SET NULL;
 
 -- ---------------------------------------------------------------------
 -- Table : network_devices
@@ -398,8 +420,9 @@ DELIMITER ;
 INSERT INTO `users` (`id`, `name`, `email`, `password_hash`, `role`, `status`) VALUES
 (1, 'Support Vicia Home', 'admin@vicia-home.local', '$2y$10$dcIfBl5B5/X9stCW5Vl70uwcQlPUNzTLbPZYgwAeGroOfAYJ/4DAq', 'admin', 'active'),
 (2, 'Arol Yemeli', 'arol@vicia-home.local', '$2y$10$dcIfBl5B5/X9stCW5Vl70uwcQlPUNzTLbPZYgwAeGroOfAYJ/4DAq', 'user', 'active'),
-(3, 'Technicien Mobile', 'technicien@vicia-home.local', '$2y$10$dcIfBl5B5/X9stCW5Vl70uwcQlPUNzTLbPZYgwAeGroOfAYJ/4DAq', 'user', 'active'),
+(3, 'Technicien Mobile', 'technicien@vicia-home.local', '$2y$10$dcIfBl5B5/X9stCW5Vl70uwcQlPUNzTLbPZYgwAeGroOfAYJ/4DAq', 'technicien', 'active'),
 (4, 'Résidente Douala', 'resident@vicia-home.local', '$2y$10$dcIfBl5B5/X9stCW5Vl70uwcQlPUNzTLbPZYgwAeGroOfAYJ/4DAq', 'user', 'active');
+-- Mot de passe initial commun des comptes de démonstration : ViciaHome@2026
 
 -- Deux maisons distinctes, démontrant le multi-tenant.
 INSERT INTO `houses` (`id`, `name`, `slug`, `address`, `city`, `alert_email`) VALUES
@@ -431,7 +454,7 @@ INSERT INTO `rooms` (`id`, `house_id`, `name`, `type`, `floor`, `icon`, `descrip
 (9, 2, 'Terrasse', 'terrasse', 'Extérieur', 'fa-umbrella-beach', 'Terrasse donnant sur le jardin');
 
 -- Équipements — topics MQTT préfixés par le slug de la maison
--- (home/<slug>/...), garantissant l'isolation des messages entre
+-- (home/<slug>/...), garantissant ViciaHome@2026l'isolation des messages entre
 -- maisons sur le même broker Mosquitto partagé.
 INSERT INTO `equipments` (`room_id`, `name`, `type`, `icon`, `state`, `mqtt_topic`) VALUES
 (1, 'Éclairage salon', 'led', 'fa-lightbulb', 1, 'home/villa-yaounde/lighting/salon/led1'),

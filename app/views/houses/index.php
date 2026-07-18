@@ -47,13 +47,55 @@ $pageScripts = ['houses.js'];
                     <i class="fa-solid fa-right-left"></i> Sélectionner
                 </button>
                 <?php if (in_array($house['role_in_house'], ['owner', 'admin'], true)): ?>
+                <button type="button" class="btn btn-sm btn-secondary"
+                        data-edit-house
+                        data-id="<?= (int) $house['id'] ?>"
+                        data-name="<?= e($house['name']) ?>"
+                        data-city="<?= e($house['city'] ?? '') ?>"
+                        data-address="<?= e($house['address'] ?? '') ?>">
+                    <i class="fa-solid fa-pen"></i> Modifier
+                </button>
                 <a href="<?= url('/houses/' . (int) $house['id'] . '/members') ?>" class="btn btn-sm btn-secondary">
                     <i class="fa-solid fa-user-gear"></i> Membres
                 </a>
+                <button type="button" class="btn btn-sm btn-danger" data-delete-house data-id="<?= (int) $house['id'] ?>" data-name="<?= e($house['name']) ?>">
+                    <i class="fa-solid fa-trash"></i> Supprimer
+                </button>
                 <?php endif; ?>
             </div>
         </div>
     <?php endforeach; ?>
+</div>
+
+<div class="modal-overlay" id="modal-edit-house">
+    <div class="modal">
+        <div class="modal__header">
+            <div class="modal__title">Modifier la maison</div>
+            <button type="button" class="modal__close" data-close-modal><i class="fa-solid fa-xmark"></i></button>
+        </div>
+        <form id="house-edit-form">
+            <div class="modal__body">
+                <div class="form-group">
+                    <label class="form-label">Nom de la maison</label>
+                    <input type="text" name="name" class="form-control" required>
+                </div>
+                <div class="form-row">
+                    <div class="form-group">
+                        <label class="form-label">Ville</label>
+                        <input type="text" name="city" class="form-control">
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Adresse</label>
+                        <input type="text" name="address" class="form-control">
+                    </div>
+                </div>
+            </div>
+            <div class="modal__footer">
+                <button type="button" class="btn btn-secondary" data-close-modal>Annuler</button>
+                <button type="submit" class="btn btn-primary"><i class="fa-solid fa-check"></i> Enregistrer</button>
+            </div>
+        </form>
+    </div>
 </div>
 <?php endif; ?>
 

@@ -10,7 +10,8 @@ use App\Core\Model;
  *
  * Modèle représentant un équipement pilotable (actionneur) : LED,
  * relais, ventilateur, pompe, servo-moteur, porte, fenêtre, sirène
- * ou caméra.
+ * ou caméra. Un équipement appartient à une pièce, elle-même
+ * rattachée à une maison.
  */
 class Equipment extends Model
 {
@@ -19,31 +20,42 @@ class Equipment extends Model
     /**
      * Retourne tous les équipements avec le nom de leur pièce associée.
      */
-    public static function allWithRoom(): array
+    public static function allWithRoom(int $houseId): array
     {
         $sql = "SELECT eq.*, r.name AS room_name
                 FROM equipments eq
                 INNER JOIN rooms r ON r.id = eq.room_id
+                WHERE r.house_id = :house_id
                 ORDER BY r.name ASC, eq.name ASC";
-        return Database::query($sql)->fetchAll();
+        return Database::query($sql, ['house_id' => $houseId])->fetchAll();
     }
 
-    /**
-     * Retourne les équipements activés dans le système.
-     */
-    public static function active(): array
+    public static function activeForHouse(int $houseId): array
     {
-        return Database::query('SELECT * FROM equipments WHERE is_active = 1 ORDER BY name ASC')->fetchAll();
+        $sql = "SELECT eq.*
+                FROM equipments eq
+                INNER JOIN rooms r ON r.id = eq.room_id
+                WHERE r.house_id = :house_id AND eq.is_active = 1
+                ORDER BY eq.name ASC";
+        return Database::query($sql, ['house_id' => $houseId])->fetchAll();
     }
 
     public static function findWithRoom(int $id): ?array
     {
-        $sql = "SELECT eq.*, r.name AS room_name
+        $sql = "SELECT eq.*, r.name AS room_name, r.house_id
                 FROM equipments eq
                 INNER JOIN rooms r ON r.id = eq.room_id
                 WHERE eq.id = :id LIMIT 1";
         $row = Database::query($sql, ['id' => $id])->fetch();
         return $row ?: null;
+    }
+
+    public static function belongsToHouse(int $equipmentId, int $houseId): bool
+    {
+        $sql = "SELECT eq.id FROM equipments eq
+                INNER JOIN rooms r ON r.id = eq.room_id
+                WHERE eq.id = :id AND r.house_id = :house_id LIMIT 1";
+        return (bool) Database::query($sql, ['id' => $equipmentId, 'house_id' => $houseId])->fetch();
     }
 
     /**
@@ -68,9 +80,21 @@ class Equipment extends Model
     /**
      * Compte les équipements actuellement allumés/ouverts (state = 1).
      */
-    public static function countActive(): int
+    public static function countActive(int $houseId): int
     {
-        $row = Database::query('SELECT COUNT(*) AS c FROM equipments WHERE state = 1')->fetch();
+        $sql = "SELECT COUNT(*) AS c FROM equipments eq
+                INNER JOIN rooms r ON r.id = eq.room_id
+                WHERE r.house_id = :house_id AND eq.state = 1";
+        $row = Database::query($sql, ['house_id' => $houseId])->fetch();
+        return (int) ($row['c'] ?? 0);
+    }
+
+    public static function countForHouse(int $houseId): int
+    {
+        $sql = "SELECT COUNT(*) AS c FROM equipments eq
+                INNER JOIN rooms r ON r.id = eq.room_id
+                WHERE r.house_id = :house_id";
+        $row = Database::query($sql, ['house_id' => $houseId])->fetch();
         return (int) ($row['c'] ?? 0);
     }
 }

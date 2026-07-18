@@ -14,6 +14,7 @@ use App\Models\User;
 class Auth
 {
     private const SESSION_USER_KEY = '_auth_user_id';
+    private const SESSION_HOUSE_KEY = '_current_house_id';
     private const REMEMBER_COOKIE  = 'vicia_remember';
 
     /**
@@ -162,5 +163,71 @@ class Auth
             echo 'Accès refusé : privilèges insuffisants.';
             exit;
         }
+    }
+
+    public static function currentHouseId(): ?int
+    {
+        $user = self::user();
+        if (!$user) {
+            return null;
+        }
+
+        $houses = \App\Models\House::forUser($user['id'], $user['role']);
+        if (empty($houses)) {
+            return null;
+        }
+
+        $selected = Session::get(self::SESSION_HOUSE_KEY);
+        foreach ($houses as $house) {
+            if ((int) $house['id'] === (int) $selected) {
+                return (int) $selected;
+            }
+        }
+
+        $firstId = (int) $houses[0]['id'];
+        Session::set(self::SESSION_HOUSE_KEY, $firstId);
+        return $firstId;
+    }
+
+    public static function switchHouse(int $houseId): bool
+    {
+        $user = self::user();
+        if (!$user || self::roleOnHouse($houseId) === null) {
+            return false;
+        }
+
+        Session::set(self::SESSION_HOUSE_KEY, $houseId);
+        return true;
+    }
+
+    public static function roleOnHouse(int $houseId): ?string
+    {
+        $user = self::user();
+        if (!$user) {
+            return null;
+        }
+
+        return \App\Models\House::roleOfUser($houseId, $user['id'], $user['role']);
+    }
+
+    public static function requireHouseRole(array $roles, ?int $houseId = null): int
+    {
+        self::requireLogin();
+        $houseId = $houseId ?? self::currentHouseId();
+
+        if (!$houseId) {
+            http_response_code(403);
+            echo 'Aucune maison associée à ce compte.';
+            exit;
+        }
+
+        $role = self::roleOnHouse($houseId);
+        if ($role === null || !in_array($role, $roles, true)) {
+            http_response_code(403);
+            echo 'Accès refusé : privilèges insuffisants sur cette maison.';
+            exit;
+        }
+
+        return $houseId;
     }
 }

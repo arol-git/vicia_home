@@ -3,28 +3,32 @@
  * api/v1/equipments.php
  *
  * Ressource REST /api/v1/equipments — gestion et pilotage des
- * équipements.
+ * équipements D'UNE MAISON (paramètre "house_id" requis, vérifié via
+ * api_authorize_house()).
  *
- *   GET    /api/v1/equipments               Liste des équipements
- *   GET    /api/v1/equipments/{id}           Détail d'un équipement
- *   POST   /api/v1/equipments                Création d'un équipement
- *   PUT    /api/v1/equipments/{id}           Mise à jour d'un équipement
- *   DELETE /api/v1/equipments/{id}           Suppression d'un équipement
- *   POST   /api/v1/equipments/{id}/toggle    Bascule d'état (marche/arrêt)
+ *   GET    /api/v1/equipments?house_id=1            Liste
+ *   GET    /api/v1/equipments/{id}?house_id=1        Détail
+ *   POST   /api/v1/equipments                        Création (house_id dans le corps)
+ *   PUT    /api/v1/equipments/{id}                   Mise à jour
+ *   DELETE /api/v1/equipments/{id}?house_id=1         Suppression
+ *   POST   /api/v1/equipments/{id}/toggle             Bascule d'état (house_id dans le corps)
  */
 
 use App\Models\Equipment;
+use App\Models\Room;
 use Mqtt\Publisher;
 
 function handle_equipments(string $method, ?string $id, ?string $subaction): void
 {
-    api_authenticate();
+    $user = api_authenticate();
+    $input = api_input();
+    $houseId = api_authorize_house($user, $input);
 
     if ($id && $subaction === 'toggle' && $method === 'POST') {
-        $equipment = Equipment::find((int) $id);
-        if (!$equipment) {
+        if (!Equipment::belongsToHouse((int) $id, $houseId)) {
             api_response(['success' => false, 'message' => 'Équipement introuvable.'], 404);
         }
+        $equipment = Equipment::find((int) $id);
         $newState = Equipment::toggleState((int) $id);
         Publisher::publish($equipment['mqtt_topic'] . '/set', $newState ? '1' : '0');
         api_response(['success' => true, 'message' => 'Commande envoyée.', 'data' => ['state' => $newState]]);
@@ -33,19 +37,22 @@ function handle_equipments(string $method, ?string $id, ?string $subaction): voi
     switch ($method) {
         case 'GET':
             if ($id) {
-                $equipment = Equipment::findWithRoom((int) $id);
-                $equipment ? api_response(['success' => true, 'data' => $equipment])
-                           : api_response(['success' => false, 'message' => 'Équipement introuvable.'], 404);
+                if (!Equipment::belongsToHouse((int) $id, $houseId)) {
+                    api_response(['success' => false, 'message' => 'Équipement introuvable.'], 404);
+                }
+                api_response(['success' => true, 'data' => Equipment::findWithRoom((int) $id)]);
             }
-            api_response(['success' => true, 'data' => Equipment::allWithRoom()]);
+            api_response(['success' => true, 'data' => Equipment::allWithRoom($houseId)]);
             break;
 
         case 'POST':
-            $input = api_input();
             foreach (['room_id', 'name', 'type', 'mqtt_topic'] as $required) {
                 if (empty($input[$required])) {
                     api_response(['success' => false, 'message' => "Le champ '$required' est obligatoire."], 422);
                 }
+            }
+            if (!Room::belongsToHouse((int) $input['room_id'], $houseId)) {
+                api_response(['success' => false, 'message' => 'Pièce invalide pour cette maison.'], 422);
             }
             $newId = Equipment::create([
                 'room_id'    => (int) $input['room_id'],
@@ -59,13 +66,11 @@ function handle_equipments(string $method, ?string $id, ?string $subaction): voi
             break;
 
         case 'PUT':
-            if (!$id || !Equipment::find((int) $id)) {
+            if (!$id || !Equipment::belongsToHouse((int) $id, $houseId)) {
                 api_response(['success' => false, 'message' => 'Équipement introuvable.'], 404);
             }
-            $input = api_input();
             Equipment::update((int) $id, array_filter([
                 'name'       => $input['name'] ?? null,
-                'room_id'    => isset($input['room_id']) ? (int) $input['room_id'] : null,
                 'mqtt_topic' => $input['mqtt_topic'] ?? null,
                 'is_active'  => isset($input['is_active']) ? (int) (bool) $input['is_active'] : null,
             ], fn($v) => $v !== null));
@@ -73,7 +78,7 @@ function handle_equipments(string $method, ?string $id, ?string $subaction): voi
             break;
 
         case 'DELETE':
-            if (!$id || !Equipment::find((int) $id)) {
+            if (!$id || !Equipment::belongsToHouse((int) $id, $houseId)) {
                 api_response(['success' => false, 'message' => 'Équipement introuvable.'], 404);
             }
             Equipment::delete((int) $id);

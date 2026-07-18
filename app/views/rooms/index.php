@@ -5,6 +5,8 @@
  * Gestion des pièces de l'habitation : listage sous forme de cartes,
  * création, modification et suppression via modales AJAX.
  */
+use App\Core\Auth;
+
 $pageScripts = ['rooms.js'];
 
 $roomTypes = [
@@ -17,7 +19,9 @@ $roomIcons = [
     'bureau' => 'fa-briefcase', 'salle_de_bain' => 'fa-bath', 'jardin' => 'fa-leaf',
     'terrasse' => 'fa-umbrella-beach', 'autre' => 'fa-door-open',
 ];
-$canManage = in_array($currentUser['role'], ['admin', 'technicien'], true);
+$houseRole = Auth::roleOnHouse(Auth::currentHouseId() ?? 0);
+$canManage = in_array($houseRole, ['admin', 'owner', 'technician'], true);
+$canDelete = in_array($houseRole, ['admin', 'owner'], true);
 ?>
 
 <div class="page-header">
@@ -48,7 +52,7 @@ $canManage = in_array($currentUser['role'], ['admin', 'technicien'], true);
                             data-description="<?= e($room['description']) ?>">
                         <i class="fa-solid fa-pen"></i>
                     </button>
-                    <?php if ($currentUser['role'] === 'admin'): ?>
+                    <?php if ($canDelete): ?>
                     <button type="button" class="btn btn-icon btn-secondary" title="Supprimer"
                             data-delete-room data-id="<?= (int) $room['id'] ?>" data-name="<?= e($room['name']) ?>">
                         <i class="fa-solid fa-trash"></i>

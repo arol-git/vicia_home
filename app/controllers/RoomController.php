@@ -13,8 +13,10 @@ use App\Models\Room;
  * Class RoomController
  *
  * Gère le module "Pièces" : listage, création, modification et
- * suppression des pièces de l'habitation. Les opérations d'écriture
- * sont réalisées en AJAX et répondent en JSON.
+ * suppression des pièces de la maison ACTUELLEMENT SÉLECTIONNÉE
+ * (voir App\Core\Auth::currentHouseId()). Toute action est vérifiée
+ * contre le rôle de l'utilisateur sur cette maison précise, et non
+ * contre un rôle global de plateforme.
  */
 class RoomController extends Controller
 {
@@ -22,21 +24,21 @@ class RoomController extends Controller
 
     public function index(): void
     {
-        Auth::requireLogin();
-        $rooms = Room::allWithCounts();
+        $houseId = Auth::requireHouseRole(['admin', 'owner', 'resident', 'technician']);
+        $rooms = Room::allWithCounts($houseId);
         $this->render('rooms/index', ['title' => 'Pièces', 'rooms' => $rooms]);
     }
 
     /**
-     * Crée une nouvelle pièce (appelé en AJAX depuis la modale
-     * "Ajouter une pièce").
+     * Crée une nouvelle pièce dans la maison actuellement sélectionnée.
      */
     public function store(): void
     {
-        Auth::requireRole(['admin', 'technicien']);
+        $houseId = Auth::requireHouseRole(['admin', 'owner', 'technician']);
         $this->verifyCsrf();
 
         $data = [
+            'house_id'    => $houseId,
             'name'        => trim((string) $this->request->input('name')),
             'type'        => (string) $this->request->input('type', 'autre'),
             'floor'       => trim((string) $this->request->input('floor', '')),
@@ -56,21 +58,21 @@ class RoomController extends Controller
         }
 
         $id = Room::create($data);
-        ActivityLog::record(Auth::id(), 'creation_piece', "Création de la pièce « {$data['name']} »", $this->request->ip());
+        ActivityLog::record(Auth::id(), 'creation_piece', "Création de la pièce « {$data['name']} »", $this->request->ip(), $houseId);
 
         Response::success('Pièce ajoutée avec succès.', ['id' => $id]);
     }
 
     public function update(int $id): void
     {
-        Auth::requireRole(['admin', 'technicien']);
+        $houseId = Auth::requireHouseRole(['admin', 'owner', 'technician']);
         $this->verifyCsrf();
 
-        $room = Room::find($id);
-        if (!$room) {
+        if (!Room::belongsToHouse($id, $houseId)) {
             Response::error('Pièce introuvable.', 404);
             return;
         }
+        $room = Room::find($id);
 
         $data = [
             'name'        => trim((string) $this->request->input('name')),
@@ -92,21 +94,21 @@ class RoomController extends Controller
         }
 
         Room::update($id, $data);
-        ActivityLog::record(Auth::id(), 'modification_piece', "Modification de la pièce « {$data['name']} »", $this->request->ip());
+        ActivityLog::record(Auth::id(), 'modification_piece', "Modification de la pièce « {$data['name']} »", $this->request->ip(), $houseId);
 
         Response::success('Pièce mise à jour avec succès.');
     }
 
     public function destroy(int $id): void
     {
-        Auth::requireRole(['admin']);
+        $houseId = Auth::requireHouseRole(['admin', 'owner']);
         $this->verifyCsrf();
 
-        $room = Room::find($id);
-        if (!$room) {
+        if (!Room::belongsToHouse($id, $houseId)) {
             Response::error('Pièce introuvable.', 404);
             return;
         }
+        $room = Room::find($id);
 
         if (Room::hasDependents($id)) {
             Response::error('Impossible de supprimer cette pièce : des équipements ou capteurs y sont encore rattachés.', 409);
@@ -114,7 +116,7 @@ class RoomController extends Controller
         }
 
         Room::delete($id);
-        ActivityLog::record(Auth::id(), 'suppression_piece', "Suppression de la pièce « {$room['name']} »", $this->request->ip());
+        ActivityLog::record(Auth::id(), 'suppression_piece', "Suppression de la pièce « {$room['name']} »", $this->request->ip(), $houseId);
 
         Response::success('Pièce supprimée avec succès.');
     }

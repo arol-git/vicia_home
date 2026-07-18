@@ -6,16 +6,48 @@
  * $currentUser (fourni par Controller::render()) pour n'afficher les
  * sections d'administration qu'aux rôles autorisés.
  */
+use App\Core\Auth;
 use App\Models\Alert;
+use App\Models\House;
 
 $role = $currentUser['role'] ?? 'user';
-$unreadAlerts = Alert::countUnread();
+$sidebarHouses = House::forUser($currentUser['id'], $role);
+$currentHouseId = Auth::currentHouseId();
+$currentHouseName = null;
+foreach ($sidebarHouses as $house) {
+    if ((int) $house['id'] === (int) $currentHouseId) {
+        $currentHouseName = $house['name'];
+        break;
+    }
+}
+$unreadAlerts = $currentHouseId ? Alert::countUnread($currentHouseId) : 0;
 ?>
 <aside class="sidebar">
     <div class="sidebar__brand">
         <div class="sidebar__brand-icon"><i class="fa-solid fa-house-signal"></i></div>
         <div class="sidebar__brand-text">Vicia<span>Home</span></div>
     </div>
+
+    <?php if (!empty($sidebarHouses)): ?>
+    <div class="house-switcher">
+        <button type="button" class="house-switcher__current" data-toggle-house-menu>
+            <i class="fa-solid fa-house"></i>
+            <span><?= e($currentHouseName ?? 'Choisir une maison') ?></span>
+            <i class="fa-solid fa-chevron-down"></i>
+        </button>
+        <div class="house-switcher__menu" id="house-switcher-menu">
+            <?php foreach ($sidebarHouses as $house): ?>
+                <button type="button" class="house-switcher__item <?= (int) $house['id'] === (int) $currentHouseId ? 'is-active' : '' ?>" data-switch-house data-id="<?= (int) $house['id'] ?>">
+                    <?= e($house['name']) ?>
+                    <?php if ((int) $house['id'] === (int) $currentHouseId): ?><i class="fa-solid fa-check"></i><?php endif; ?>
+                </button>
+            <?php endforeach; ?>
+            <a href="<?= url('/houses') ?>" class="house-switcher__item house-switcher__manage">
+                <i class="fa-solid fa-gear"></i> Gérer mes maisons
+            </a>
+        </div>
+    </div>
+    <?php endif; ?>
 
     <nav class="sidebar__nav">
         <a href="<?= url('/dashboard') ?>" class="sidebar__link">
@@ -56,6 +88,9 @@ $unreadAlerts = Alert::countUnread();
         <div class="sidebar__section-label">Administration</div>
         <a href="<?= url('/history') ?>" class="sidebar__link">
             <i class="fa-solid fa-clock-rotate-left"></i><span>Historique</span>
+        </a>
+        <a href="<?= url('/houses') ?>" class="sidebar__link">
+            <i class="fa-solid fa-house-user"></i><span>Mes maisons</span>
         </a>
         <?php if ($role === 'admin'): ?>
         <a href="<?= url('/users') ?>" class="sidebar__link">

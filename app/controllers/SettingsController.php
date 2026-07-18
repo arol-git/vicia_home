@@ -4,9 +4,9 @@ namespace App\Controllers;
 
 use App\Core\Auth;
 use App\Core\Controller;
-use App\Core\Database;
 use App\Core\Response;
 use App\Models\ActivityLog;
+use App\Models\Setting;
 
 /**
  * Class SettingsController
@@ -20,8 +20,7 @@ class SettingsController extends Controller
     public function index(): void
     {
         Auth::requireRole(['admin']);
-        $rows = Database::query('SELECT setting_key, setting_value FROM settings')->fetchAll();
-        $settings = array_column($rows, 'setting_value', 'setting_key');
+        $settings = Setting::all();
 
         $this->render('settings/index', ['title' => 'Paramètres', 'settings' => $settings]);
     }
@@ -31,15 +30,11 @@ class SettingsController extends Controller
         Auth::requireRole(['admin']);
         $this->verifyCsrf();
 
-        $editable = ['site_name', 'theme_mode', 'telegram_bot_token', 'telegram_chat_id', 'smtp_host', 'smtp_from'];
+        $editable = ['site_name', 'theme_mode', 'telegram_bot_token', 'smtp_host', 'smtp_from'];
 
         foreach ($editable as $key) {
             if ($this->request->input($key) !== null) {
-                Database::query(
-                    'INSERT INTO settings (setting_key, setting_value) VALUES (:key, :value)
-                     ON DUPLICATE KEY UPDATE setting_value = :value',
-                    ['key' => $key, 'value' => (string) $this->request->input($key)]
-                );
+                Setting::set($key, (string) $this->request->input($key));
             }
         }
 
