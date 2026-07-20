@@ -28,14 +28,23 @@ return [
     'upload_path' => __DIR__ . '/../public/uploads',
     'upload_url'  => '/uploads',
 
-    // Paramètres MQTT (utilisés par /mqtt et par les vues d'état MQTT)
+     /* // Paramètres MQTT (utilisés par /mqtt et par les vues d'état MQTT)
     'mqtt' => [
         'host'       => getenv('MQTT_HOST') ?: '127.0.0.1',
         'port'       => getenv('MQTT_PORT') ?: 8883,
         'tls'        => true,
         'client_id'  => 'vicia_home_web',
         'username'   => getenv('MQTT_USER') ?: 'vicia_web',
-        'password'   => getenv('MQTT_PASS') ?: 'change_me',
+        'password'   => getenv('MQTT_PASS') ?: 'change_me',  */
+
+    // Paramètres MQTT (utilisés par le site, Wokwi/ESP32 et le subscriber)
+    'mqtt' => [
+        'host'       => getenv('MQTT_HOST') ?: 'broker.hivemq.com',
+        'port'       => getenv('MQTT_PORT') ?: 1883,
+        'tls'        => filter_var(getenv('MQTT_TLS') ?: false, FILTER_VALIDATE_BOOLEAN),
+        'client_id'  => getenv('MQTT_CLIENT_ID') ?: 'vicia_home_web',
+        'username'   => getenv('MQTT_USER') ?: '',
+        'password'   => getenv('MQTT_PASS') ?: '',
         'base_topic' => 'home',
     ],
 

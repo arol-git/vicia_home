@@ -38,11 +38,11 @@ $pageScripts = ['houses.js'];
             </div>
             <div class="card__title"><?= e($house['name']) ?></div>
             <div class="card__subtitle mb-4"><?= e($house['city'] ?? '—') ?><?= $house['address'] ? ' · ' . e($house['address']) : '' ?></div>
-            <div class="flex flex-gap-3 mb-4">
+            <div class="house-card__stats mb-4">
                 <span class="badge badge-neutral"><i class="fa-solid fa-door-open"></i> <?= (int) $house['rooms_count'] ?> pièces</span>
                 <span class="badge badge-neutral"><i class="fa-solid fa-users"></i> <?= (int) $house['members_count'] ?> membre(s)</span>
             </div>
-            <div class="flex flex-gap-2">
+            <div class="house-card__actions">
                 <button type="button" class="btn btn-sm btn-primary" data-switch-house-card data-id="<?= (int) $house['id'] ?>">
                     <i class="fa-solid fa-right-left"></i> Sélectionner
                 </button>
