@@ -34,9 +34,13 @@ class Setting
         self::ensureTable();
 
         Database::query(
-            'INSERT INTO settings (setting_key, setting_value) VALUES (:key, :value)
-             ON DUPLICATE KEY UPDATE setting_value = :value',
-            ['key' => $key, 'value' => $value]
+            'INSERT INTO settings (setting_key, setting_value) VALUES (:key, :insert_value)
+             ON DUPLICATE KEY UPDATE setting_value = :update_value',
+            [
+                'key' => $key,
+                'insert_value' => $value,
+                'update_value' => $value,
+            ]
         );
     }
 

@@ -204,7 +204,7 @@ $currentMode = $currentMode ?? 'comfort';
                 <div class="card__title">Tendance capteur</div>
                 <div class="card__subtitle">Évolution sur les dernières 24 heures</div>
             </div>
-            <select id="dashboard-sensor-select" class="form-control" style="width:auto;">
+            <select id="dashboard-sensor-select" class="form-control dashboard-sensor-select">
                 <?php foreach ($allSensors as $s): ?>
                     <?php if (in_array($s['type'], ['dht22_temp', 'dht22_hum', 'mq2', 'mq135', 'ldr'], true)): ?>
                         <option value="<?= (int) $s['id'] ?>"><?= e($s['name']) ?></option>

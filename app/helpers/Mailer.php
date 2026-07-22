@@ -2,31 +2,77 @@
 
 namespace App\Helpers;
 
+use App\Models\Setting;
+use PHPMailer\PHPMailer\Exception as MailException;
+use PHPMailer\PHPMailer\PHPMailer;
+
 /**
- * Class Mailer
- *
- * Enveloppe minimale d'envoi d'e-mails. Utilise la fonction native
- * mail() de PHP, adaptée à un serveur Apache/Ubuntu disposant d'un
- * agent de transport local (sendmail/postfix) ou d'un relais SMTP
- * configuré au niveau système.
- *
- * En environnement de développement (APP_ENV != production), les
- * messages sont simplement journalisés dans storage/logs/app.log
- * plutôt qu'effectivement envoyés, afin de faciliter les tests.
+ * Envoi d'e-mails via SMTP lorsque les paramètres sont configurés,
+ * avec un repli sur mail() si aucun serveur SMTP n'est défini.
  */
 class Mailer
 {
     public static function send(string $to, string $subject, string $body): bool
     {
-        $fromSetting = config('app_name') . ' <no-reply@vicia-home.local>';
+        $settings = Setting::all();
+        $host = trim((string) ($settings['smtp_host'] ?? ''));
 
-        if (config('env') !== 'production') {
-            app_log("[Mailer] (mode développement — email non envoyé) À: $to | Sujet: $subject | Corps: $body");
-            return true;
+        if ($host === '') {
+            app_log("[Mailer] E-mail non envoyé : serveur SMTP vide. À: $to | Sujet: $subject");
+            return false;
         }
 
-        $headers = "From: $fromSetting\r\nContent-Type: text/plain; charset=UTF-8";
+        if ($host !== '' && class_exists(PHPMailer::class)) {
+            return self::sendSmtp($settings, $to, $subject, $body);
+        }
+
+        $fromEmail = trim((string) ($settings['smtp_from'] ?? '')) ?: 'no-reply@vicia-home.local';
+        $fromName = trim((string) ($settings['smtp_from_name'] ?? '')) ?: config('app_name');
+        $headers = "From: {$fromName} <{$fromEmail}>\r\nContent-Type: text/plain; charset=UTF-8";
 
         return mail($to, $subject, $body, $headers);
+    }
+
+    private static function sendSmtp(array $settings, string $to, string $subject, string $body): bool
+    {
+        $mail = new PHPMailer(true);
+
+        try {
+            $mail->isSMTP();
+            $mail->Host = trim((string) ($settings['smtp_host'] ?? ''));
+            $mail->Port = (int) ($settings['smtp_port'] ?? 587);
+            $mail->SMTPAuth = trim((string) ($settings['smtp_username'] ?? '')) !== '';
+            $mail->Username = trim((string) ($settings['smtp_username'] ?? ''));
+            $mail->Password = (string) ($settings['smtp_password'] ?? '');
+
+            $encryption = trim((string) ($settings['smtp_encryption'] ?? 'tls'));
+            if (in_array($encryption, ['tls', 'ssl'], true)) {
+                $mail->SMTPSecure = $encryption;
+            }
+
+            $fromEmail = trim((string) ($settings['smtp_from'] ?? '')) ?: $mail->Username;
+            $fromName = trim((string) ($settings['smtp_from_name'] ?? '')) ?: config('app_name');
+
+            if ($fromEmail === '') {
+                app_log('[Mailer] E-mail non envoyé : adresse d’expédition SMTP vide.');
+                return false;
+            }
+
+            $mail->CharSet = 'UTF-8';
+            $mail->setFrom($fromEmail, $fromName);
+            $mail->addAddress($to);
+            $mail->Subject = $subject;
+            $mail->Body = $body;
+            $mail->AltBody = $body;
+
+            app_log("[Mailer] Tentative SMTP vers $to via {$mail->Host}:{$mail->Port}.");
+            $sent = $mail->send();
+            app_log("[Mailer] E-mail envoyé à $to.");
+
+            return $sent;
+        } catch (MailException $e) {
+            app_log('[Mailer] Échec SMTP : ' . $e->getMessage());
+            return false;
+        }
     }
 }

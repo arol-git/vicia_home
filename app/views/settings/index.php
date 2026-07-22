@@ -50,8 +50,38 @@ $pageScripts = [];
                 <input type="text" name="smtp_host" class="form-control" value="<?= e($settings['smtp_host'] ?? '') ?>" placeholder="smtp.example.com">
             </div>
             <div class="form-group">
+                <label class="form-label">Port SMTP</label>
+                <input type="number" name="smtp_port" class="form-control" value="<?= e($settings['smtp_port'] ?? '587') ?>" placeholder="587">
+            </div>
+        </div>
+        <div class="form-row">
+            <div class="form-group">
+                <label class="form-label">Sécurité</label>
+                <select name="smtp_encryption" class="form-control">
+                    <option value="tls" <?= ($settings['smtp_encryption'] ?? 'tls') === 'tls' ? 'selected' : '' ?>>TLS</option>
+                    <option value="ssl" <?= ($settings['smtp_encryption'] ?? '') === 'ssl' ? 'selected' : '' ?>>SSL</option>
+                    <option value="" <?= ($settings['smtp_encryption'] ?? '') === '' ? 'selected' : '' ?>>Aucune</option>
+                </select>
+            </div>
+            <div class="form-group">
+                <label class="form-label">Nom d'expéditeur</label>
+                <input type="text" name="smtp_from_name" class="form-control" value="<?= e($settings['smtp_from_name'] ?? 'Vicia Home') ?>">
+            </div>
+        </div>
+        <div class="form-row">
+            <div class="form-group">
+                <label class="form-label">Utilisateur SMTP</label>
+                <input type="text" name="smtp_username" class="form-control" value="<?= e($settings['smtp_username'] ?? '') ?>" placeholder="compte@example.com">
+            </div>
+            <div class="form-group">
+                <label class="form-label">Mot de passe SMTP</label>
+                <input type="password" name="smtp_password" class="form-control" value="<?= e($settings['smtp_password'] ?? '') ?>" autocomplete="new-password">
+            </div>
+        </div>
+        <div class="form-row">
+            <div class="form-group">
                 <label class="form-label">Adresse d'expédition</label>
-                <input type="email" name="smtp_from" class="form-control" value="<?= e($settings['smtp_from'] ?? '') ?>">
+                <input type="email" name="smtp_from" class="form-control" value="<?= e($settings['smtp_from'] ?? '') ?>" placeholder="no-reply@example.com">
             </div>
         </div>
     </div>

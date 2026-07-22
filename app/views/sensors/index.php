@@ -139,13 +139,13 @@ $canDelete = in_array($houseRole, ['admin', 'owner'], true);
 </div>
 
 <div class="modal-overlay" id="modal-sensor-history">
-    <div class="modal" style="max-width: 680px;">
+    <div class="modal modal-wide">
         <div class="modal__header">
             <div class="modal__title" id="history-modal-title">Historique du capteur</div>
             <button type="button" class="modal__close" data-close-modal><i class="fa-solid fa-xmark"></i></button>
         </div>
         <div class="modal__body">
-            <div class="chart-card__canvas-wrap" style="height:300px;">
+            <div class="chart-card__canvas-wrap sensor-history-chart-wrap">
                 <canvas id="sensor-history-chart"></canvas>
             </div>
             <div class="empty-state" id="history-empty" style="display:none;">

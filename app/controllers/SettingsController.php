@@ -30,7 +30,18 @@ class SettingsController extends Controller
         Auth::requireRole(['admin']);
         $this->verifyCsrf();
 
-        $editable = ['site_name', 'theme_mode', 'telegram_bot_token', 'smtp_host', 'smtp_from'];
+        $editable = [
+            'site_name',
+            'theme_mode',
+            'telegram_bot_token',
+            'smtp_host',
+            'smtp_port',
+            'smtp_encryption',
+            'smtp_username',
+            'smtp_password',
+            'smtp_from',
+            'smtp_from_name',
+        ];
 
         foreach ($editable as $key) {
             if ($this->request->input($key) !== null) {

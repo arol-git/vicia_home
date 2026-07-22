@@ -154,3 +154,16 @@
 @media (max-width: 900px) {
     .auth-page__visual { display: none; }
 }
+
+@media (max-width: 480px) {
+    .auth-page__form-side {
+        align-items: flex-start;
+        padding: var(--space-5) var(--space-4);
+    }
+
+    .auth-options {
+        align-items: flex-start;
+        flex-direction: column;
+        gap: var(--space-2);
+    }
+}

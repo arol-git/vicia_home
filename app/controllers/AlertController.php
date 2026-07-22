@@ -5,6 +5,7 @@ namespace App\Controllers;
 use App\Core\Auth;
 use App\Core\Controller;
 use App\Core\Response;
+use App\Helpers\Notifier;
 use App\Models\Alert;
 
 /**
@@ -43,6 +44,47 @@ class AlertController extends Controller
 
         Alert::markAllAsRead($houseId);
         Response::success('Toutes les alertes ont été marquées comme lues.');
+    }
+
+    public function testEmail(): void
+    {
+        app_log('[AlertController] Requête reçue sur /alerts/test-email.');
+
+        $houseId = Auth::requireHouseRole(['admin', 'owner', 'resident', 'technician']);
+        $this->verifyCsrf();
+        $this->runEmailTest($houseId);
+    }
+
+    public function testEmailDirect(): void
+    {
+        app_log('[AlertController] Requête reçue sur /alerts/test-email-direct.');
+
+        $houseId = Auth::requireHouseRole(['admin', 'owner', 'resident', 'technician']);
+        $this->runEmailTest($houseId);
+    }
+
+    private function runEmailTest(int $houseId): void
+    {
+        app_log("[AlertController] Test e-mail demandé pour la maison $houseId.");
+
+        $message = 'Alerte de test e-mail générée depuis Vicia Home.';
+        Alert::create([
+            'house_id' => $houseId,
+            'type' => 'test_email',
+            'severity' => 'warning',
+            'source' => 'manual_test',
+            'message' => $message,
+        ]);
+
+        $sent = Notifier::sendAlertEmail($houseId, 'Alerte de test', $message);
+        app_log('[AlertController] Résultat test e-mail : ' . ($sent ? 'envoyé' : 'non envoyé') . '.');
+
+        if (!$sent) {
+            Response::success('Alerte créée, mais aucun e-mail n’a été envoyé. Vérifiez SMTP et votre e-mail de réception.', ['sent' => false]);
+            return;
+        }
+
+        Response::success('Alerte créée et e-mail de test envoyé.', ['sent' => true]);
     }
 
     /**

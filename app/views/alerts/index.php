@@ -13,9 +13,14 @@ $pageScripts = [];
         <div class="page-header__title">Alertes &amp; notifications</div>
         <div class="page-header__subtitle"><?= count($alerts) ?> alerte(s) au total</div>
     </div>
-    <button type="button" class="btn btn-secondary" id="mark-all-read-btn">
-        <i class="fa-solid fa-check-double"></i> Tout marquer comme lu
-    </button>
+    <div class="flex flex-gap-2">
+        <button type="button" class="btn btn-primary" id="test-email-alert-btn">
+            <i class="fa-solid fa-envelope-circle-check"></i> Alerte test e-mail
+        </button>
+        <button type="button" class="btn btn-secondary" id="mark-all-read-btn">
+            <i class="fa-solid fa-check-double"></i> Tout marquer comme lu
+        </button>
+    </div>
 </div>
 
 <div class="card">
@@ -57,6 +62,15 @@ document.addEventListener('DOMContentLoaded', () => {
             ViciaApp.toast('Toutes les alertes ont été marquées comme lues.', 'success');
             setTimeout(() => window.location.reload(), 500);
         });
+    });
+
+    document.getElementById('test-email-alert-btn')?.addEventListener('click', () => {
+        ViciaAjax.post('/alerts/test-email')
+            .then((res) => {
+                ViciaApp.toast(res.message, res.sent === false ? 'error' : 'success');
+                setTimeout(() => window.location.reload(), 700);
+            })
+            .catch((err) => ViciaApp.toast(err.message || 'Impossible de créer l’alerte de test.', 'error'));
     });
 });
 </script>

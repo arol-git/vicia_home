@@ -101,6 +101,8 @@ $router->get('/history', 'HistoryController@index');
 
 // ------------------------- Alertes / notifications -------------------------------
 $router->get('/alerts', 'AlertController@index');
+$router->get('/alerts/test-email-direct', 'AlertController@testEmailDirect');
+$router->post('/alerts/test-email', 'AlertController@testEmail');
 $router->post('/alerts/{id}/read', 'AlertController@markAsRead');
 $router->post('/alerts/read-all', 'AlertController@markAllAsRead');
 $router->get('/alerts/unread-count', 'AlertController@unreadCount');

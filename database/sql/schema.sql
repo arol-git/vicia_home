@@ -499,4 +499,9 @@ INSERT INTO `settings` (`setting_key`, `setting_value`) VALUES
 ('site_name', 'Vicia Home'),
 ('theme_mode', 'light'),
 ('smtp_host', ''),
-('smtp_from', 'no-reply@vicia-home.local');
+('smtp_port', '587'),
+('smtp_encryption', 'tls'),
+('smtp_username', ''),
+('smtp_password', ''),
+('smtp_from', 'yemeliarol04@gmail.com'),
+('smtp_from_name', 'Vicia Home');

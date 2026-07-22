@@ -13,6 +13,12 @@
 
 define('ROOT_PATH', dirname(__DIR__, 2));
 
+// Charge les dépendances Composer (PHPMailer, client MQTT Composer, etc.).
+$composerAutoload = ROOT_PATH . '/vendor/autoload.php';
+if (file_exists($composerAutoload)) {
+    require_once $composerAutoload;
+}
+
 // --- Autochargement des classes applicatives ---------------------------
 // Convention : le préfixe "App\" pointe vers /app, le préfixe "Mqtt\"
 // pointe vers /mqtt. Chaque séparateur d'espace de noms correspond à

@@ -65,6 +65,7 @@ class Notifier
         $recipients = self::emailRecipients($houseId);
 
         if (empty($recipients)) {
+            app_log('[Notifier] E-mail ignoré : aucun destinataire configuré pour la maison ' . ($houseId ?? 'globale') . '.');
             return false;
         }
 

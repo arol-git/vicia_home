@@ -18,6 +18,7 @@ form, fieldset, legend, table, th, td, figure, figcaption {
 html {
     font-size: 16px;
     -webkit-text-size-adjust: 100%;
+    overflow-x: hidden;
 }
 
 body {
@@ -27,6 +28,7 @@ body {
     background-color: var(--color-bg);
     line-height: 1.5;
     -webkit-font-smoothing: antialiased;
+    overflow-x: hidden;
 }
 
 ul, ol {
