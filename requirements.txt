@@ -1,0 +1,7 @@
+# Installer pip si nécessaire
+sudo apt install python3-pip -y
+
+# Installer les dépendances
+cd /opt/lampp/htdocs/vicia-home
+pip3 install -r requirements.txt
+
