@@ -114,6 +114,52 @@ function role_label(string $role): string
 }
 
 /**
+ * Indique si un rôle peut gérer l'inventaire matériel.
+ *
+ * Pour un débutant : on centralise cette règle ici pour éviter de la
+ * recopier partout. Si demain la politique de sécurité change, on
+ * modifie une seule fonction au lieu de chercher dans toutes les vues
+ * et tous les contrôleurs.
+ */
+function can_manage_hardware_inventory(?string $role): bool
+{
+    return $role === 'admin';
+}
+
+/**
+ * Indique si un rôle peut voir les topics MQTT.
+ *
+ * Les topics MQTT sont des adresses techniques permettant de publier
+ * des commandes ou de lire des mesures. On les considère donc comme
+ * des informations sensibles et on les réserve à l'administration.
+ */
+function can_view_mqtt_topics(?string $role): bool
+{
+    return $role === 'admin';
+}
+
+/**
+ * Retire la clé "mqtt_topic" d'une ligne ou d'une liste de lignes.
+ *
+ * Cette fonction sert de filet de sécurité avant de renvoyer des
+ * données vers une interface ou une API. Même si la vue oublie de
+ * cacher une colonne, la donnée sensible peut déjà être supprimée ici.
+ */
+function hide_mqtt_topics($data)
+{
+    $strip = static function (array $row): array {
+        unset($row['mqtt_topic']);
+        return $row;
+    };
+
+    if (isset($data[0]) && is_array($data[0])) {
+        return array_map($strip, $data);
+    }
+
+    return is_array($data) ? $strip($data) : $data;
+}
+
+/**
  * Retourne la classe d'icône Font Awesome associée à un type
  * d'équipement.
  */

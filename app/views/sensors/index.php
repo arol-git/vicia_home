@@ -17,8 +17,13 @@ $sensorTypes = [
     'rfid' => 'RFID', 'humidite_sol' => 'Humidité du sol',
 ];
 $houseRole = Auth::roleOnHouse(Auth::currentHouseId() ?? 0);
-$canManage = in_array($houseRole, ['admin', 'owner', 'technician'], true);
-$canDelete = in_array($houseRole, ['admin', 'owner'], true);
+// Les topics MQTT sont des informations techniques sensibles. Pour
+// un débutant : on calcule ici les permissions utilisées par la vue,
+// mais les contrôleurs vérifient aussi ces droits côté serveur.
+$canManage = can_manage_hardware_inventory($houseRole);
+$canDelete = can_manage_hardware_inventory($houseRole);
+$canSeeMqttTopics = $canSeeMqttTopics ?? can_view_mqtt_topics($houseRole);
+$columnsCount = $canSeeMqttTopics ? 8 : 7;
 ?>
 
 <div class="page-header">
@@ -43,12 +48,15 @@ $canDelete = in_array($houseRole, ['admin', 'owner'], true);
                 <th>Dernière valeur</th>
                 <th>Relevé</th>
                 <th>Seuil d'alerte</th>
+                <?php if ($canSeeMqttTopics): ?>
+                <th>Topic MQTT</th>
+                <?php endif; ?>
                 <th></th>
             </tr>
         </thead>
         <tbody>
         <?php if (empty($sensors)): ?>
-            <tr><td colspan="7"><div class="empty-state"><i class="fa-solid fa-microchip"></i><p>Aucun capteur enregistré.</p></div></td></tr>
+            <tr><td colspan="<?= (int) $columnsCount ?>"><div class="empty-state"><i class="fa-solid fa-microchip"></i><p>Aucun capteur enregistré.</p></div></td></tr>
         <?php endif; ?>
         <?php foreach ($sensors as $sensor): ?>
             <tr>
@@ -65,6 +73,9 @@ $canDelete = in_array($houseRole, ['admin', 'owner'], true);
                 <td><strong><?= $sensor['last_value'] !== null ? e($sensor['last_value']) . ' ' . e($sensor['unit']) : '—' ?></strong></td>
                 <td class="text-xs text-muted"><?= e(time_ago($sensor['last_recorded_at'])) ?></td>
                 <td class="text-xs text-muted"><?= $sensor['alert_threshold'] !== null ? e($sensor['alert_threshold']) . ' ' . e($sensor['unit']) : '—' ?></td>
+                <?php if ($canSeeMqttTopics): ?>
+                <td class="text-xs text-muted"><?= e($sensor['mqtt_topic']) ?></td>
+                <?php endif; ?>
                 <td>
                     <div class="table-actions">
                         <button type="button" class="btn btn-icon btn-secondary" title="Historique"
@@ -85,6 +96,7 @@ $canDelete = in_array($houseRole, ['admin', 'owner'], true);
     </table>
 </div>
 
+<?php if ($canManage): ?>
 <div class="modal-overlay" id="modal-add-sensor">
     <div class="modal">
         <div class="modal__header">
@@ -137,6 +149,7 @@ $canDelete = in_array($houseRole, ['admin', 'owner'], true);
         </form>
     </div>
 </div>
+<?php endif; ?>
 
 <div class="modal-overlay" id="modal-sensor-history">
     <div class="modal modal-wide">

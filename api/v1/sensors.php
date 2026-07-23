@@ -47,12 +47,13 @@ function handle_sensors(string $method, ?string $id, ?string $subaction): void
                 if (!Sensor::belongsToHouse((int) $id, $houseId)) {
                     api_response(['success' => false, 'message' => 'Capteur introuvable.'], 404);
                 }
-                api_response(['success' => true, 'data' => Sensor::findWithRoom((int) $id)]);
+                api_response(['success' => true, 'data' => api_hide_mqtt_topics(Sensor::findWithRoom((int) $id), $user, $houseId)]);
             }
-            api_response(['success' => true, 'data' => Sensor::allWithRoom($houseId)]);
+            api_response(['success' => true, 'data' => api_hide_mqtt_topics(Sensor::allWithRoom($houseId), $user, $houseId)]);
             break;
 
         case 'POST':
+            api_require_house_admin($user, $houseId);
             foreach (['room_id', 'name', 'type', 'mqtt_topic'] as $required) {
                 if (empty($input[$required])) {
                     api_response(['success' => false, 'message' => "Le champ '$required' est obligatoire."], 422);
@@ -74,6 +75,7 @@ function handle_sensors(string $method, ?string $id, ?string $subaction): void
             break;
 
         case 'DELETE':
+            api_require_house_admin($user, $houseId);
             if (!$id || !Sensor::belongsToHouse((int) $id, $houseId)) {
                 api_response(['success' => false, 'message' => 'Capteur introuvable.'], 404);
             }

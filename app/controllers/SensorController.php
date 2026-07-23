@@ -26,17 +26,23 @@ class SensorController extends Controller
         $sensors = Sensor::allWithRoom($houseId);
         $rooms   = Room::forHouse($houseId);
         $house   = House::find($houseId);
+        // Les topics MQTT des capteurs indiquent où arrivent les
+        // mesures. On ne les affiche qu'à l'administration.
+        $canSeeMqttTopics = can_view_mqtt_topics(Auth::roleOnHouse($houseId));
         $this->render('sensors/index', [
             'title'   => 'Capteurs',
             'sensors' => $sensors,
             'rooms'   => $rooms,
             'house'   => $house,
+            'canSeeMqttTopics' => $canSeeMqttTopics,
         ]);
     }
 
     public function store(): void
     {
-        $houseId = Auth::requireHouseRole(['admin', 'owner', 'technician']);
+        // Seule l'administration peut déclarer un capteur : cela crée
+        // une nouvelle entrée technique et un topic MQTT sensible.
+        $houseId = Auth::requireHouseRole(['admin']);
         $this->verifyCsrf();
 
         $roomId = (int) $this->request->input('room_id');
@@ -81,7 +87,9 @@ class SensorController extends Controller
 
     public function update(int $id): void
     {
-        $houseId = Auth::requireHouseRole(['admin', 'owner', 'technician']);
+        // Seule l'administration peut modifier un capteur, notamment
+        // son topic MQTT et son seuil d'alerte.
+        $houseId = Auth::requireHouseRole(['admin']);
         $this->verifyCsrf();
 
         if (!Sensor::belongsToHouse($id, $houseId)) {
@@ -127,7 +135,8 @@ class SensorController extends Controller
 
     public function destroy(int $id): void
     {
-        $houseId = Auth::requireHouseRole(['admin', 'owner']);
+        // Seule l'administration peut supprimer un capteur de l'inventaire.
+        $houseId = Auth::requireHouseRole(['admin']);
         $this->verifyCsrf();
 
         if (!Sensor::belongsToHouse($id, $houseId)) {

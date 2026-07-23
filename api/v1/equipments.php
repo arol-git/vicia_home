@@ -40,12 +40,13 @@ function handle_equipments(string $method, ?string $id, ?string $subaction): voi
                 if (!Equipment::belongsToHouse((int) $id, $houseId)) {
                     api_response(['success' => false, 'message' => 'Équipement introuvable.'], 404);
                 }
-                api_response(['success' => true, 'data' => Equipment::findWithRoom((int) $id)]);
+                api_response(['success' => true, 'data' => api_hide_mqtt_topics(Equipment::findWithRoom((int) $id), $user, $houseId)]);
             }
-            api_response(['success' => true, 'data' => Equipment::allWithRoom($houseId)]);
+            api_response(['success' => true, 'data' => api_hide_mqtt_topics(Equipment::allWithRoom($houseId), $user, $houseId)]);
             break;
 
         case 'POST':
+            api_require_house_admin($user, $houseId);
             foreach (['room_id', 'name', 'type', 'mqtt_topic'] as $required) {
                 if (empty($input[$required])) {
                     api_response(['success' => false, 'message' => "Le champ '$required' est obligatoire."], 422);
@@ -66,6 +67,7 @@ function handle_equipments(string $method, ?string $id, ?string $subaction): voi
             break;
 
         case 'PUT':
+            api_require_house_admin($user, $houseId);
             if (!$id || !Equipment::belongsToHouse((int) $id, $houseId)) {
                 api_response(['success' => false, 'message' => 'Équipement introuvable.'], 404);
             }
@@ -78,6 +80,7 @@ function handle_equipments(string $method, ?string $id, ?string $subaction): voi
             break;
 
         case 'DELETE':
+            api_require_house_admin($user, $houseId);
             if (!$id || !Equipment::belongsToHouse((int) $id, $houseId)) {
                 api_response(['success' => false, 'message' => 'Équipement introuvable.'], 404);
             }

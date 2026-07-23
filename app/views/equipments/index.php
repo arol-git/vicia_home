@@ -15,8 +15,13 @@ $equipmentTypes = [
     'servo' => 'Servo-moteur', 'porte' => 'Porte', 'fenetre' => 'Fenêtre', 'sirene' => 'Sirène', 'camera' => 'Caméra',
 ];
 $houseRole = Auth::roleOnHouse(Auth::currentHouseId() ?? 0);
-$canManage = in_array($houseRole, ['admin', 'owner', 'technician'], true);
-$canDelete = in_array($houseRole, ['admin', 'owner'], true);
+// Les opérations d'inventaire matériel sont réservées aux admins.
+// Un résident ou technicien peut consulter/piloter si son rôle l'autorise,
+// mais il ne doit pas pouvoir créer, supprimer ou voir les topics MQTT.
+$canManage = can_manage_hardware_inventory($houseRole);
+$canDelete = can_manage_hardware_inventory($houseRole);
+$canSeeMqttTopics = $canSeeMqttTopics ?? can_view_mqtt_topics($houseRole);
+$columnsCount = $canSeeMqttTopics ? 7 : 6;
 ?>
 
 <div class="page-header">
@@ -38,7 +43,9 @@ $canDelete = in_array($houseRole, ['admin', 'owner'], true);
                 <th>Équipement</th>
                 <th>Type</th>
                 <th>Pièce</th>
+                <?php if ($canSeeMqttTopics): ?>
                 <th>Topic MQTT</th>
+                <?php endif; ?>
                 <th>Dernier changement</th>
                 <th>État</th>
                 <th></th>
@@ -46,7 +53,7 @@ $canDelete = in_array($houseRole, ['admin', 'owner'], true);
         </thead>
         <tbody>
         <?php if (empty($equipments)): ?>
-            <tr><td colspan="7"><div class="empty-state"><i class="fa-solid fa-plug-circle-bolt"></i><p>Aucun équipement enregistré.</p></div></td></tr>
+            <tr><td colspan="<?= (int) $columnsCount ?>"><div class="empty-state"><i class="fa-solid fa-plug-circle-bolt"></i><p>Aucun équipement enregistré.</p></div></td></tr>
         <?php endif; ?>
         <?php foreach ($equipments as $eq): ?>
             <tr>
@@ -60,7 +67,9 @@ $canDelete = in_array($houseRole, ['admin', 'owner'], true);
                 </td>
                 <td><span class="badge badge-neutral"><?= e($equipmentTypes[$eq['type']] ?? $eq['type']) ?></span></td>
                 <td><?= e($eq['room_name']) ?></td>
+                <?php if ($canSeeMqttTopics): ?>
                 <td class="text-xs text-muted"><?= e($eq['mqtt_topic']) ?></td>
+                <?php endif; ?>
                 <td class="text-xs text-muted"><?= e(time_ago($eq['last_state_change'])) ?></td>
                 <td>
                     <label class="switch">
@@ -84,6 +93,7 @@ $canDelete = in_array($houseRole, ['admin', 'owner'], true);
     </table>
 </div>
 
+<?php if ($canManage): ?>
 <div class="modal-overlay" id="modal-add-equipment">
     <div class="modal">
         <div class="modal__header">
@@ -127,3 +137,4 @@ $canDelete = in_array($houseRole, ['admin', 'owner'], true);
         </form>
     </div>
 </div>
+<?php endif; ?>

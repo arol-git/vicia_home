@@ -8,7 +8,13 @@
  * déployé ; cette vue prévoit l'emplacement d'intégration
  * (data-stream-url) prêt à recevoir un lecteur vidéo.
  */
+use App\Core\Auth;
+
 $pageScripts = [];
+$houseRole = Auth::roleOnHouse(Auth::currentHouseId() ?? 0);
+// Même règle que pour les équipements : le topic MQTT d'une caméra
+// n'est visible que par l'administration.
+$canSeeMqttTopics = $houseRole === 'admin';
 ?>
 
 <div class="page-header">
@@ -39,7 +45,12 @@ $pageScripts = [];
                     <i class="fa-solid fa-video-slash" style="font-size:2rem;"></i>
                 <?php endif; ?>
             </div>
-            <div class="text-sm text-muted mt-4"><?= e($camera['room_name']) ?> · Topic : <?= e($camera['mqtt_topic']) ?></div>
+            <div class="text-sm text-muted mt-4">
+                <?= e($camera['room_name']) ?>
+                <?php if ($canSeeMqttTopics): ?>
+                    · Topic : <?= e($camera['mqtt_topic']) ?>
+                <?php endif; ?>
+            </div>
         </div>
     <?php endforeach; ?>
 </div>

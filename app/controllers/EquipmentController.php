@@ -30,17 +30,26 @@ class EquipmentController extends Controller
         $equipments = Equipment::allWithRoom($houseId);
         $rooms      = Room::forHouse($houseId);
         $house      = House::find($houseId);
+        // Seuls les administrateurs plateforme voient les topics MQTT.
+        // Un topic donne l'adresse technique de commande d'un appareil :
+        // on le traite donc comme une information sensible.
+        $canSeeMqttTopics = can_view_mqtt_topics(Auth::roleOnHouse($houseId));
         $this->render('equipments/index', [
             'title'      => 'Équipements',
             'equipments' => $equipments,
             'rooms'      => $rooms,
             'house'      => $house,
+            'canSeeMqttTopics' => $canSeeMqttTopics,
         ]);
     }
 
     public function store(): void
     {
-        $houseId = Auth::requireHouseRole(['admin', 'owner', 'technician']);
+        // Création réservée à l'administration : ajouter un équipement
+        // expose un nouveau topic MQTT et peut donner un accès physique
+        // à la maison. On vérifie ce droit côté serveur, pas seulement
+        // dans l'interface.
+        $houseId = Auth::requireHouseRole(['admin']);
         $this->verifyCsrf();
 
         $roomId = (int) $this->request->input('room_id');
@@ -84,7 +93,9 @@ class EquipmentController extends Controller
 
     public function update(int $id): void
     {
-        $houseId = Auth::requireHouseRole(['admin', 'owner', 'technician']);
+        // Modification réservée à l'administration pour éviter qu'un
+        // utilisateur change le topic MQTT d'un équipement existant.
+        $houseId = Auth::requireHouseRole(['admin']);
         $this->verifyCsrf();
 
         if (!Equipment::belongsToHouse($id, $houseId)) {
@@ -131,7 +142,9 @@ class EquipmentController extends Controller
 
     public function destroy(int $id): void
     {
-        $houseId = Auth::requireHouseRole(['admin', 'owner']);
+        // Suppression réservée à l'administration : retirer un équipement
+        // modifie l'inventaire matériel de la maison.
+        $houseId = Auth::requireHouseRole(['admin']);
         $this->verifyCsrf();
 
         if (!Equipment::belongsToHouse($id, $houseId)) {

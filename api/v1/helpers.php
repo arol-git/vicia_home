@@ -87,3 +87,46 @@ function api_authorize_house(array $user, array $input = []): int
 
     return $houseId;
 }
+
+/**
+ * Retourne le rôle de l'utilisateur API dans une maison.
+ * Débutant : on sépare cette fonction de api_authorize_house() parce
+ * que certaines routes acceptent la lecture pour tous les membres,
+ * mais réservent l'écriture aux administrateurs.
+ */
+function api_house_role(array $user, int $houseId): ?string
+{
+    return \App\Models\House::roleOfUser($houseId, (int) $user['id'], (string) $user['role']);
+}
+
+/**
+ * Bloque une route API si l'utilisateur n'est pas administrateur.
+ */
+function api_require_house_admin(array $user, int $houseId): void
+{
+    if (api_house_role($user, $houseId) !== 'admin') {
+        api_response(['success' => false, 'message' => 'Action réservée à l’administration.'], 403);
+    }
+}
+
+/**
+ * Retire les topics MQTT d'une réponse API pour les non-admins.
+ * Le paramètre peut être une ligne unique ou une liste de lignes.
+ */
+function api_hide_mqtt_topics($data, array $user, int $houseId)
+{
+    if (api_house_role($user, $houseId) === 'admin') {
+        return $data;
+    }
+
+    $strip = static function (array $row): array {
+        unset($row['mqtt_topic']);
+        return $row;
+    };
+
+    if (isset($data[0]) && is_array($data[0])) {
+        return array_map($strip, $data);
+    }
+
+    return is_array($data) ? $strip($data) : $data;
+}
