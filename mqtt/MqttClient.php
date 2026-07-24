@@ -17,19 +17,19 @@ namespace Mqtt;
  * "php-mqtt/client", pleinement compatible avec cette même
  * configuration de connexion.
  */
-class MqttClient
+class MqttClient  // il s'agit de la classe principale du client MQTT, qui gère la connexion, la publication, l'abonnement et la réception de messages. 
 {
-    private $socket;
-    private string $host;
+    private $socket;  // Le socket TCP/TLS utilisé pour la communication avec le broker MQTT.
+    private string $host;  // private indique que la variable est accessible uniquement à l'intérieur de la classe MqttClient. Le type string indique que la variable doit contenir une chaîne de caractères.
     private int $port;
     private bool $tls;
     private string $clientId;
     private string $username;
     private string $password;
 
-    public function __construct(array $config)
+    public function __construct(array $config)  // fonction permettant d'initialiser les paramètres de connexion à partir d'un tableau de configuration. Le constructeur est appelé lors de la création d'une instance de la classe MqttClient.
     {
-        $this->host     = $config['host'];
+        $this->host     = $config['host'];   //this permtet de récupérer l'adresse du broker MQTT à partir du tableau de configuration et de l'assigner à la propriété $host de l'objet MqttClient.
         $this->port     = (int) $config['port'];
         $this->tls      = (bool) ($config['tls'] ?? false);
         $this->clientId = $config['client_id'] . '_' . substr(md5(uniqid('', true)), 0, 6);

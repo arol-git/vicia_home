@@ -66,7 +66,7 @@ vicia-home/
 ├── database/
 │   └── sql/schema.sql        Script SQL complet (tables, clés, contraintes, triggers, jeux de données)
 ├── api/
-│   ├── index.php             Point d'entrée de l'API REST
+│   ├── index.php             Point d'entrée de l'API REST qui permet 
 │   └── v1/                    Ressources de l'API (rooms, equipments, sensors, alerts, automation, auth)
 ├── mqtt/
 │   ├── MqttClient.php        Client MQTT 3.1.1 minimaliste (sans dépendance externe)
