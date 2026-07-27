@@ -1,0 +1,26 @@
+# Dépendances
+/vendor/
+
+# Environnement
+.env
+
+# Journaux et fichiers générés
+/logs/*.log
+!/logs/.gitkeep
+/storage/reports/*.pdf
+!/storage/reports/.gitkeep
+/cache/*
+!/cache/.gitkeep
+/uploads/*
+!/uploads/.gitkeep
+
+# Outils
+/.phpunit.cache
+composer.lock.bak
+
+# Système / IDE
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
+*.swp
