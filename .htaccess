@@ -14,6 +14,20 @@
     # Si la requête vise déjà public/, laisse Apache continuer dans ce dossier.
     RewriteRule ^public/ - [L]
 
+    # L'API REST a son propre front controller. Une URL comme
+    # /api/v1/auth/login ne correspond pas a un fichier physique :
+    # Apache doit donc l'envoyer vers api/index.php.
+    RewriteRule ^api/ api/index.php [L,QSA]
+
+    # Le bot Telegram a son propre point d'entree dans vicia-bot/public/.
+    # On laisse uniquement ce dossier public accessible, sinon le webhook
+    # est redirige vers l'application principale et Telegram recoit un 404.
+    RewriteRule ^vicia-bot/public/ - [L]
+
+    # Securite : tout le reste du dossier vicia-bot reste inaccessible
+    # depuis le navigateur (.env, vendor, logs, configuration, etc.).
+    RewriteRule ^vicia-bot/ - [F,L]
+
     # Sinon, route vers public/ sans supposer que le projet est à la racine du vhost.
     RewriteRule ^(.*)$ public/$1 [L]
 </IfModule>

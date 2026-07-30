@@ -14,7 +14,7 @@ $pageScripts = [];
 $houseRole = Auth::roleOnHouse(Auth::currentHouseId() ?? 0);
 // Même règle que pour les équipements : le topic MQTT d'une caméra
 // n'est visible que par l'administration.
-$canSeeMqttTopics = $houseRole === 'admin';
+$canSeeMqttTopics = can_view_mqtt_topics($houseRole);
 ?>
 
 <div class="page-header">

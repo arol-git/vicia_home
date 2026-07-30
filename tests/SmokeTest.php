@@ -61,6 +61,12 @@ assertTrue(e('<script>') === '&lt;script&gt;', "e() doit échapper les caractèr
 assertTrue(equipment_icon('led') === 'fa-lightbulb', "equipment_icon('led') doit retourner 'fa-lightbulb'");
 assertTrue(sensor_icon('mq2') === 'fa-smog', "sensor_icon('mq2') doit retourner 'fa-smog'");
 assertTrue(role_label('admin') === 'Administrateur', "role_label('admin') doit retourner 'Administrateur'");
+assertTrue(can_manage_hardware_inventory('admin'), "Seul le rôle admin doit pouvoir gérer l'inventaire matériel");
+assertTrue(!can_manage_hardware_inventory('owner'), "Le rôle owner ne doit pas pouvoir ajouter d'équipements ou capteurs");
+assertTrue(!can_manage_hardware_inventory('technician'), "Le rôle technician ne doit pas pouvoir ajouter d'équipements ou capteurs");
+assertTrue(can_view_mqtt_topics('admin'), "Seul le rôle admin doit voir les topics MQTT");
+assertTrue(!can_view_mqtt_topics('resident'), "Le rôle resident ne doit pas voir les topics MQTT");
+assertTrue(!array_key_exists('mqtt_topic', hide_mqtt_topics(['name' => 'LED', 'mqtt_topic' => 'home/demo/led'])), 'hide_mqtt_topics() doit retirer mqtt_topic sur une ligne');
 
 echo "\n=== Résultat : $passed réussi(s), $failed échoué(s) ===\n";
 exit($failed > 0 ? 1 : 0);

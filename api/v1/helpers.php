@@ -115,18 +115,9 @@ function api_require_house_admin(array $user, int $houseId): void
  */
 function api_hide_mqtt_topics($data, array $user, int $houseId)
 {
-    if (api_house_role($user, $houseId) === 'admin') {
+    if (can_view_mqtt_topics(api_house_role($user, $houseId))) {
         return $data;
     }
 
-    $strip = static function (array $row): array {
-        unset($row['mqtt_topic']);
-        return $row;
-    };
-
-    if (isset($data[0]) && is_array($data[0])) {
-        return array_map($strip, $data);
-    }
-
-    return is_array($data) ? $strip($data) : $data;
+    return hide_mqtt_topics($data);
 }
