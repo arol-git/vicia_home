@@ -2,6 +2,7 @@
 
 namespace Bot\Core;
 
+use Bot\Services\KeyboardBuilder;
 use Telegram\Bot\Api;
 
 /**
@@ -37,11 +38,28 @@ abstract class Controller
     protected function respond(string $message, ?array $keyboard = null): void
     {
         if ($this->request->isCallbackQuery()) {
-            $this->response->edit($message, $keyboard);
+            $this->response->edit($message, $this->withBackToMenu($keyboard));
             $this->response->answerCallback();
         } else {
             $this->response->text($message, $keyboard);
         }
+    }
+
+    /**
+     * Ajoute un bouton "Retour au menu" en bas des ecrans ouverts
+     * depuis un bouton inline. Ainsi, le meme message peut revenir au
+     * menu principal sans envoyer un nouveau message dans Telegram.
+     */
+    private function withBackToMenu(?array $keyboard): ?array
+    {
+        if (!$this->request->isCallbackQuery() || $this->request->callbackData() === 'menu:main') {
+            return $keyboard;
+        }
+
+        $keyboard ??= [];
+        $keyboard[] = KeyboardBuilder::row(KeyboardBuilder::button('⬅ Retour au menu', 'menu:main'));
+
+        return $keyboard;
     }
 
     protected function log(): \Monolog\Logger

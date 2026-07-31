@@ -19,6 +19,8 @@ use Telegram\Bot\Exceptions\TelegramSDKException;
  */
 class Response
 {
+    private bool $callbackAnswered = false;
+
     public function __construct(private readonly Api $telegram, private readonly Request $request)
     {
     }
@@ -72,6 +74,10 @@ class Response
      */
     public function answerCallback(string $text = '', bool $showAlert = false): void
     {
+        if ($this->callbackAnswered) {
+            return;
+        }
+
         $callbackId = $this->request->callbackQueryId();
         if (!$callbackId) {
             return;
@@ -84,6 +90,8 @@ class Response
                 'show_alert'        => $showAlert,
             ]);
         }, 'answerCallbackQuery');
+
+        $this->callbackAnswered = true;
     }
 
     public function photo(string $filePath, string $caption = ''): void

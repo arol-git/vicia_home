@@ -49,10 +49,10 @@ class MenuController extends Controller
      */
     public function open(string $key): void
     {
-        // Telegram attend un accuse de reception pour chaque clic sur
-        // bouton inline. Sans cela, l'utilisateur voit parfois le
-        // bouton charger alors que le serveur traite deja la demande.
-        $this->response->answerCallback();
+        if ($key === 'main') {
+            $this->index();
+            return;
+        }
 
         if (isset(self::READY[$key])) {
             [$class, $method] = self::READY[$key];
