@@ -38,7 +38,7 @@ return [
         'password'   => getenv('MQTT_PASS') ?: 'change_me',  */
 
     // Paramètres MQTT (utilisés par le site, Wokwi/ESP32 et le subscriber)
-    'mqtt' => [
+   /* 'mqtt' => [
         'host'       => getenv('MQTT_HOST') ?: 'broker.hivemq.com',
         'port'       => getenv('MQTT_PORT') ?: 1883,
         'tls'        => filter_var(getenv('MQTT_TLS') ?: false, FILTER_VALIDATE_BOOLEAN),
@@ -46,7 +46,17 @@ return [
         'username'   => getenv('MQTT_USER') ?: '',
         'password'   => getenv('MQTT_PASS') ?: '',
         'base_topic' => 'home',
-    ],
+    ],  */
+
+    'mqtt' => [
+    'host'       => getenv('MQTT_HOST'),
+    'port'       => 8883,
+    'tls'        => true,
+    'client_id'  => 'vicia_home_web',
+    'username'   => getenv('MQTT_USER'),
+    'password'   => getenv('MQTT_PASS'),
+    'base_topic' => 'viciahome',
+],
 
     // Journalisation applicative
     'log_path' => __DIR__ . '/../storage/logs/app.log',
