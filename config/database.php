@@ -13,6 +13,6 @@ return [
     'port'     => getenv('DB_PORT') ?: '3306',
     'database' => getenv('DB_NAME') ?: 'vicia_home2',
     'username' => getenv('DB_USER') ?: 'root',
-    'password' => getenv('DB_PASS') ?: '',
+    'password' => getenv('DB_PASS') ?: (getenv('DB_PASSWORD') ?: ''),
     'charset'  => 'utf8mb4',
 ];

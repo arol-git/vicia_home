@@ -69,14 +69,23 @@ const ViciaAjax = (() => {
         options.method = finalMethod;
 
         const response = await fetch(resolveUrl(url), options);
+        const raw = await response.text();
         let json;
         try {
-            json = await response.json();
+            json = raw ? JSON.parse(raw) : null;
         } catch (e) {
-            json = { success: response.ok, message: response.ok ? '' : 'Réponse invalide du serveur.' };
+            json = {
+                success: false,
+                message: raw ? 'Réponse invalide du serveur.' : 'Réponse vide du serveur.',
+                raw,
+            };
         }
 
-        if (!response.ok) {
+        if (!json || typeof json !== 'object') {
+            json = { success: false, message: 'Réponse vide du serveur.' };
+        }
+
+        if (!response.ok || json.success === false) {
             throw json;
         }
 

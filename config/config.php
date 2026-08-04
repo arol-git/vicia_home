@@ -58,6 +58,15 @@ return [
     'base_topic' => 'viciahome',
 ],
 
+    // Paramètres du module Vicia Home AI.
+    // Sans clé API, le module reste utilisable avec ses réponses de repli locales.
+    'ai' => [
+        'provider' => getenv('AI_LLM_PROVIDER') ?: 'openai',
+        'api_key'  => getenv('AI_LLM_API_KEY') ?: '',
+        'model'    => getenv('AI_LLM_MODEL') ?: 'gpt-4o-mini',
+        'base_url' => getenv('AI_LLM_BASE_URL') ?: '',
+    ],
+
     // Journalisation applicative
     'log_path' => __DIR__ . '/../storage/logs/app.log',
 ];

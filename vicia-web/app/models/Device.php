@@ -1,0 +1,97 @@
+<?php
+
+namespace App\Models;
+
+use App\Core\Database;
+use App\Core\Model;
+
+/**
+ * Class Device
+ *
+ * Modèle représentant une carte ESP32 physiquement APPAIRÉE à une
+ * maison, identifiée par son `chip_id` matériel (unique, en pratique
+ * l'adresse MAC ou le chip ID Espressif). C'est cet appairage — et
+ * non le simple nommage d'un topic MQTT — qui garantit qu'un
+ * équipement ou capteur est piloté par la carte réellement installée
+ * dans la maison, et non par un appareil homonyme mal configuré.
+ */
+class Device extends Model
+{
+    protected static string $table = 'devices';
+
+    public static function forHouse(int $houseId): array
+    {
+        return Database::query(
+            'SELECT * FROM devices WHERE house_id = :house_id ORDER BY created_at DESC',
+            ['house_id' => $houseId]
+        )->fetchAll();
+    }
+
+    public static function belongsToHouse(int $deviceId, int $houseId): bool
+    {
+        $row = Database::query(
+            'SELECT id FROM devices WHERE id = :id AND house_id = :house_id LIMIT 1',
+            ['id' => $deviceId, 'house_id' => $houseId]
+        )->fetch();
+        return (bool) $row;
+    }
+
+    /**
+     * Vérifie qu'une carte appartient à la maison ET qu'elle est
+     * effectivement appairée (statut "paired") — une carte révoquée
+     * ne doit plus pouvoir se voir rattacher de nouveaux
+     * équipements/capteurs.
+     */
+    public static function isPairedInHouse(int $deviceId, int $houseId): bool
+    {
+        $row = Database::query(
+            "SELECT id FROM devices WHERE id = :id AND house_id = :house_id AND status = 'paired' LIMIT 1",
+            ['id' => $deviceId, 'house_id' => $houseId]
+        )->fetch();
+        return (bool) $row;
+    }
+
+    public static function findByChipId(string $chipId): ?array
+    {
+        $row = Database::query('SELECT * FROM devices WHERE chip_id = :chip_id LIMIT 1', ['chip_id' => $chipId])->fetch();
+        return $row ?: null;
+    }
+
+    /**
+     * Appaire une nouvelle carte ESP32 à une maison. Le chip_id doit
+     * être unique sur toute la plateforme : une carte ne peut être
+     * appairée qu'à une seule maison à la fois.
+     */
+    public static function pair(int $houseId, string $chipId, string $label): int
+    {
+        return self::create([
+            'house_id' => $houseId,
+            'chip_id'  => $chipId,
+            'label'    => $label,
+            'status'   => 'paired',
+        ]);
+    }
+
+    public static function revoke(int $id): bool
+    {
+        return self::update($id, ['status' => 'revoked']);
+    }
+
+    public static function touchLastSeen(int $id): void
+    {
+        Database::query('UPDATE devices SET last_seen = NOW() WHERE id = :id', ['id' => $id]);
+    }
+
+    /**
+     * Construit le topic MQTT normalisé d'un équipement/capteur à
+     * partir du slug de la maison et du domaine/zone/grandeur fournis,
+     * évitant la saisie manuelle et donc les erreurs de nommage.
+     * Ex. generateTopic($house, 'lighting', 'salon', 'led1')
+     *     -> "home/villa-yaounde/lighting/salon/led1"
+     */
+    public static function generateTopic(array $house, string $domain, string $zone, string $measure): string
+    {
+        $slugify = fn(string $v) => trim(preg_replace('/[^a-z0-9]+/', '-', strtolower($v)), '-');
+        return sprintf('home/%s/%s/%s/%s', $house['slug'], $slugify($domain), $slugify($zone), $slugify($measure));
+    }
+}

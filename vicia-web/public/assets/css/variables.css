@@ -1,0 +1,75 @@
+/**
+ * assets/css/variables.css
+ *
+ * Jetons de conception (design tokens) de la plateforme Vicia Home.
+ * Palette professionnelle inspirée des interfaces de supervision
+ * (Home Assistant, Ajax Systems, Ubiquiti) : bleu nuit, blanc, gris
+ * clair, vert. Le mode sombre surcharge ces mêmes variables dans
+ * dark-mode.css, sans dupliquer la logique des composants.
+ */
+
+:root {
+    /* Couleurs de marque */
+    --color-navy-900: #0e1a2b;
+    --color-navy-800: #142338;
+    --color-navy-700: #1b2e48;
+    --color-navy-600: #24405f;
+    --color-primary: #2f5fa8;
+    --color-primary-dark: #234a87;
+    --color-primary-light: #5c85c4;
+    --color-primary-soft: #e8eefb;
+
+    /* Couleurs fonctionnelles */
+    --color-success: #2e7d5b;
+    --color-success-soft: #e2f3ea;
+    --color-warning: #c98a1c;
+    --color-warning-soft: #fbf0dc;
+    --color-danger: #c1442f;
+    --color-danger-soft: #fbe6e2;
+    --color-info: #2f80a8;
+    --color-info-soft: #e2f1f7;
+
+    /* Neutres */
+    --color-bg: #f3f5f9;
+    --color-surface: #ffffff;
+    --color-surface-alt: #f8f9fc;
+    --color-border: #e4e8ef;
+    --color-text: #1b2430;
+    --color-text-muted: #6c7686;
+    --color-text-soft: #98a2b3;
+
+    /* Typographie */
+    --font-base: 'Segoe UI', 'Inter', -apple-system, BlinkMacSystemFont, Roboto, Arial, sans-serif;
+    --fs-xs: 0.75rem;
+    --fs-sm: 0.85rem;
+    --fs-base: 0.95rem;
+    --fs-md: 1.05rem;
+    --fs-lg: 1.25rem;
+    --fs-xl: 1.6rem;
+    --fs-xxl: 2rem;
+
+    /* Espacements */
+    --space-1: 4px;
+    --space-2: 8px;
+    --space-3: 12px;
+    --space-4: 16px;
+    --space-5: 24px;
+    --space-6: 32px;
+    --space-7: 48px;
+
+    /* Rayons et ombres */
+    --radius-sm: 6px;
+    --radius-md: 10px;
+    --radius-lg: 16px;
+    --radius-pill: 999px;
+    --shadow-sm: 0 1px 2px rgba(14, 26, 43, 0.06);
+    --shadow-md: 0 4px 16px rgba(14, 26, 43, 0.08);
+    --shadow-lg: 0 12px 32px rgba(14, 26, 43, 0.14);
+
+    /* Structure */
+    --sidebar-width: 260px;
+    --sidebar-width-collapsed: 76px;
+    --topbar-height: 68px;
+    --transition-fast: 0.15s ease;
+    --transition-base: 0.25s ease;
+}

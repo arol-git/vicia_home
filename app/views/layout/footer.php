@@ -14,11 +14,13 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
 
 <!-- Scripts applicatifs -->
-<script src="<?= asset('js/ajax.js') ?>"></script>
+<?php $ajaxScript = __DIR__ . '/../../../public/assets/js/ajax.js'; ?>
+<script src="<?= asset('js/ajax.js') ?><?= file_exists($ajaxScript) ? '?v=' . filemtime($ajaxScript) : '' ?>"></script>
 <script src="<?= asset('js/app.js') ?>"></script>
 <script src="<?= asset('js/charts.js') ?>"></script>
 <?php if (!empty($pageScripts)): foreach ($pageScripts as $script): ?>
-<script src="<?= asset('js/' . $script) ?>"></script>
+<?php $scriptPath = __DIR__ . '/../../../public/assets/js/' . $script; ?>
+<script src="<?= asset('js/' . $script) ?><?= file_exists($scriptPath) ? '?v=' . filemtime($scriptPath) : '' ?>"></script>
 <?php endforeach; endif; ?>
 </body>
 </html>

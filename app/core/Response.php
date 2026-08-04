@@ -20,7 +20,16 @@ class Response
     {
         http_response_code($statusCode);
         header('Content-Type: application/json; charset=utf-8');
-        echo json_encode($data, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
+        $json = json_encode($data, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
+        if ($json === false) {
+            app_log('[Response] Encodage JSON impossible : ' . json_last_error_msg());
+            http_response_code(500);
+            $json = json_encode([
+                'success' => false,
+                'message' => 'Réponse serveur impossible à encoder en JSON.',
+            ], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
+        }
+        echo $json;
         exit;
     }
 
