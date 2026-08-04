@@ -2,6 +2,7 @@
 
 namespace App\Core;
 
+use App\Core\Request;
 use App\Models\User;
 
 /**
@@ -142,14 +143,22 @@ class Auth
     }
 
     /**
-     * Exige une authentification ; redirige vers la page de connexion
-     * si aucun utilisateur n'est authentifié.
+     * Exige une authentification ; renvoie JSON sur AJAX ou redirige
+     * vers la page de connexion si l'accès n'est pas autorisé.
      */
     public static function requireLogin(): void
     {
-        if (!self::check()) {
-            Response::redirect('/login');
+        if (self::check()) {
+            return;
         }
+
+        $request = new Request();
+        if ($request->isAjax()) {
+            Response::error('Authentification requise.', 401);
+            return;
+        }
+
+        Response::redirect('/login');
     }
 
     /**
@@ -214,17 +223,26 @@ class Auth
     {
         self::requireLogin();
         $houseId = $houseId ?? self::currentHouseId();
+        $request = new Request();
 
         if (!$houseId) {
-            http_response_code(403);
-            echo 'Aucune maison associée à ce compte.';
+            if ($request->isAjax()) {
+                Response::error('Aucune maison associée à ce compte.', 403);
+            } else {
+                http_response_code(403);
+                echo 'Aucune maison associée à ce compte.';
+            }
             exit;
         }
 
         $role = self::roleOnHouse($houseId);
         if ($role === null || !in_array($role, $roles, true)) {
-            http_response_code(403);
-            echo 'Accès refusé : privilèges insuffisants sur cette maison.';
+            if ($request->isAjax()) {
+                Response::error('Accès refusé : privilèges insuffisants sur cette maison.', 403);
+            } else {
+                http_response_code(403);
+                echo 'Accès refusé : privilèges insuffisants sur cette maison.';
+            }
             exit;
         }
 

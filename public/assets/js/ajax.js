@@ -36,8 +36,10 @@ const ViciaAjax = (() => {
     async function request(method, url, data = null) {
         const options = {
             method,
+            credentials: 'same-origin',
             headers: {
                 'X-Requested-With': 'XMLHttpRequest',
+                'Accept': 'application/json',
             },
         };
 
@@ -68,15 +70,36 @@ const ViciaAjax = (() => {
         }
         options.method = finalMethod;
 
-        const response = await fetch(resolveUrl(url), options);
+        let response;
+        try {
+            response = await fetch(resolveUrl(url), options);
+        } catch (networkError) {
+            console.error('[ViciaAjax] erreur réseau', networkError);
+            throw {
+                success: false,
+                message: networkError?.message || 'Erreur réseau lors de la requête.',
+            };
+        }
+        const raw = await response.text();
+        const normalized = raw ? raw.trim().replace(/^\uFEFF/, '') : '';
         let json;
         try {
-            json = await response.json();
+            json = normalized ? JSON.parse(normalized) : null;
         } catch (e) {
-            json = { success: response.ok, message: response.ok ? '' : 'Réponse invalide du serveur.' };
+            console.error('[ViciaAjax] réponse JSON invalide', { url: resolveUrl(url), raw, error: e });
+            json = {
+                success: false,
+                message: raw ? 'Réponse invalide du serveur. Voir la console pour plus de détails.' : 'Réponse vide du serveur.',
+                raw,
+            };
         }
 
-        if (!response.ok) {
+        if (!json || typeof json !== 'object') {
+            console.error('[ViciaAjax] réponse JSON inattendue', { url: resolveUrl(url), raw, json });
+            json = { success: false, message: 'Réponse vide du serveur.' };
+        }
+
+        if (!response.ok || json.success === false) {
             throw json;
         }
 

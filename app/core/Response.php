@@ -18,9 +18,24 @@ class Response
      */
     public static function json($data, int $statusCode = 200): void
     {
+        if (ob_get_length() !== false) {
+            while (ob_get_level() > 0) {
+                @ob_end_clean();
+            }
+        }
+
         http_response_code($statusCode);
         header('Content-Type: application/json; charset=utf-8');
-        echo json_encode($data, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
+        $json = json_encode($data, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
+        if ($json === false) {
+            app_log('[Response] Encodage JSON impossible : ' . json_last_error_msg());
+            http_response_code(500);
+            $json = json_encode([
+                'success' => false,
+                'message' => 'Réponse serveur impossible à encoder en JSON.',
+            ], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
+        }
+        echo $json;
         exit;
     }
 

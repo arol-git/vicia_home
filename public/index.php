@@ -123,4 +123,10 @@ $router->post('/profile', 'ProfileController@update');
 $router->post('/profile/notifications', 'ProfileController@updateNotifications');
 $router->post('/profile/password', 'ProfileController@updatePassword');
 
+// ------------------------- Vicia Home AI ---------------------------------------------
+$router->get('/ai', 'AIController@index');
+$router->post('/ai/message', 'AIController@send');
+$router->post('/ai/debug', 'AIController@debug');
+$router->post('/ai/reset', 'AIController@reset');
+
 $router->dispatch(new Request());

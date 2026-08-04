@@ -69,13 +69,13 @@ class Router
                 $controllerClass = 'App\\Controllers\\' . $controllerName;
 
                 if (!class_exists($controllerClass)) {
-                    $this->abort(500, "Contrôleur introuvable : $controllerClass");
+                    $this->abort($request, 500, "Contrôleur introuvable : $controllerClass");
                 }
 
                 $controller = new $controllerClass();
 
                 if (!method_exists($controller, $action)) {
-                    $this->abort(500, "Action introuvable : $controllerClass::$action");
+                    $this->abort($request, 500, "Action introuvable : $controllerClass::$action");
                 }
 
                 call_user_func_array([$controller, $action], $matches);
@@ -83,11 +83,16 @@ class Router
             }
         }
 
-        $this->abort(404, 'Page introuvable');
+        $this->abort($request, 404, 'Page introuvable');
     }
 
-    private function abort(int $code, string $message): void
+    private function abort(Request $request, int $code, string $message): void
     {
+        if ($request->isAjax()) {
+            Response::error($message, $code);
+            return;
+        }
+
         http_response_code($code);
         $viewFile = __DIR__ . '/../views/errors/' . $code . '.php';
         if (file_exists($viewFile)) {

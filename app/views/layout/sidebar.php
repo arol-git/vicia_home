@@ -53,6 +53,9 @@ $unreadAlerts = $currentHouseId ? Alert::countUnread($currentHouseId) : 0;
         <a href="<?= url('/dashboard') ?>" class="sidebar__link">
             <i class="fa-solid fa-gauge-high"></i><span>Tableau de bord</span>
         </a>
+        <a href="<?= url('/ai') ?>" class="sidebar__link">
+            <i class="fa-solid fa-robot"></i><span>Vicia Home AI</span>
+        </a>
 
         <div class="sidebar__section-label">Maison</div>
         <a href="<?= url('/rooms') ?>" class="sidebar__link">
@@ -114,6 +117,9 @@ $unreadAlerts = $currentHouseId ? Alert::countUnread($currentHouseId) : 0;
     <header class="topbar">
         <div class="topbar__title"><?= e($title ?? 'Vicia Home') ?></div>
         <div class="topbar__actions">
+            <a href="<?= url('/ai') ?>" class="topbar__icon-btn" title="Assistant vocal IA">
+                <i class="fa-solid fa-microphone-lines"></i>
+            </a>
             <button type="button" class="topbar__icon-btn" data-action="toggle-theme" title="Changer de thème">
                 <i class="fa-solid fa-moon"></i>
             </button>
