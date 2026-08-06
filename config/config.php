@@ -38,26 +38,35 @@ return [
         'password'   => getenv('MQTT_PASS') ?: 'change_me',  */
 
     // Paramètres MQTT (utilisés par le site, Wokwi/ESP32 et le subscriber)
-   /* 'mqtt' => [
-        'host'       => getenv('MQTT_HOST') ?: 'broker.hivemq.com',
-        'port'       => getenv('MQTT_PORT') ?: 1883,
-        'tls'        => filter_var(getenv('MQTT_TLS') ?: false, FILTER_VALIDATE_BOOLEAN),
-        'client_id'  => getenv('MQTT_CLIENT_ID') ?: 'vicia_home_web',
-        'username'   => getenv('MQTT_USER') ?: '',
-        'password'   => getenv('MQTT_PASS') ?: '',
+/*    'mqtt' => [
+        'host'       => 'broker.hivemq.com',
+        'port'       => 1883,
+        'tls'        => false,
+        'client_id'  => 'vicia_home_web',
         'base_topic' => 'home',
-    ],  */
+    ],*/
+
 
     'mqtt' => [
+    'host'       => 'f0f51473e19f4dc89f2813a0a491dcbb.s1.eu.hivemq.cloud',  // Votre cluster
+    'port'       => 8883,  // Port TLS
+    'tls'        => true,   // Activer TLS
+    'username'   => 'viciaHome',    // Username créé
+    'password'   => 'viciaSecure',   // Password créé
+    'client_id'  => 'vicia_home_web',
+    'base_topic' => 'home',
+],
+/*
+'mqtt' => [
     'host'       => getenv('MQTT_HOST'),
-    'port'       => 8883,
-    'tls'        => true,
+    'port'       => (int)(getenv('MQTT_PORT') ?: 8883),
+    'tls'        => filter_var(getenv('MQTT_TLS'), FILTER_VALIDATE_BOOLEAN),
     'client_id'  => 'vicia_home_web',
     'username'   => getenv('MQTT_USER'),
     'password'   => getenv('MQTT_PASS'),
-    'base_topic' => 'viciahome',
+    'base_topic' => 'home',
 ],
-
+*/
     // Paramètres du module Vicia Home AI.
     // Sans clé API, le module reste utilisable avec ses réponses de repli locales.
     'ai' => [
