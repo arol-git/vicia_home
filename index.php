@@ -1,4 +1,4 @@
 <?php
-header('Location: vicia-home/public');
+header('Location: public');
 exit;
 ?>

@@ -13,7 +13,7 @@ return [
     'env'         => getenv('APP_ENV') ?: 'development',
 
     // URL de base de l'application (sans slash final)
-    'base_url'    => getenv('APP_URL') ?: 'http://localhost/vicia-home/public',
+    'base_url'    => getenv('APP_URL') ?: 'https://viciahome-production.up.railway.app',
 
     // Fuseau horaire de référence
     'timezone'    => 'Africa/Douala',
