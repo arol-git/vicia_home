@@ -84,19 +84,9 @@ const ViciaAjax = (() => {
         const normalized = raw ? raw.trim().replace(/^\uFEFF/, '') : '';
         let json;
         try {
-            json = normalized ? JSON.parse(normalized) : null;
+            json = await response.json();
         } catch (e) {
-            console.error('[ViciaAjax] réponse JSON invalide', { url: resolveUrl(url), raw, error: e });
-            json = {
-                success: false,
-                message: raw ? 'Réponse invalide du serveur. Voir la console pour plus de détails.' : 'Réponse vide du serveur.',
-                raw,
-            };
-        }
-
-        if (!json || typeof json !== 'object') {
-            console.error('[ViciaAjax] réponse JSON inattendue', { url: resolveUrl(url), raw, json });
-            json = { success: false, message: 'Réponse vide du serveur.' };
+            json = { success: response.ok, message: response.ok ? '' : 'Réponse invalide du serveur.' };
         }
 
         if (!response.ok || json.success === false) {
