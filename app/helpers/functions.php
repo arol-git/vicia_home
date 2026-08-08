@@ -37,7 +37,21 @@ function config(string $key = null)
  */
 function url(string $path = ''): string
 {
-    return rtrim(config('base_url'), '/') . '/' . ltrim($path, '/');
+    $baseUrl = rtrim((string) config('base_url'), '/');
+    if ($baseUrl === '') {
+        return '/' . ltrim($path, '/');
+    }
+
+    $path = '/' . ltrim($path, '/');
+
+    // If the configured base URL already ends with "/public" or "/public/",
+    // keep the path relative to that directory. Otherwise, if the app is served
+    // from the repo root, add "/public" before route paths.
+    if (preg_match('#/public/?$#', $baseUrl)) {
+        return $baseUrl . $path;
+    }
+
+    return $baseUrl . '/public' . $path;
 }
 
 /**
