@@ -82,10 +82,3 @@ return [
     // Journalisation applicative
     'log_path' => __DIR__ . '/../storage/logs/app.log',
 ];
-
-// public/test_env.php (temporaire) — NE PAS garder en production
-header('Content-Type: text/plain');
-echo 'APP_URL=' . (getenv('APP_URL') ?: '<unset>') . PHP_EOL;
-echo 'SITE_URL=' . (getenv('SITE_URL') ?: '<unset>') . PHP_EOL;
-echo 'DB_HOST=' . (getenv('DB_HOST') ?: '<unset>') . PHP_EOL;
-echo 'MQTT_HOST=' . (getenv('MQTT_HOST') ?: '<unset>') . PHP_EOL;
