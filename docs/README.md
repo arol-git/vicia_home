@@ -114,13 +114,13 @@ cd vicia-home
 
 ```bash
 sudo mysql -u root -p <<'SQL'
-CREATE DATABASE vicia_home2 CHARACTER SET utf8mb4;
+CREATE DATABASE railway CHARACTER SET utf8mb4;
 CREATE USER 'vicia_user'@'localhost' IDENTIFIED BY 'un-mot-de-passe-robuste';
-GRANT ALL PRIVILEGES ON vicia_home2.* TO 'vicia_user'@'localhost';
+GRANT ALL PRIVILEGES ON railway.* TO 'vicia_user'@'localhost';
 FLUSH PRIVILEGES;
 SQL
 
-mysql -u vicia_user -p vicia_home2 < database/sql/schema.sql
+mysql -u vicia_user -p railway < database/sql/schema.sql
 ```
 
 Le script `schema.sql` crée l'intégralité des tables, contraintes, index et triggers, et insère un jeu de données de démonstration (voir §7).
@@ -185,7 +185,7 @@ After=network.target mysql.service mosquitto.service
 [Service]
 Type=simple
 User=www-data
-Environment=DB_HOST=127.0.0.1 DB_NAME=vicia_home2 DB_USER=root DB_PASS=
+Environment=MYSQL_HOST=127.0.0.1 MYSQL_DATABASE=railway MYSQL_USER=root MYSQL_PASSWORD=
 Environment=MQTT_HOST=127.0.0.1 MQTT_PORT=8883
 ExecStart=/usr/bin/php /var/www/vicia-home/mqtt/subscriber.php
 Restart=on-failure
@@ -205,7 +205,7 @@ sudo systemctl status vicia-mqtt.service
 
 ## 6. Configuration
 
-Toute la configuration applicative se trouve dans `config/config.php` et `config/database.php`, avec surcharge possible par variables d'environnement (voir `.env.example`) : `APP_ENV`, `APP_URL`, `APP_KEY`, `DB_HOST`, `DB_NAME`, `DB_USER`, `DB_PASS`, `MQTT_HOST`, `MQTT_PORT`, `MQTT_USER`, `MQTT_PASS`.
+Toute la configuration applicative se trouve dans `config/config.php` et `config/database.php`, avec surcharge possible par variables d'environnement (voir `.env.example`) : `APP_ENV`, `APP_URL`, `APP_KEY`, `MYSQL_HOST`, `MYSQL_DATABASE`, `MYSQL_USER`, `MYSQL_PASSWORD`, `MQTT_HOST`, `MQTT_PORT`, `MQTT_USER`, `MQTT_PASS`.
 
 Les paramètres modifiables depuis l'interface (nom du site, jeton du bot Telegram, identifiants SMTP) sont stockés en base dans la table `settings` et gérés depuis le module **Paramètres** (réservé aux administrateurs).
 
@@ -324,7 +324,7 @@ curl -X POST https://votre-domaine.example.com/api/v1/equipments/4/toggle \
 Sans Apache, à des fins de test, le serveur de développement intégré de PHP peut être utilisé :
 
 ```bash
-export DB_HOST=127.0.0.1 DB_NAME=vicia_home2 DB_USER=root DB_PASS=
+export MYSQL_HOST=127.0.0.1 MYSQL_DATABASE=railway MYSQL_USER=root MYSQL_PASSWORD=
 cd public
 php -S 127.0.0.1:8000 index.php
 ```

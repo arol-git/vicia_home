@@ -8,7 +8,7 @@
 -- =====================================================================
 
 -- Sélectionnez votre base avant d'exécuter ce script, par exemple :
--- mysql -u vicia_user -p vicia_home2 < database/sql/ai_schema.sql
+-- mysql -u vicia_user -p railway < database/sql/ai_schema.sql
 
 -- ---------------------------------------------------------------------
 -- Table : ai_conversations

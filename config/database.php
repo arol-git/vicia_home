@@ -9,11 +9,11 @@
 /*
 return [
     'driver'   => 'mysql',
-    'host'     => getenv('DB_HOST') ?: 'https://viciahome-production.up.railway.app',
-    'port'     => getenv('DB_PORT') ?: '3306',
-    'database' => getenv('DB_NAME') ?: 'vicia_home2',
-    'username' => getenv('DB_USER') ?: 'root',
-    'password' => getenv('DB_PASS') ?: (getenv('DB_PASSWORD') ?: ''),
+    'host'     => getenv('MYSQL_HOST') ?: 'https://viciahome-production.up.railway.app',
+    'port'     => getenv('MYSQL_PORT') ?: '3306',
+    'database' => getenv('MYSQL_DATABASE') ?: 'railway',
+    'username' => getenv('MYSQL_USER') ?: 'root',
+    'password' => getenv('MYSQL_PASSWORD') ?: (getenv('MYSQL_PASSWORDWORD') ?: ''),
     'charset'  => 'utf8mb4',
 ];
 */

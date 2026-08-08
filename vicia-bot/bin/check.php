@@ -51,17 +51,28 @@ try {
     fail('Configuration invalide : ' . $e->getMessage());
     exit(1);
 }
-
+/*
 $required = [
     'APP_KEY',
     'TELEGRAM_BOT_TOKEN',
     'TELEGRAM_WEBHOOK_SECRET',
     'VICIA_API_BASE_URL',
     'VICIA_ALERT_WEBHOOK_SECRET',
-    'DB_HOST',
-    'DB_PORT',
-    'DB_NAME',
-    'DB_USER',
+    'MYSQL_HOST',
+    'MYSQL_PORT',
+    'MYSQL_DATABASE',
+    'MYSQL_USER',
+]; */
+$required = [
+    'APP_KEY',
+    'TELEGRAM_BOT_TOKEN',
+    'TELEGRAM_WEBHOOK_SECRET',
+    'VICIA_API_BASE_URL',
+    'VICIA_ALERT_WEBHOOK_SECRET',
+    'MYSQL_HOST',
+    'MYSQL_PORT',
+    'MYSQL_NAME',
+    'MYSQL_USER',
 ];
 
 foreach ($required as $key) {

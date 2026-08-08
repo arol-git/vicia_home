@@ -9,10 +9,10 @@
 
 return [
     'driver'   => 'mysql',
-    'host'     => getenv('DB_HOST') ?: '127.0.0.1',
-    'port'     => getenv('DB_PORT') ?: '3306',
-    'database' => getenv('DB_NAME') ?: 'vicia_home',
-    'username' => getenv('DB_USER') ?: 'vicia_user',
-    'password' => getenv('DB_PASS') ?: 'change_me',
+    'host'     => getenv('MYSQL_HOST') ?: '127.0.0.1',
+    'port'     => getenv('MYSQL_PORT') ?: '3306',
+    'database' => getenv('MYSQL_DATABASE') ?: 'vicia_home',
+    'username' => getenv('MYSQL_USER') ?: 'vicia_user',
+    'password' => getenv('MYSQL_PASSWORD') ?: 'change_me',
     'charset'  => 'utf8mb4',
 ];

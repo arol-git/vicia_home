@@ -37,7 +37,7 @@ class App
         $dotenv = Dotenv::createImmutable(self::ROOT_PATH);
         $dotenv->safeLoad();
 
-        $dotenv->required(['TELEGRAM_BOT_TOKEN', 'VICIA_API_BASE_URL', 'DB_NAME', 'DB_USER', 'APP_KEY'])
+        $dotenv->required(['TELEGRAM_BOT_TOKEN', 'VICIA_API_BASE_URL', 'MYSQL_DATABASE', 'MYSQL_USER', 'APP_KEY'])
             ->notEmpty();
 
         date_default_timezone_set(self::env('APP_TIMEZONE', 'UTC'));
@@ -55,7 +55,7 @@ class App
     /**
      * Lit une variable d'environnement, avec valeur par défaut.
      * Ne journalise et n'expose jamais les clés sensibles
-     * (APP_KEY, TELEGRAM_BOT_TOKEN, *_SECRET, DB_PASS) telles quelles :
+     * (APP_KEY, TELEGRAM_BOT_TOKEN, *_SECRET, MYSQL_PASSWORD) telles quelles :
      * à l'appelant de rester prudent avec ce qu'il en fait.
      */
     public static function env(string $key, mixed $default = null): mixed

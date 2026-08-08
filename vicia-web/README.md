@@ -197,7 +197,7 @@ After=network.target mysql.service mosquitto.service
 [Service]
 Type=simple
 User=www-data
-Environment=DB_HOST=127.0.0.1 DB_NAME=vicia_home DB_USER=vicia_user DB_PASS=un-mot-de-passe-robuste
+Environment=MYSQL_HOST=127.0.0.1 MYSQL_DATABASE=vicia_home MYSQL_USER=vicia_user MYSQL_PASSWORD=un-mot-de-passe-robuste
 Environment=MQTT_HOST=127.0.0.1 MQTT_PORT=8883
 ExecStart=/usr/bin/php /var/www/vicia-home/mqtt/subscriber.php
 Restart=on-failure
@@ -217,7 +217,7 @@ sudo systemctl status vicia-mqtt.service
 
 ## 6. Configuration
 
-Toute la configuration applicative se trouve dans `config/config.php` et `config/database.php`, avec surcharge possible par variables d'environnement (voir `.env.example`) : `APP_ENV`, `APP_URL`, `APP_KEY`, `DB_HOST`, `DB_NAME`, `DB_USER`, `DB_PASS`, `MQTT_HOST`, `MQTT_PORT`, `MQTT_USER`, `MQTT_PASS`.
+Toute la configuration applicative se trouve dans `config/config.php` et `config/database.php`, avec surcharge possible par variables d'environnement (voir `.env.example`) : `APP_ENV`, `APP_URL`, `APP_KEY`, `MYSQL_HOST`, `MYSQL_DATABASE`, `MYSQL_USER`, `MYSQL_PASSWORD`, `MQTT_HOST`, `MQTT_PORT`, `MQTT_USER`, `MQTT_PASS`.
 
 Les paramètres globaux modifiables depuis l'interface (nom du site, serveur SMTP partagé) sont stockés en base dans la table `settings` et gérés depuis le module **Paramètres** (réservé aux administrateurs de plateforme). Le jeton du bot Telegram et l'e-mail d'alerte sont, eux, propres à chaque maison et se configurent depuis **Mes maisons → modifier la maison**.
 
@@ -386,7 +386,7 @@ curl -X POST "https://votre-domaine.example.com/api/v1/equipments/4/toggle" \
 Sans Apache, à des fins de test, le serveur de développement intégré de PHP peut être utilisé :
 
 ```bash
-export DB_HOST=127.0.0.1 DB_NAME=vicia_home DB_USER=vicia_user DB_PASS=un-mot-de-passe-robuste
+export MYSQL_HOST=127.0.0.1 MYSQL_DATABASE=vicia_home MYSQL_USER=vicia_user MYSQL_PASSWORD=un-mot-de-passe-robuste
 cd public
 php -S 127.0.0.1:8000 index.php
 ```

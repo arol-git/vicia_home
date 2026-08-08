@@ -3,7 +3,7 @@
 header('Content-Type: text/plain');
 
 $keys = [
-    'APP_URL','SITE_URL','DB_HOST','DB_NAME','DB_USER','DB_PASS',
+    'APP_URL','SITE_URL','MYSQL_HOST','MYSQL_DATABASE','MYSQL_USER','MYSQL_PASSWORD',
     'MQTT_HOST','MQTT_PORT','MQTT_TLS','MQTT_USER','MQTT_PASS',
     'AI_LLM_API_KEY'
 ];

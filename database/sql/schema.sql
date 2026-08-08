@@ -23,11 +23,11 @@
 SET NAMES utf8mb4;
 SET FOREIGN_KEY_CHECKS = 0;
 
-CREATE DATABASE IF NOT EXISTS `vicia_home2`
+CREATE DATABASE IF NOT EXISTS `railway`
     CHARACTER SET utf8mb4
     COLLATE utf8mb4_unicode_ci;
 
-USE `vicia_home2`;
+USE `railway`;
 
 -- ---------------------------------------------------------------------
 -- Table : users
