@@ -42,6 +42,10 @@ class Request
         $path = '/' . ltrim($uri, '/');
         $prefixes = [];
 
+        if (preg_match('#^/public(/|$)#', $path)) {
+            $path = '/' . ltrim(substr($path, strlen('/public')), '/');
+        }
+
         if (function_exists('config')) {
             $basePath = parse_url(config('base_url') ?? '', PHP_URL_PATH);
             if ($basePath) {

@@ -32,6 +32,11 @@ if (PHP_SAPI === 'cli-server') {
 Session::start();
 Auth::restoreFromRememberCookie();
 
+$rawPath = parse_url($_SERVER['REQUEST_URI'] ?? '/', PHP_URL_PATH) ?: '/';
+if (preg_match('#^/public(/|$)#', $rawPath)) {
+    $_SERVER['REQUEST_URI'] = '/' . ltrim(substr($rawPath, strlen('/public')), '/');
+}
+
 $router = new Router();
 
 // ------------------------- Authentification -----------------------------
