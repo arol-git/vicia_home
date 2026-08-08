@@ -35,23 +35,53 @@ function config(string $key = null)
 /**
  * Construit une URL absolue de l'application à partir d'un chemin relatif.
  */
-function url(string $path = ''): string
+function detect_public_path_prefix(): string
+{
+    $scriptName = $_SERVER['SCRIPT_NAME'] ?? $_SERVER['PHP_SELF'] ?? '';
+    if ($scriptName !== '') {
+        $scriptDir = rtrim(str_replace('\\', '/', dirname($scriptName)), '/');
+        if ($scriptDir !== '' && basename($scriptDir) === 'public') {
+            return $scriptDir;
+        }
+    }
+
+    $requestUri = parse_url($_SERVER['REQUEST_URI'] ?? '', PHP_URL_PATH) ?: '';
+    if ($requestUri !== '') {
+        $segments = explode('/', trim($requestUri, '/'));
+        if (isset($segments[0]) && $segments[0] === 'public') {
+            return '/public';
+        }
+    }
+
+    return '';
+}
+
+function build_base_url(): string
 {
     $baseUrl = rtrim((string) config('base_url'), '/');
     if ($baseUrl === '') {
-        return '/' . ltrim($path, '/');
+        $scheme = (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off') ? 'https' : 'http';
+        $host = $_SERVER['HTTP_HOST'] ?? ($_SERVER['SERVER_NAME'] ?? 'localhost');
+        $baseUrl = $scheme . '://' . $host;
     }
 
+    $parsedPath = parse_url($baseUrl, PHP_URL_PATH) ?: '';
+    $publicPrefix = detect_public_path_prefix();
+
+    if ($publicPrefix !== '' && !preg_match('#/public$#', $parsedPath)) {
+        if (!str_ends_with($baseUrl, $publicPrefix)) {
+            $baseUrl .= $publicPrefix;
+        }
+    }
+
+    return rtrim($baseUrl, '/');
+}
+
+function url(string $path = ''): string
+{
+    $baseUrl = build_base_url();
     $path = '/' . ltrim($path, '/');
-
-    // If the configured base URL already ends with "/public" or "/public/",
-    // keep the path relative to that directory. Otherwise, if the app is served
-    // from the repo root, add "/public" before route paths.
-    if (preg_match('#/public/?$#', $baseUrl)) {
-        return $baseUrl . $path;
-    }
-
-    return $baseUrl . '/public' . $path;
+    return $baseUrl . $path;
 }
 
 /**
