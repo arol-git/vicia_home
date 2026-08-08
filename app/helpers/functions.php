@@ -68,6 +68,13 @@ function build_base_url(): string
     $parsedPath = parse_url($baseUrl, PHP_URL_PATH) ?: '';
     $publicPrefix = detect_public_path_prefix();
 
+    // If the configured base URL wrongly contains /public but the current
+    // request is not served through a /public path, strip that suffix.
+    if ($publicPrefix === '' && preg_match('#/public$#', $parsedPath)) {
+        $baseUrl = rtrim(substr($baseUrl, 0, -7), '/');
+        $parsedPath = parse_url($baseUrl, PHP_URL_PATH) ?: '';
+    }
+
     if ($publicPrefix !== '' && !preg_match('#/public$#', $parsedPath)) {
         if (!str_ends_with($baseUrl, $publicPrefix)) {
             $baseUrl .= $publicPrefix;
