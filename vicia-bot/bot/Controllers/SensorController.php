@@ -30,7 +30,7 @@ class SensorController extends Controller
         }
 
         $lines = array_map(function ($s) use ($unit) {
-            $value = $s['last_value'] !== null ? "{$s['last_value']} {$s['unit']}" : 'aucune mesure';
+            $value = $s['latest_value'] !== null ? "{$s['latest_value']} {$s['unit']}" : 'aucune mesure';
             return "• <b>{$s['name']}</b> ({$s['room_name']}) : {$value}";
         }, $sensors);
 

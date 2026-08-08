@@ -57,7 +57,7 @@ $canManage = in_array($currentUser['role'], ['admin', 'technicien'], true);
                 </td>
                 <td><span class="badge badge-neutral"><?= e($sensorTypes[$sensor['type']] ?? $sensor['type']) ?></span></td>
                 <td><?= e($sensor['room_name']) ?></td>
-                <td><strong><?= $sensor['last_value'] !== null ? e($sensor['last_value']) . ' ' . e($sensor['unit']) : '—' ?></strong></td>
+                <td><strong><?= $sensor['latest_value'] !== null ? e($sensor['latest_value']) . ' ' . e($sensor['unit']) : '—' ?></strong></td>
                 <td class="text-xs text-muted"><?= e(time_ago($sensor['last_recorded_at'])) ?></td>
                 <td class="text-xs text-muted"><?= $sensor['alert_threshold'] !== null ? e($sensor['alert_threshold']) . ' ' . e($sensor['unit']) : '—' ?></td>
                 <td>

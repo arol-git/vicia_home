@@ -173,7 +173,7 @@ class AIService
     private static function sensorSummary(int $houseId, string $type): array
     {
         $sensors = array_values(array_filter(Sensor::allWithRoom($houseId), fn($s) => $s['type'] === $type));
-        return ['sensors' => array_map(fn($s) => ['name' => $s['name'], 'room' => $s['room_name'], 'value' => $s['last_value'], 'unit' => $s['unit']], $sensors)];
+        return ['sensors' => array_map(fn($s) => ['name' => $s['name'], 'room' => $s['room_name'], 'value' => $s['latest_value'], 'unit' => $s['unit']], $sensors)];
     }
 
     private static function equipmentStateSummary(int $houseId, array $types): array

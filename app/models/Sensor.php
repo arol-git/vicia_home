@@ -20,7 +20,7 @@ class Sensor extends Model
     public static function allWithRoom(int $houseId): array
     {
         $sql = "SELECT s.*, r.name AS room_name,
-                       (SELECT sr.value FROM sensor_readings sr WHERE sr.sensor_id = s.id ORDER BY sr.recorded_at DESC LIMIT 1) AS last_value,
+                       (SELECT sr.value FROM sensor_readings sr WHERE sr.sensor_id = s.id ORDER BY sr.recorded_at DESC LIMIT 1) AS latest_value,
                        (SELECT sr.recorded_at FROM sensor_readings sr WHERE sr.sensor_id = s.id ORDER BY sr.recorded_at DESC LIMIT 1) AS last_recorded_at
                 FROM sensors s
                 INNER JOIN rooms r ON r.id = s.room_id
