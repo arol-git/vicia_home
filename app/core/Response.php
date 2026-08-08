@@ -54,8 +54,10 @@ class Response
      */
     public static function redirect(string $path): void
     {
-        $config = require __DIR__ . '/../../config/config.php';
-        header('Location: ' . $config['base_url'] . $path);
+        // Use the `url()` helper to build redirect targets so that
+        // base_url normalization and trailing slashes are handled
+        // consistently across environments.
+        header('Location: ' . url($path));
         exit;
     }
 }

@@ -13,7 +13,10 @@ return [
     'env'         => getenv('APP_ENV') ?: 'development',
 
     // URL de base de l'application (sans slash final)
-    'base_url'    => getenv('APP_URL') ?: 'https://viciahome-production.up.railway.app',
+    // Use APP_URL or SITE_URL as provided by the environment. Do not
+    // force a `/public` suffix here because the hosting provider may
+    // already serve the `public/` directory as the document root.
+    'base_url'    => rtrim(getenv('APP_URL') ?: getenv('SITE_URL') ?: 'https://viciahome-production.up.railway.app', '/'),
 
     // Fuseau horaire de référence
     'timezone'    => 'Africa/Douala',
