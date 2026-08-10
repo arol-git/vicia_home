@@ -178,6 +178,159 @@ const ViciaApp = (() => {
         });
     }
 
+    function initMobileSidebar() {
+        const sidebar = document.querySelector('.sidebar');
+        const toggleBtns = document.querySelectorAll('[data-toggle-sidebar]');
+        if (!sidebar || toggleBtns.length === 0) return;
+
+        // Create backdrop
+        let backdrop = document.createElement('div');
+        backdrop.className = 'mobile-backdrop';
+        document.body.appendChild(backdrop);
+
+        // Create small left-edge area to capture swipe-open gestures on mobile
+        let edge = document.createElement('div');
+        edge.className = 'edge-swipe-area';
+        document.body.appendChild(edge);
+
+        function openSidebar() {
+            sidebar.classList.add('is-open');
+            sidebar.setAttribute('aria-hidden', 'false');
+            toggleBtns.forEach(b => b.setAttribute('aria-expanded', 'true'));
+            backdrop.classList.add('is-visible');
+            document.body.style.overflow = 'hidden';
+            // focus management: move focus to first focusable element inside sidebar
+            const focusable = sidebar.querySelector('a,button,input,select,textarea,[tabindex]:not([tabindex="-1"])');
+            if (focusable) focusable.focus();
+            trapFocus(sidebar);
+        }
+
+        function closeSidebar() {
+            sidebar.classList.remove('is-open');
+            sidebar.setAttribute('aria-hidden', 'true');
+            toggleBtns.forEach(b => b.setAttribute('aria-expanded', 'false'));
+            backdrop.classList.remove('is-visible');
+            document.body.style.overflow = '';
+            releaseFocusTrap();
+            // return focus to the first toggle button
+            if (toggleBtns[0]) toggleBtns[0].focus();
+        }
+
+        toggleBtns.forEach((btn) => btn.addEventListener('click', (e) => {
+            e.stopPropagation();
+            if (sidebar.classList.contains('is-open')) {
+                closeSidebar();
+            } else {
+                openSidebar();
+            }
+        }));
+
+        backdrop.addEventListener('click', closeSidebar);
+
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'Escape') closeSidebar();
+        });
+
+        // Ensure sidebar state resets when resizing to desktop
+        window.addEventListener('resize', () => {
+            if (window.innerWidth > 640) {
+                sidebar.classList.remove('is-open');
+                backdrop.classList.remove('is-visible');
+                document.body.style.overflow = '';
+            }
+        });
+
+        // Close button inside sidebar
+        document.querySelectorAll('[data-close-sidebar]').forEach((btn) => btn.addEventListener('click', closeSidebar));
+
+        // Touch handling: swipe to close on sidebar
+        let startX = 0;
+        let currentX = 0;
+        let touchingSidebar = false;
+
+        sidebar.addEventListener('touchstart', (e) => {
+            if (!sidebar.classList.contains('is-open')) return;
+            startX = e.touches[0].clientX;
+            touchingSidebar = true;
+            sidebar.style.transition = 'none';
+        }, { passive: true });
+
+        sidebar.addEventListener('touchmove', (e) => {
+            if (!touchingSidebar) return;
+            currentX = e.touches[0].clientX;
+            const translateX = Math.min(0, currentX - startX);
+            sidebar.style.transform = `translateX(${translateX}px)`;
+            backdrop.style.opacity = String(Math.max(0, 0.45 + translateX / 300));
+        }, { passive: true });
+
+        sidebar.addEventListener('touchend', (e) => {
+            if (!touchingSidebar) return;
+            touchingSidebar = false;
+            sidebar.style.transition = '';
+            const diff = currentX - startX;
+            sidebar.style.transform = '';
+            backdrop.style.opacity = '';
+            if (diff < -60) {
+                closeSidebar();
+            } else {
+                // restore
+                openSidebar();
+            }
+            startX = currentX = 0;
+        });
+
+        // Edge swipe to open
+        let edgeStartX = 0;
+        let edgeActive = false;
+        edge.addEventListener('touchstart', (e) => {
+            if (sidebar.classList.contains('is-open')) return;
+            edgeStartX = e.touches[0].clientX;
+            edgeActive = true;
+        }, { passive: true });
+        edge.addEventListener('touchmove', (e) => {
+            if (!edgeActive) return;
+            const x = e.touches[0].clientX;
+            const delta = x - edgeStartX;
+            if (delta > 30) {
+                openSidebar();
+                edgeActive = false;
+            }
+        }, { passive: true });
+        edge.addEventListener('touchend', () => { edgeActive = false; edgeStartX = 0; });
+    }
+
+    // Focus trap utilities
+    let _focusTrapHandler = null;
+    function trapFocus(container) {
+        const focusable = Array.from(container.querySelectorAll('a,button,input,select,textarea,[tabindex]:not([tabindex="-1"])'))
+            .filter(el => !el.hasAttribute('disabled'));
+        if (focusable.length === 0) return;
+        const first = focusable[0];
+        const last = focusable[focusable.length - 1];
+        _focusTrapHandler = (e) => {
+            if (e.key !== 'Tab') return;
+            if (e.shiftKey) {
+                if (document.activeElement === first) {
+                    e.preventDefault();
+                    last.focus();
+                }
+            } else {
+                if (document.activeElement === last) {
+                    e.preventDefault();
+                    first.focus();
+                }
+            }
+        };
+        document.addEventListener('keydown', _focusTrapHandler);
+    }
+
+    function releaseFocusTrap() {
+        if (_focusTrapHandler) {
+            document.removeEventListener('keydown', _focusTrapHandler);
+            _focusTrapHandler = null;
+        }
+    }
+
     function appUrl(path) {
         const base = document.querySelector('meta[name="app-base-url"]')?.getAttribute('content') || '/';
         return `${base.replace(/\/+$/, '')}/${String(path).replace(/^\/+/, '')}`;
@@ -189,6 +342,7 @@ const ViciaApp = (() => {
         initModalTriggers();
         initAlertPolling();
         initHouseSwitcher();
+        initMobileSidebar();
     }
 
     document.addEventListener('DOMContentLoaded', init);

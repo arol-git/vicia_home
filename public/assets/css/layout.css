@@ -210,6 +210,22 @@
     color: var(--color-text);
 }
 
+.topbar__menu-btn {
+    display: none;
+    width: 44px;
+    height: 44px;
+    border-radius: var(--radius-md);
+    background: transparent;
+    border: none;
+    color: var(--color-text);
+    font-size: 1.1rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-right: var(--space-3);
+}
+.topbar__menu-btn:focus { outline: 2px solid var(--color-primary); }
+
 .topbar__actions {
     display: flex;
     align-items: center;
@@ -373,4 +389,68 @@
     .topbar__user-info {
         display: none;
     }
+
+    /* Mobile: hide the sidebar by default and use an off-canvas panel */
+    .topbar__menu-btn { display: inline-flex; }
+
+    .sidebar {
+        transform: translateX(-110%);
+        transition: transform 260ms cubic-bezier(.2,.9,.2,1), box-shadow 180ms ease-in-out;
+        position: fixed;
+        z-index: 60;
+        width: 80%;
+        max-width: 320px;
+        left: 0;
+        top: 0;
+        bottom: 0;
+        box-shadow: 0 8px 24px rgba(2,6,23,0.15);
+        will-change: transform;
+        touch-action: pan-y;
+    }
+
+    .sidebar.is-open {
+        transform: translateX(0);
+    }
+
+    .sidebar__close-btn {
+        margin-left: auto;
+        background: transparent;
+        border: none;
+        color: rgba(255,255,255,0.9);
+        font-size: 1.05rem;
+        width: 40px;
+        height: 40px;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        border-radius: var(--radius-md);
+        transition: background var(--transition-fast);
+    }
+    .sidebar__close-btn:hover { background: rgba(255,255,255,0.04); }
+
+    /* Invisible edge area to capture swipe-open gestures */
+    .edge-swipe-area {
+        position: fixed;
+        left: 0;
+        top: 0;
+        bottom: 0;
+        width: 18px;
+        z-index: 55;
+        touch-action: none;
+    }
+
+    /* Backdrop shown when sidebar is open */
+    .mobile-backdrop {
+        display: none;
+        position: fixed;
+        inset: 0;
+        background: rgba(0,0,0,0.45);
+        z-index: 50;
+        transition: opacity 180ms ease-in-out;
+        opacity: 0;
+    }
+    .mobile-backdrop.is-visible { display: block; opacity: 1; }
+
+    /* Content takes full width when sidebar hidden */
+    .content-wrapper { margin-left: 0; }
 }

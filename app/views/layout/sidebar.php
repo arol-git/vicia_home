@@ -22,9 +22,12 @@ foreach ($sidebarHouses as $house) {
 }
 $unreadAlerts = $currentHouseId ? Alert::countUnread($currentHouseId) : 0;
 ?>
-<aside class="sidebar">
+<aside id="main-sidebar" class="sidebar" role="navigation" aria-hidden="false">
     <div class="sidebar__brand">
         <div class="sidebar__brand-icon"><i class="fa-solid fa-house-signal"></i></div>
+        <button type="button" class="sidebar__close-btn" aria-label="Fermer le menu" data-close-sidebar>
+            <i class="fa-solid fa-xmark"></i>
+        </button>
         <div class="sidebar__brand-text">Vicia<span>Home</span></div>
     </div>
 
@@ -115,6 +118,9 @@ $unreadAlerts = $currentHouseId ? Alert::countUnread($currentHouseId) : 0;
 
 <div class="content-wrapper">
     <header class="topbar">
+        <button type="button" class="topbar__menu-btn" aria-label="Ouvrir le menu" data-toggle-sidebar aria-controls="main-sidebar" aria-expanded="false">
+            <i class="fa-solid fa-bars"></i>
+        </button>
         <div class="topbar__title"><?= e($title ?? 'Vicia Home') ?></div>
         <div class="topbar__actions">
             <a href="<?= url('/ai') ?>" class="topbar__icon-btn" title="Assistant vocal IA">
