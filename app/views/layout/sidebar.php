@@ -24,11 +24,13 @@ $unreadAlerts = $currentHouseId ? Alert::countUnread($currentHouseId) : 0;
 ?>
 <aside id="main-sidebar" class="sidebar" role="navigation" aria-hidden="false">
     <div class="sidebar__brand">
-        <div class="sidebar__brand-icon"><i class="fa-solid fa-house-signal"></i></div>
+        <div class="sidebar__brand-main">
+            <div class="sidebar__brand-icon"><i class="fa-solid fa-house-signal"></i></div>
+            <div class="sidebar__brand-text">Vicia<span>Home</span></div>
+        </div>
         <button type="button" class="sidebar__close-btn" aria-label="Fermer le menu" data-close-sidebar>
             <i class="fa-solid fa-xmark"></i>
         </button>
-        <div class="sidebar__brand-text">Vicia<span>Home</span></div>
     </div>
 
     <?php if (!empty($sidebarHouses)): ?>

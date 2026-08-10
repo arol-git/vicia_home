@@ -31,36 +31,59 @@
 .sidebar__brand {
     display: flex;
     align-items: center;
-    gap: var(--space-3);
-    padding: var(--space-5) var(--space-5);
-    border-bottom: 1px solid rgba(255, 255, 255, 0.08);
-}
+        justify-content: space-between;
+        gap: var(--space-3);
+        padding: var(--space-5) var(--space-5);
+        border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+    }
 
-.sidebar__brand-icon {
-    width: 38px;
-    height: 38px;
-    border-radius: var(--radius-md);
-    background: var(--color-primary);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-size: 1.1rem;
-    color: #fff;
-    flex-shrink: 0;
-}
+    .sidebar__brand-main {
+        display: flex;
+        align-items: center;
+        gap: var(--space-3);
+        min-width: 0;
+    }
 
-.sidebar__brand-text {
-    font-size: var(--fs-lg);
-    font-weight: 700;
-    letter-spacing: 0.02em;
-    white-space: nowrap;
-}
-.sidebar__brand-text span {
-    color: var(--color-primary-light);
-}
+    .sidebar__brand-icon {
+        width: 38px;
+        height: 38px;
+        border-radius: var(--radius-md);
+        background: var(--color-primary);
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 1.1rem;
+        color: #fff;
+        flex-shrink: 0;
+    }
 
-.sidebar__nav {
-    flex: 1;
+    .sidebar__brand-text {
+        font-size: var(--fs-lg);
+        font-weight: 700;
+        letter-spacing: 0.02em;
+        white-space: nowrap;
+        overflow: hidden;
+        text-overflow: ellipsis;
+    }
+    .sidebar__brand-text span {
+        color: var(--color-primary-light);
+    }
+
+    .sidebar__close-btn {
+        display: none;
+        background: transparent;
+        border: none;
+        color: rgba(255,255,255,0.9);
+        font-size: 1.05rem;
+        width: 40px;
+        height: 40px;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        border-radius: var(--radius-md);
+        transition: background var(--transition-fast);
+    }
+    .sidebar__close-btn:hover { background: rgba(255,255,255,0.04); }
     overflow-y: auto;
     padding: var(--space-4) var(--space-3);
 }
@@ -230,6 +253,16 @@
     display: flex;
     align-items: center;
     gap: var(--space-4);
+    flex-wrap: wrap;
+    justify-content: flex-end;
+    min-width: 0;
+}
+
+.topbar__title {
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
 }
 
 .topbar__icon-btn {
@@ -359,17 +392,67 @@
 }
 
 @media (max-width: 960px) {
+    .topbar {
+        height: auto;
+        padding: 0 var(--space-4);
+        flex-wrap: wrap;
+        gap: var(--space-2);
+        align-items: flex-start;
+    }
+
+    .topbar__menu-btn { display: inline-flex; }
+
     .sidebar {
         width: var(--sidebar-width-collapsed);
+        position: fixed;
+        left: 0;
+        top: 0;
+        bottom: 0;
+        transition: width var(--transition-base), transform 260ms cubic-bezier(.2,.9,.2,1);
+        box-shadow: none;
+        background: linear-gradient(180deg, var(--color-navy-900) 0%, var(--color-navy-800) 100%);
     }
     .sidebar__brand-text,
     .sidebar__section-label,
     .sidebar__link span,
-    .sidebar__footer {
+    .sidebar__footer,
+    .house-switcher__current,
+    .house-switcher__menu,
+    .house-switcher__item,
+    .house-switcher__manage {
         display: none;
     }
     .sidebar__link {
         justify-content: center;
+    }
+    .sidebar__close-btn {
+        display: inline-flex;
+    }
+    .sidebar.is-open {
+        width: min(80%, 320px);
+        transform: translateX(0);
+        position: fixed;
+        z-index: 60;
+        left: 0;
+        top: 0;
+        bottom: 0;
+        box-shadow: 0 8px 24px rgba(2,6,23,0.15);
+    }
+    .sidebar.is-open .sidebar__brand-text,
+    .sidebar.is-open .sidebar__section-label,
+    .sidebar.is-open .sidebar__link span,
+    .sidebar.is-open .sidebar__footer,
+    .sidebar.is-open .house-switcher__current,
+    .sidebar.is-open .house-switcher__menu,
+    .sidebar.is-open .house-switcher__item,
+    .sidebar.is-open .house-switcher__manage {
+        display: unset;
+    }
+    .sidebar.is-open .sidebar__link {
+        justify-content: flex-start;
+    }
+    .sidebar.is-open .sidebar__link span {
+        display: inline;
     }
     .content-wrapper {
         margin-left: var(--sidebar-width-collapsed);

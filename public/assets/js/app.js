@@ -169,8 +169,11 @@ const ViciaApp = (() => {
             }
         });
 
+        menu.addEventListener('click', (e) => e.stopPropagation());
+
         menu.querySelectorAll('[data-switch-house]').forEach((btn) => {
-            btn.addEventListener('click', () => {
+            btn.addEventListener('click', (e) => {
+                e.stopPropagation();
                 ViciaAjax.post(`/houses/switch/${btn.dataset.id}`)
                     .then((res) => { window.location.href = res.redirect || appUrl('/dashboard'); })
                     .catch((err) => toast(err.message || 'Sélection impossible.', 'error'));
