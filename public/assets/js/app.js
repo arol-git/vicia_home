@@ -159,6 +159,7 @@ const ViciaApp = (() => {
         if (!toggle || !menu) return;
 
         toggle.addEventListener('click', (e) => {
+            e.preventDefault();
             e.stopPropagation();
             menu.classList.toggle('is-open');
         });
