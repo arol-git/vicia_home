@@ -165,17 +165,22 @@ const ViciaApp = (() => {
         if (!toggle || !menu) return;
 
         toggle.addEventListener('click', (e) => {
+            e.preventDefault();
             e.stopPropagation();
             menu.classList.toggle('is-open');
         });
+
         document.addEventListener('click', (e) => {
-            if (!menu.contains(e.target) && e.target !== toggle) {
+            if (!menu.contains(e.target) && !toggle.contains(e.target)) {
                 menu.classList.remove('is-open');
             }
         });
 
+        menu.addEventListener('click', (e) => e.stopPropagation());
+
         menu.querySelectorAll('[data-switch-house]').forEach((btn) => {
-            btn.addEventListener('click', () => {
+            btn.addEventListener('click', (e) => {
+                e.stopPropagation();
                 ViciaAjax.post(`/houses/switch/${btn.dataset.id}`)
                     .then((res) => { window.location.href = res.redirect || '/dashboard'; })
                     .catch((err) => toast(err.message || 'Sélection impossible.', 'error'));
