@@ -142,11 +142,6 @@ $unreadAlerts = $currentHouseId ? Alert::countUnread($currentHouseId) : 0;
                     <span class="topbar__user-role"><?= e(role_label($currentUser['role'] ?? 'user')) ?></span>
                 </div>
             </div>
-            <form action="<?= url('/logout') ?>" method="POST">
-                <?= csrf_field() ?>
-                <button type="submit" class="topbar__icon-btn" title="Déconnexion">
-                    <i class="fa-solid fa-right-from-bracket"></i>
-                </button>
-            </form>
+            <!-- Logout moved to profile page -->
         </div>
     </header>

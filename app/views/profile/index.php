@@ -111,3 +111,13 @@ document.getElementById('notifications-form').addEventListener('submit', (e) => 
         .catch((err) => ViciaApp.toast(err.message || 'Erreur lors de la mise à jour des notifications.', 'error'));
 });
 </script>
+
+<div class="card mt-4">
+    <div class="card__header"><div class="card__title">Session</div></div>
+    <div class="card__body">
+        <form action="<?= url('/logout') ?>" method="POST">
+            <?= csrf_field() ?>
+            <button type="submit" class="btn btn-danger"><i class="fa-solid fa-right-from-bracket"></i> Se déconnecter</button>
+        </form>
+    </div>
+</div>

@@ -206,6 +206,9 @@ const ViciaApp = (() => {
             const focusable = sidebar.querySelector('a,button,input,select,textarea,[tabindex]:not([tabindex="-1"])');
             if (focusable) focusable.focus();
             trapFocus(sidebar);
+            // Ensure house switcher menu stays closed when opening the sidebar
+            const hsMenu = sidebar.querySelector('.house-switcher__menu');
+            if (hsMenu) hsMenu.classList.remove('is-open');
         }
 
         function closeSidebar() {
