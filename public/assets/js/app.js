@@ -202,6 +202,7 @@ const ViciaApp = (() => {
             toggleBtns.forEach(b => b.setAttribute('aria-expanded', 'true'));
             backdrop.classList.add('is-visible');
             document.body.style.overflow = 'hidden';
+            document.documentElement.style.overflow = 'hidden';
             // focus management: move focus to first focusable element inside sidebar
             const focusable = sidebar.querySelector('a,button,input,select,textarea,[tabindex]:not([tabindex="-1"])');
             if (focusable) focusable.focus();
@@ -217,6 +218,7 @@ const ViciaApp = (() => {
             toggleBtns.forEach(b => b.setAttribute('aria-expanded', 'false'));
             backdrop.classList.remove('is-visible');
             document.body.style.overflow = '';
+            document.documentElement.style.overflow = '';
             releaseFocusTrap();
             // return focus to the first toggle button
             if (toggleBtns[0]) toggleBtns[0].focus();
@@ -243,6 +245,7 @@ const ViciaApp = (() => {
                 sidebar.classList.remove('is-open');
                 backdrop.classList.remove('is-visible');
                 document.body.style.overflow = '';
+                document.documentElement.style.overflow = '';
             }
         });
 
