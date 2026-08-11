@@ -58,17 +58,17 @@ class EquipmentController extends Controller
         }
 
         $type = (string) $this->request->input('type');
+        $name = trim((string) $this->request->input('name'));
         $house = House::find($houseId);
-        // Le topic est généré automatiquement à partir de la maison,
-        // du type d'équipement et de la zone indiquée, plutôt que
-        // saisi librement : cela évite toute collision ou faute de
-        // frappe qui ferait piloter le mauvais équipement.
-        $mqttTopic = Device::generateTopic($house, $type, $zone ?: 'zone', 'set' . random_int(1, 9999));
+
+        $nameSlug = trim(preg_replace('/[^a-z0-9]+/', '-', strtolower($name)), '-') ?: 'equipment';
+        $defaultTopic = Device::generateTopic($house, $type, $zone ?: 'zone', $deviceId . '-' . $nameSlug);
+        $mqttTopic = trim((string) $this->request->input('mqtt_topic', '')) ?: $defaultTopic;
 
         $data = [
             'room_id'    => $roomId,
             'device_id'  => $deviceId,
-            'name'       => trim((string) $this->request->input('name')),
+            'name'       => $name,
             'type'       => $type,
             'icon'       => (string) $this->request->input('icon', equipment_icon($type)),
             'mqtt_topic' => $mqttTopic,
@@ -104,21 +104,23 @@ class EquipmentController extends Controller
             return;
         }
 
+        $equipment = Equipment::find($id);
         $roomId = (int) $this->request->input('room_id');
         if (!Room::belongsToHouse($roomId, $houseId)) {
             Response::error('Pièce invalide pour cette maison.', 422);
             return;
         }
 
-        // Le topic MQTT n'est jamais modifiable ici : il a été généré
-        // une fois pour toutes à la création, à partir de la carte
-        // ESP32 appairée. Le changer reviendrait à faire piloter
-        // silencieusement un autre équipement physique.
         $data = [
             'room_id' => $roomId,
             'name'    => trim((string) $this->request->input('name')),
             'type'    => (string) $this->request->input('type'),
         ];
+
+        $mqttTopic = trim((string) $this->request->input('mqtt_topic', ''));
+        if ($mqttTopic !== '') {
+            $data['mqtt_topic'] = $mqttTopic;
+        }
 
         $validator = new Validator($data);
         $validator->rules([
@@ -181,7 +183,8 @@ class EquipmentController extends Controller
         // Publication de la commande vers le module ESP32 concerné, sur
         // le topic propre à cette maison (isolation garantie par le
         // préfixe home/<slug-maison>/... défini à la création du topic).
-        Publisher::publish($equipment['mqtt_topic'] . '/set', $newState ? '1' : '0');
+        $topic = Publisher::topicForEquipment($equipment['mqtt_topic'] ?? null, $houseId, (int) $equipment['id'], 'set');
+        Publisher::publish($topic, $newState ? '1' : '0');
 
         ActivityLog::record(
             Auth::id(),

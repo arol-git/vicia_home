@@ -54,13 +54,16 @@ class SensorController extends Controller
         }
 
         $type = (string) $this->request->input('type');
+        $name = trim((string) $this->request->input('name'));
         $house = House::find($houseId);
-        $mqttTopic = Device::generateTopic($house, $type, $zone ?: 'zone', 'value');
+        $nameSlug = trim(preg_replace('/[^a-z0-9]+/', '-', strtolower($name)), '-') ?: 'sensor';
+        $defaultTopic = Device::generateTopic($house, $type, $zone ?: 'zone', $deviceId . '-' . $nameSlug);
+        $mqttTopic = trim((string) $this->request->input('mqtt_topic', '')) ?: $defaultTopic;
 
         $data = [
             'room_id'         => $roomId,
             'device_id'       => $deviceId,
-            'name'            => trim((string) $this->request->input('name')),
+            'name'            => $name,
             'type'            => $type,
             'unit'            => trim((string) $this->request->input('unit', '')),
             'icon'            => sensor_icon($type),
@@ -97,12 +100,18 @@ class SensorController extends Controller
             return;
         }
 
+        $sensor = Sensor::find($id);
         $data = [
             'room_id'         => (int) $this->request->input('room_id'),
             'name'            => trim((string) $this->request->input('name')),
             'unit'            => trim((string) $this->request->input('unit', '')),
             'alert_threshold' => $this->request->input('alert_threshold') !== '' ? $this->request->input('alert_threshold') : null,
         ];
+
+        $mqttTopic = trim((string) $this->request->input('mqtt_topic', ''));
+        if ($mqttTopic !== '') {
+            $data['mqtt_topic'] = $mqttTopic;
+        }
 
         if (!Room::belongsToHouse($data['room_id'], $houseId)) {
             Response::error('Pièce invalide pour cette maison.', 422);

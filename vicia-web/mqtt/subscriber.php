@@ -172,11 +172,12 @@ function executeRule(array $rule, string $reason): void
 
     if ($rule['action_equipment_id'] && $rule['action_state'] !== null) {
         $equipment = \App\Models\Equipment::find((int) $rule['action_equipment_id']);
-        if ($equipment) {
-            \App\Models\Equipment::update($equipment['id'], ['state' => (int) $rule['action_state']]);
-            Publisher::publish($equipment['mqtt_topic'] . '/set', (string) (int) $rule['action_state']);
-            $resultParts[] = "Équipement « {$equipment['name']} » mis à l'état {$rule['action_state']}";
-        }
+            if ($equipment) {
+                Equipment::update($equipment['id'], ['state' => (int) $rule['action_state']]);
+                $topic = Publisher::topicForEquipment($equipment['mqtt_topic'] ?? null, $rule['house_id'] ?? null, (int) $equipment['id'], 'set');
+                Publisher::publish($topic, (string) (int) $rule['action_state']);
+                $resultParts[] = "Équipement « {$equipment['name']} » mis à l'état {$rule['action_state']}";
+            }
     }
 
     if ($rule['notify_telegram']) {

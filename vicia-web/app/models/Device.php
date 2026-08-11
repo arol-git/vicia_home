@@ -84,10 +84,12 @@ class Device extends Model
 
     /**
      * Construit le topic MQTT normalisé d'un équipement/capteur à
-     * partir du slug de la maison et du domaine/zone/grandeur fournis,
-     * évitant la saisie manuelle et donc les erreurs de nommage.
-     * Ex. generateTopic($house, 'lighting', 'salon', 'led1')
-     *     -> "home/villa-yaounde/lighting/salon/led1"
+     * partir du slug de la maison et du domaine/zone/mesure fournis.
+     * Évite la saisie manuelle et les erreurs de nommage.
+     * Exemple de topic stable :
+     *   home/<house-slug>/<type>/<zone>/<deviceId>-<name-slug>
+     * Le suffixe de commande est ensuite ajouté séparément :
+     *   home/<house-slug>/<type>/<zone>/<deviceId>-<name-slug>/set
      */
     public static function generateTopic(array $house, string $domain, string $zone, string $measure): string
     {

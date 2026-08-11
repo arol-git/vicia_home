@@ -126,6 +126,11 @@ $canManage = in_array($currentUser['role'], ['admin', 'technicien'], true);
                     <label class="form-label">Zone (utilisée pour générer le topic MQTT)</label>
                     <input type="text" name="zone" class="form-control" placeholder="Ex. salon, garage">
                 </div>
+                <div class="form-group">
+                    <label class="form-label">Topic MQTT (optionnel)</label>
+                    <input type="text" name="mqtt_topic" class="form-control" placeholder="Ex. home/maison/led/salon/1-lampe">
+                    <div class="form-hint">Laissez vide pour générer automatiquement un topic stable.</div>
+                </div>
             </div>
             <div class="modal__footer">
                 <button type="button" class="btn btn-secondary" data-close-modal>Annuler</button>

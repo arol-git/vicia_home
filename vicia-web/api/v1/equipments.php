@@ -30,7 +30,8 @@ function handle_equipments(string $method, ?string $id, ?string $subaction): voi
         }
         $equipment = Equipment::find((int) $id);
         $newState = Equipment::toggleState((int) $id);
-        Publisher::publish($equipment['mqtt_topic'] . '/set', $newState ? '1' : '0');
+        $topic = Publisher::topicForEquipment($equipment['mqtt_topic'] ?? null, $houseId, (int) $id, 'set');
+        Publisher::publish($topic, $newState ? '1' : '0');
         api_response(['success' => true, 'message' => 'Commande envoyée.', 'data' => ['state' => $newState]]);
     }
 

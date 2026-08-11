@@ -2,14 +2,12 @@
  * assets/js/ai.js
  *
  * Interface conversationnelle du module Vicia Home AI : capture
- * vocale (Web Speech API), synthèse de la réponse (SpeechSynthesis
- * API), et échange texte via AJAX avec AIController::send(). Aucune
- * dépendance externe, JavaScript natif comme le reste de la
- * plateforme.
+ * vocale (Web Speech API), synthèse vocale (SpeechSynthesis API), et
+ * échange texte via AJAX avec AIController::send().
  */
 
 document.addEventListener('DOMContentLoaded', () => {
-    const config = JSON.parse(document.getElementById('ai-config')?.textContent || '{}');
+    const config = parseConfig('ai-config');
     const messagesEl = document.getElementById('ai-messages');
     const statusEl = document.getElementById('ai-status');
     const form = document.getElementById('ai-form');
@@ -17,44 +15,72 @@ document.addEventListener('DOMContentLoaded', () => {
     const micBtn = document.getElementById('ai-mic-btn');
     const resetBtn = document.getElementById('ai-reset-btn');
 
-    if (!form || !messagesEl) return;
+    if (!form || !messagesEl || !statusEl || !config.sendUrl || !config.resetUrl) {
+        return;
+    }
 
-    // ------------------------- Envoi de message (texte ou vocal) -------------------------
-
-    form.addEventListener('submit', (e) => {
-        e.preventDefault();
-        const text = textInput.value.trim();
-        if (!text) return;
-        sendMessage(text);
+    form.addEventListener('submit', async (event) => {
+        event.preventDefault();
+        const message = textInput.value.trim();
+        if (!message) {
+            return;
+        }
         textInput.value = '';
+        await sendMessage(message);
     });
 
-    function sendMessage(text) {
-        appendMessage('user', text);
-        setStatus('thinking', "🧠 L'IA réfléchit...");
+    resetBtn?.addEventListener('click', async () => {
+        if (!confirm("Démarrer une nouvelle conversation ? L'historique affiché sera effacé.")) {
+            return;
+        }
+        setStatus('thinking', '🔄 Réinitialisation en cours...');
+        try {
+            await ViciaAjax.post(config.resetUrl);
+            messagesEl.innerHTML = '';
+            appendMessage('assistant', 'Nouvelle conversation. Comment puis-je vous aider ?');
+            setStatus(null, '');
+        } catch (error) {
+            console.error('[AI] reset error', error);
+            setStatus(null, '');
+            appendMessage('assistant', '⚠️ Impossible de réinitialiser la conversation.');
+        }
+    });
 
-        ViciaAjax.post(config.sendUrl, { message: text })
-            .then((res) => {
-                setStatus('speaking', '🔊 Réponse...');
-                appendMessage('assistant', res.reply);
-                speak(res.spoken_text || res.reply);
-                setTimeout(() => setStatus(null, ''), 600);
-            })
-            .catch((err) => {
-                console.error('[AI] erreur AJAX', err);
-                setStatus(null, '');
-                appendMessage('assistant', '⚠️ ' + (err.message || "Une erreur est survenue."));
-            });
+    initVoiceRecognition();
+    initSpeechSynthesis();
+
+    async function sendMessage(text) {
+        appendMessage('user', text);
+        setStatus('thinking', "🧠 L'assistant réfléchit...");
+
+        try {
+            const response = await ViciaAjax.post(config.sendUrl, { message: text });
+            if (!response || !response.success) {
+                throw new Error(response?.message || 'Réponse invalide du serveur.');
+            }
+
+            const assistantText = response.reply || response.message || 'Je suis désolé, je n’ai pas de réponse pour le moment.';
+            setStatus('speaking', '🔊 Réponse reçue...');
+            appendMessage('assistant', assistantText);
+            await speak(/** @type {string} */ (response.spoken_text || assistantText));
+            setStatus(null, '');
+        } catch (error) {
+            console.error('[AI] erreur AJAX', error);
+            setStatus(null, '');
+            appendMessage('assistant', '⚠️ ' + (error.message || 'Une erreur est survenue.'));
+        }
     }
 
     function appendMessage(role, content) {
-        const el = document.createElement('div');
-        el.className = `ai-message ai-message--${role === 'user' ? 'user' : 'assistant'}`;
+        const messageEl = document.createElement('div');
+        messageEl.className = `ai-message ai-message--${role === 'user' ? 'user' : 'assistant'}`;
+
         const bubble = document.createElement('div');
         bubble.className = 'ai-message__bubble';
         bubble.innerHTML = escapeHtml(content).replace(/\n/g, '<br>');
-        el.appendChild(bubble);
-        messagesEl.appendChild(el);
+
+        messageEl.appendChild(bubble);
+        messagesEl.appendChild(messageEl);
         messagesEl.scrollTop = messagesEl.scrollHeight;
     }
 
@@ -69,24 +95,30 @@ document.addEventListener('DOMContentLoaded', () => {
         statusEl.className = 'ai-chat__status' + (state ? ` is-${state}` : '');
     }
 
-    // ------------------------------- Nouvelle conversation -------------------------------
+    function parseConfig(elementId) {
+        const element = document.getElementById(elementId);
+        if (!element) {
+            return {};
+        }
 
-    resetBtn?.addEventListener('click', () => {
-        if (!confirm('Démarrer une nouvelle conversation ? L\'historique affiché sera effacé.')) return;
-        ViciaAjax.post(config.resetUrl).then(() => {
-            messagesEl.innerHTML = '';
-            appendMessage('assistant', "Nouvelle conversation. Comment puis-je vous aider ?");
-        });
-    });
+        try {
+            return JSON.parse(element.textContent || '{}');
+        } catch (error) {
+            console.error('[AI] invalid config JSON', error);
+            return {};
+        }
+    }
 
-    // ------------------------------ Reconnaissance vocale ------------------------------
+    function initVoiceRecognition() {
+        const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+        if (!SpeechRecognition || !micBtn) {
+            disableMic('Reconnaissance vocale indisponible sur ce navigateur ou sans HTTPS.');
+            return;
+        }
 
-    const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
-    let recognizer = null;
-    let listening = false;
+        const recognizer = new SpeechRecognition();
+        let listening = false;
 
-    if (SpeechRecognition) {
-        recognizer = new SpeechRecognition();
         recognizer.lang = 'fr-FR';
         recognizer.continuous = false;
         recognizer.interimResults = false;
@@ -94,13 +126,17 @@ document.addEventListener('DOMContentLoaded', () => {
         recognizer.addEventListener('start', () => {
             listening = true;
             micBtn.classList.add('is-listening');
-            setStatus('listening', "🎙️ L'IA écoute...");
+            setStatus('listening', "🎙️ L'assistant écoute...");
         });
 
-        recognizer.addEventListener('result', (event) => {
-            const transcript = event.results[0][0].transcript;
+        recognizer.addEventListener('result', async (event) => {
+            const transcript = event.results[0][0].transcript.trim();
+            if (!transcript) {
+                setStatus(null, '');
+                return;
+            }
             textInput.value = transcript;
-            sendMessage(transcript);
+            await sendMessage(transcript);
             textInput.value = '';
         });
 
@@ -112,36 +148,56 @@ document.addEventListener('DOMContentLoaded', () => {
             }
         });
 
-        recognizer.addEventListener('error', () => {
+        recognizer.addEventListener('error', (event) => {
+            console.error('[AI] speech recognition error', event.error || event);
             listening = false;
             micBtn.classList.remove('is-listening');
             setStatus(null, '');
+            appendMessage('assistant', '⚠️ Reconnaissance vocale indisponible ou interrompue.');
         });
 
         micBtn.addEventListener('click', () => {
             if (listening) {
                 recognizer.stop();
-            } else {
+                return;
+            }
+            try {
                 recognizer.start();
+            } catch (error) {
+                console.error('[AI] cannot start recognition', error);
+                appendMessage('assistant', '⚠️ Impossible de démarrer la reconnaissance vocale.');
             }
         });
-    } else {
-        micBtn.disabled = true;
-        micBtn.title = 'Reconnaissance vocale indisponible sur ce navigateur ou sans HTTPS.';
-        micBtn.style.opacity = '0.5';
-        micBtn.style.cursor = 'not-allowed';
     }
 
-    // ----------------------------------- Synthèse vocale -----------------------------------
+    function initSpeechSynthesis() {
+        if (!('speechSynthesis' in window)) {
+            return;
+        }
+
+        window.speechSynthesis.onvoiceschanged = () => {
+            preferredFrenchVoice();
+        };
+    }
 
     function speak(text) {
-        if (!('speechSynthesis' in window) || !text) return;
-        window.speechSynthesis.cancel(); // interrompt toute lecture précédente en cours
-        const utterance = new SpeechSynthesisUtterance(text);
-        utterance.lang = 'fr-FR';
-        utterance.rate = 1.0;
-        utterance.voice = preferredFrenchVoice();
-        window.speechSynthesis.speak(utterance);
+        if (!('speechSynthesis' in window) || !text) {
+            return Promise.resolve();
+        }
+
+        window.speechSynthesis.cancel();
+
+        return new Promise((resolve) => {
+            const utterance = new SpeechSynthesisUtterance(text);
+            utterance.lang = 'fr-FR';
+            utterance.rate = 1.0;
+            utterance.voice = preferredFrenchVoice();
+
+            utterance.addEventListener('end', resolve);
+            utterance.addEventListener('error', resolve);
+
+            window.speechSynthesis.speak(utterance);
+        });
     }
 
     function preferredFrenchVoice() {
@@ -152,12 +208,13 @@ document.addEventListener('DOMContentLoaded', () => {
             || null;
     }
 
-    function loadVoices() {
-        preferredFrenchVoice();
-    }
-
-    if ('speechSynthesis' in window) {
-        window.speechSynthesis.onvoiceschanged = loadVoices;
-        loadVoices();
+    function disableMic(title) {
+        if (!micBtn) {
+            return;
+        }
+        micBtn.disabled = true;
+        micBtn.title = title;
+        micBtn.style.opacity = '0.5';
+        micBtn.style.cursor = 'not-allowed';
     }
 });

@@ -39,6 +39,27 @@ class Publisher
         return true;
     }
 
+    /**
+     * Retourne un topic MQTT prévisible pour un équipement.
+     * Si un topic explicite est fourni en base ($mqttTopic), on le
+     * utilise en ajoutant le suffixe. Sinon on génère un topic stable
+     * à partir du préfixe configuré et des identifiants house/equipment.
+     *
+     * Exemple retourné: "home/123/equipment/45/set"
+     */
+    public static function topicForEquipment(?string $mqttTopic, ?int $houseId, int $equipmentId, string $suffix = 'set'): string
+    {
+        if (!empty($mqttTopic)) {
+            return rtrim($mqttTopic, '/') . '/' . $suffix;
+        }
+
+        $config = require __DIR__ . '/config.php';
+        $base = isset($config['base_topic']) ? rtrim($config['base_topic'], '/') : 'home';
+        $h = $houseId !== null ? (int) $houseId : 0;
+
+        return "$base/house/$h/equipment/$equipmentId/$suffix";
+    }
+
     private static function log(string $topic, string $payload, string $direction, bool $success): void
     {
         try {

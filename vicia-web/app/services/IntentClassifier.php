@@ -2,6 +2,7 @@
 
 namespace App\Services;
 
+use App\Models\Equipment;
 use App\Models\Room;
 
 /**
@@ -12,43 +13,39 @@ use App\Models\Room;
  *   - pour une commande, l'action et la cible (type d'équipement, pièce, mode) ;
  *   - pour une question, la catégorie de la question.
  *
- * Volontairement déterministe (expressions régulières et
- * dictionnaires de synonymes) plutôt que déléguée au LLM : plus
- * rapide, gratuit, prévisible, et suffisant pour un domaine fermé
- * (piloter une maison). Le LLM (App\Services\LLMService) n'intervient
- * jamais dans cette étape — il ne sert qu'à formuler la réponse une
- * fois l'intention déjà résolue avec certitude.
+ * Le module reste volontairement déterministe pour les commandes
+ * d'action : l'intention métier est résolue sans appel au LLM.
  */
 class IntentClassifier
 {
     /** Verbes d'action -> état cible (1 = activer/ouvrir, 0 = désactiver/fermer). */
     private const ACTION_VERBS = [
         'allume'      => 1, 'allumer'     => 1, 'active'   => 1, 'activer'  => 1,
-        'ouvre'       => 1, 'ouvrir'      => 1, 'déverrouille' => 1, 'déverrouiller' => 1,
-        'lance'       => 1, 'lancer'      => 1, 'démarre'  => 1, 'démarrer' => 1,
-        'éteins'      => 0, 'éteindre'    => 0, 'désactive' => 0, 'désactiver' => 0,
+        'ouvre'       => 1, 'ouvrir'      => 1, 'deverrouille' => 1, 'deverrouiller' => 1,
+        'lance'       => 1, 'lancer'      => 1, 'demarre'  => 1, 'demarrer' => 1,
+        'eteins'      => 0, 'eteindre'    => 0, 'desactive' => 0, 'desactiver' => 0,
         'ferme'       => 0, 'fermer'      => 0, 'verrouille' => 0, 'verrouiller' => 0,
-        'coupe'       => 0, 'couper'      => 0, 'stoppe'   => 0, 'arrête'   => 0, 'arrêter' => 0,
+        'coupe'       => 0, 'couper'      => 0, 'stoppe'   => 0, 'arrete'   => 0, 'arreter' => 0,
     ];
 
     /** Mots-clés de cible -> type d'équipement (voir enum equipments.type). */
     private const TARGET_TYPES = [
-        'lampe' => 'led', 'lampes' => 'led', 'lumière' => 'led', 'lumières' => 'led', 'lumiere' => 'led', 'lumieres' => 'led',
-        'éclairage' => 'led', 'eclairage' => 'led',
+        'lampe' => 'led', 'lampes' => 'led', 'lumiere' => 'led', 'lumieres' => 'led',
+        'eclairage' => 'led',
         'porte' => 'porte', 'portes' => 'porte', 'portail' => 'porte',
-        'fenêtre' => 'fenetre', 'fenêtres' => 'fenetre', 'fenetre' => 'fenetre', 'fenetres' => 'fenetre',
+        'fenetre' => 'fenetre', 'fenetres' => 'fenetre',
         'ventilateur' => 'ventilateur', 'ventilateurs' => 'ventilateur', 'climatisation' => 'ventilateur',
         'pompe' => 'pompe', 'arrosage' => 'pompe',
-        'alarme' => 'sirene', 'sirène' => 'sirene', 'sirene' => 'sirene',
-        'caméra' => 'camera', 'camera' => 'camera', 'caméras' => 'camera',
+        'alarme' => 'sirene', 'sirene' => 'sirene',
+        'camera' => 'camera', 'cameras' => 'camera',
         'relais' => 'relais', 'prise' => 'relais', 'prises' => 'relais',
     ];
 
     private const MODE_WORDS = ['confort' => 'confort', 'nuit' => 'nuit', 'absence' => 'absence', 'urgence' => 'urgence'];
 
-    private const QUESTION_STARTERS = ['quel', 'quelle', 'quels', 'quelles', 'combien', 'y a-t-il', 'y a t il', 'qui', 'toutes', 'tous', 'est-ce', 'est ce'];
-    private const ANALYSIS_WORDS = ['résumé', 'resume', 'analyse', 'rapport', 'suggestion', 'conseil', 'conseille', 'recommand'];
-    private const CONFIRM_YES = ['oui', 'confirme', 'confirmer', "d'accord", 'daccord', 'ok', 'vas-y', 'go'];
+    private const QUESTION_STARTERS = ['quel', 'quelle', 'quels', 'quelles', 'combien', 'y a t il', 'y a t il', 'qui', 'toutes', 'tous', 'est ce', 'est ce'];
+    private const ANALYSIS_WORDS = ['resume', 'analyse', 'rapport', 'suggestion', 'conseil', 'conseille', 'recommand'];
+    private const CONFIRM_YES = ['oui', 'confirme', 'confirmer', 'd accord', 'daccord', 'ok', 'vas y', 'go'];
     private const CONFIRM_NO = ['non', 'annule', 'annuler', 'stop', 'laisse'];
 
     /**
@@ -105,62 +102,107 @@ class IntentClassifier
 
     private static function detectEquipmentCommand(string $normalized, int $houseId): ?array
     {
-        $verbState = null;
-        foreach (self::ACTION_VERBS as $verb => $state) {
-            if (str_starts_with($normalized, $verb) || str_contains($normalized, " $verb ") || str_contains($normalized, " $verb")) {
-                $verbState = $state;
-                $matchedVerb = $verb;
-                break;
-            }
-        }
-        if ($verbState === null) {
+        $action = self::detectActionState($normalized);
+        if ($action === null) {
             return null;
         }
 
-        $targetType = null;
-        foreach (self::TARGET_TYPES as $word => $type) {
-            if (str_contains($normalized, $word)) {
-                $targetType = $type;
-                break;
-            }
+        $targetType = self::detectTargetType($normalized);
+        $roomName = self::detectRoom($normalized, $houseId);
+
+        if ($targetType === null && $roomName !== null) {
+            $targetType = self::inferDefaultTargetType($roomName, $houseId);
         }
+
         if ($targetType === null) {
             return null;
         }
 
-        $scopeAll = (bool) preg_match('/\btout(es)?\b/', $normalized);
-
-        $roomName = null;
-        foreach (Room::forHouse($houseId) as $room) {
-            $roomNormalized = self::normalize($room['name']);
-            if (str_contains($normalized, $roomNormalized)) {
-                $roomName = $room['name'];
-                break;
-            }
-        }
+        $scopeAll = self::detectScopeAll($normalized, $targetType, $roomName);
 
         return [
-            'type'        => 'command',
-            'action'      => 'toggle_equipment',
-            'target_type' => $targetType,
-            'target_state' => $verbState,
-            'scope_all'   => $scopeAll,
-            'room'        => $roomName,
+            'type'         => 'command',
+            'action'       => 'toggle_equipment',
+            'target_type'  => $targetType,
+            'target_state' => $action['state'],
+            'scope_all'    => $scopeAll,
+            'room'         => $roomName,
         ];
+    }
+
+    private static function detectActionState(string $normalized): ?array
+    {
+        foreach (self::ACTION_VERBS as $verb => $state) {
+            if (self::containsWord($normalized, $verb)) {
+                return ['state' => $state, 'verb' => $verb];
+            }
+        }
+        return null;
+    }
+
+    private static function detectTargetType(string $normalized): ?string
+    {
+        foreach (self::TARGET_TYPES as $word => $type) {
+            if (self::containsWord($normalized, $word)) {
+                return $type;
+            }
+        }
+        return null;
+    }
+
+    private static function detectRoom(string $normalized, int $houseId): ?string
+    {
+        foreach (Room::forHouse($houseId) as $room) {
+            $roomNormalized = self::normalize($room['name']);
+            if (self::containsWord($normalized, $roomNormalized)) {
+                return $room['name'];
+            }
+        }
+        return null;
+    }
+
+    private static function inferDefaultTargetType(string $roomName, int $houseId): ?string
+    {
+        $equipments = Equipment::allWithRoom($houseId);
+        $roomNameNormalized = self::normalize($roomName);
+        $roomEquipments = array_filter($equipments, fn($e) => self::normalize($e['room_name']) === $roomNameNormalized);
+        $types = array_values(array_unique(array_column($roomEquipments, 'type')));
+
+        if (count($types) === 1) {
+            return $types[0];
+        }
+
+        if (in_array('led', $types, true)) {
+            return 'led';
+        }
+        if (in_array('relais', $types, true)) {
+            return 'relais';
+        }
+
+        return $types[0] ?? null;
+    }
+
+    private static function detectScopeAll(string $normalized, string $targetType, ?string $roomName): bool
+    {
+        if (preg_match('/\b(tout|tous|toutes|ensemble|globalement|entier)\b/', $normalized)) {
+            return true;
+        }
+
+        return $roomName !== null && strpos($normalized, $targetType) === false;
     }
 
     private static function questionTopic(string $normalized): string
     {
         return match (true) {
-            str_contains($normalized, 'température') || str_contains($normalized, 'temperature') => 'temperature',
-            str_contains($normalized, 'humidité') || str_contains($normalized, 'humidite')         => 'humidity',
-            str_contains($normalized, 'énergie') || str_contains($normalized, 'energie') || str_contains($normalized, 'consomm') => 'energy',
-            str_contains($normalized, 'porte')                                                     => 'doors',
-            str_contains($normalized, 'lampe') || str_contains($normalized, 'lumiere') || str_contains($normalized, 'lumière') => 'lights',
-            str_contains($normalized, 'intrusion')                                                 => 'security',
-            str_contains($normalized, 'wifi') || str_contains($normalized, 'wi-fi') || str_contains($normalized, 'connecté') || str_contains($normalized, 'reseau') || str_contains($normalized, 'réseau') => 'network',
-            str_contains($normalized, 'hors ligne') || str_contains($normalized, 'appareils')       => 'devices',
-            default                                                                                  => 'house_state',
+            str_contains($normalized, 'temperature') => 'temperature',
+            str_contains($normalized, 'humidite') => 'humidity',
+            str_contains($normalized, 'energie') || str_contains($normalized, 'consomm') => 'energy',
+            str_contains($normalized, 'porte') => 'doors',
+            str_contains($normalized, 'lampe') || str_contains($normalized, 'lumiere') => 'lights',
+            str_contains($normalized, 'intrusion') => 'security',
+            str_contains($normalized, 'wifi') || str_contains($normalized, 'wi fi') || str_contains($normalized, 'connecte') || str_contains($normalized, 'reseau') => 'network',
+            str_contains($normalized, 'hors ligne') || str_contains($normalized, 'appareils') => 'devices',
+            default => 'house_state',
         };
     }
 
@@ -168,23 +210,57 @@ class IntentClassifier
     {
         return match (true) {
             str_contains($normalized, 'semaine') || str_contains($normalized, 'hebdo') => 'weekly',
-            str_contains($normalized, 'énergie') || str_contains($normalized, 'energie') || str_contains($normalized, 'consomm') => 'energy',
-            str_contains($normalized, 'sécurité') || str_contains($normalized, 'securite') => 'security',
-            str_contains($normalized, 'réseau') || str_contains($normalized, 'reseau') => 'network',
+            str_contains($normalized, 'energie') || str_contains($normalized, 'consomm') => 'energy',
+            str_contains($normalized, 'securite') => 'security',
+            str_contains($normalized, 'reseau') => 'network',
             str_contains($normalized, 'alerte') => 'alerts',
             default => 'daily',
         };
     }
 
+    private static function containsWord(string $haystack, string $word): bool
+    {
+        return preg_match('/(?:^|\s)' . preg_quote($word, '/') . '(?:$|\s)/u', $haystack) === 1;
+    }
+
     /**
      * Normalise un texte pour la comparaison : minuscules, accents
-     * conservés (le français en dépend sémantiquement), espaces
-     * multiples réduits, ponctuation de fin retirée.
+     * retirés, ponctuation supprimée, espaces multiples réduits.
      */
     private static function normalize(string $text): string
     {
         $text = mb_strtolower(trim($text));
+        $text = preg_replace('/[^\p{L}\p{N}\s]/u', ' ', $text);
         $text = preg_replace('/\s+/u', ' ', $text);
-        return trim($text, " \t\n\r\0\x0B?!.");
+        $text = trim($text);
+        return self::foldAccents($text);
+    }
+
+    private static function foldAccents(string $text): string
+    {
+        if (function_exists('transliterator_transliterate')) {
+            $converted = transliterator_transliterate('Any-Latin; Latin-ASCII', $text);
+            if ($converted !== false) {
+                return strtolower(preg_replace('/[^a-z0-9\s]/', '', $converted));
+            }
+        }
+
+        if (extension_loaded('iconv')) {
+            $converted = @iconv('UTF-8', 'ASCII//TRANSLIT', $text);
+            if ($converted !== false) {
+                return strtolower(preg_replace('/[^a-z0-9\s]/', '', $converted));
+            }
+        }
+
+        $replacements = [
+            'à' => 'a', 'á' => 'a', 'â' => 'a', 'ã' => 'a', 'ä' => 'a', 'å' => 'a',
+            'æ' => 'ae', 'ç' => 'c', 'è' => 'e', 'é' => 'e', 'ê' => 'e', 'ë' => 'e',
+            'ì' => 'i', 'í' => 'i', 'î' => 'i', 'ï' => 'i', 'ñ' => 'n',
+            'ò' => 'o', 'ó' => 'o', 'ô' => 'o', 'õ' => 'o', 'ö' => 'o',
+            'ù' => 'u', 'ú' => 'u', 'û' => 'u', 'ü' => 'u', 'ÿ' => 'y',
+            'œ' => 'oe', 'æ' => 'ae',
+        ];
+
+        return strtolower(strtr($text, $replacements));
     }
 }

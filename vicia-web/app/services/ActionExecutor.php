@@ -84,7 +84,8 @@ class ActionExecutor
                 continue; // déjà dans l'état demandé : rien à faire, pas d'appel MQTT inutile
             }
             Equipment::update($eq['id'], ['state' => (int) $intent['target_state']]);
-            Publisher::publish($eq['mqtt_topic'] . '/set', (string) (int) $intent['target_state']);
+            $topic = Publisher::topicForEquipment($eq['mqtt_topic'] ?? null, $houseId, (int) $eq['id'], 'set');
+            Publisher::publish($topic, (string) (int) $intent['target_state']);
             $affected[] = $eq['name'];
         }
 
