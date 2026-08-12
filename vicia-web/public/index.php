@@ -39,93 +39,12 @@ $router->get('/', 'AuthController@showLogin');
 $router->get('/login', 'AuthController@showLogin');
 $router->post('/login', 'AuthController@login');
 $router->post('/logout', 'AuthController@logout');
-$router->get('/forgot-password', 'AuthController@showForgotPassword');
-$router->post('/forgot-password', 'AuthController@sendResetLink');
-$router->get('/reset-password', 'AuthController@showResetPassword');
-$router->post('/reset-password', 'AuthController@resetPassword');
 
-// ------------------------- Tableau de bord --------------------------------
-$router->get('/dashboard', 'DashboardController@index');
-
-// ------------------------- Maisons (multi-tenant) ---------------------------
+// ------------------------- Sélection de maison ---------------------------
 $router->get('/houses', 'HouseController@index');
-$router->post('/houses', 'HouseController@store');
-$router->put('/houses/{id}', 'HouseController@update');
-$router->delete('/houses/{id}', 'HouseController@destroy');
 $router->post('/houses/switch/{id}', 'HouseController@switchHouse');
-$router->get('/houses/{id}/members', 'HouseController@members');
-$router->post('/houses/{id}/members', 'HouseController@addMember');
-$router->delete('/houses/{id}/members/{userId}', 'HouseController@removeMember');
 
-// ------------------------- Pièces -----------------------------------------
-$router->get('/rooms', 'RoomController@index');
-$router->post('/rooms', 'RoomController@store');
-$router->put('/rooms/{id}', 'RoomController@update');
-$router->delete('/rooms/{id}', 'RoomController@destroy');
-
-// ------------------------- Appareils (ESP32) -----------------------------
-$router->get('/devices', 'DeviceController@index');
-$router->post('/devices', 'DeviceController@store');
-$router->post('/devices/{id}/revoke', 'DeviceController@revoke');
-$router->delete('/devices/{id}', 'DeviceController@destroy');
-
-// ------------------------- Équipements -------------------------------------
-$router->get('/equipments', 'EquipmentController@index');
-$router->post('/equipments', 'EquipmentController@store');
-$router->put('/equipments/{id}', 'EquipmentController@update');
-$router->delete('/equipments/{id}', 'EquipmentController@destroy');
-$router->post('/equipments/{id}/toggle', 'EquipmentController@toggle');
-
-// ------------------------- Capteurs -----------------------------------------
-$router->get('/sensors', 'SensorController@index');
-$router->post('/sensors', 'SensorController@store');
-$router->put('/sensors/{id}', 'SensorController@update');
-$router->delete('/sensors/{id}', 'SensorController@destroy');
-$router->get('/sensors/{id}/history', 'SensorController@history');
-
-// ------------------------- Caméras -------------------------------------------
-$router->get('/cameras', 'CameraController@index');
-
-// ------------------------- Réseau / cybersécurité ----------------------------
-$router->get('/security', 'SecurityController@index');
-$router->post('/security/devices/{id}/whitelist', 'SecurityController@whitelist');
-$router->post('/security/devices/{id}/blacklist', 'SecurityController@blacklist');
-$router->post('/security/simulate-scan', 'SecurityController@simulateScan');
-
-// ------------------------- Consommation ---------------------------------------
-$router->get('/consumption', 'ConsumptionController@index');
-
-// ------------------------- Automatisation -------------------------------------
-$router->get('/automation', 'AutomationController@index');
-$router->post('/automation', 'AutomationController@store');
-$router->post('/automation/{id}/toggle', 'AutomationController@toggle');
-$router->delete('/automation/{id}', 'AutomationController@destroy');
-
-// ------------------------- Historique ------------------------------------------
-$router->get('/history', 'HistoryController@index');
-
-// ------------------------- Alertes / notifications -------------------------------
-$router->get('/alerts', 'AlertController@index');
-$router->post('/alerts/{id}/read', 'AlertController@markAsRead');
-$router->post('/alerts/read-all', 'AlertController@markAllAsRead');
-$router->get('/alerts/unread-count', 'AlertController@unreadCount');
-
-// ------------------------- Utilisateurs ------------------------------------------
-$router->get('/users', 'UserController@index');
-$router->post('/users', 'UserController@store');
-$router->put('/users/{id}', 'UserController@update');
-$router->delete('/users/{id}', 'UserController@destroy');
-
-// ------------------------- Paramètres ---------------------------------------------
-$router->get('/settings', 'SettingsController@index');
-$router->post('/settings', 'SettingsController@update');
-
-// ------------------------- Profil ---------------------------------------------------
-$router->get('/profile', 'ProfileController@show');
-$router->post('/profile', 'ProfileController@update');
-$router->post('/profile/password', 'ProfileController@updatePassword');
-
-// ------------------------- Vicia Home AI ---------------------------------------------
+// ------------------------- Module IA Vicia Home ---------------------------
 $router->get('/ai', 'AIController@index');
 $router->post('/ai/message', 'AIController@send');
 $router->post('/ai/reset', 'AIController@reset');

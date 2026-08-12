@@ -27,7 +27,7 @@ class AuthController extends Controller
     public function showLogin(): void
     {
         if (Auth::check()) {
-            Response::redirect('/dashboard');
+            Response::redirect('/ai');
         }
         $this->render('auth/login', ['title' => 'Connexion'], false);
     }
@@ -73,9 +73,9 @@ class AuthController extends Controller
         ActivityLog::record($user['id'], 'connexion', 'Connexion réussie à la plateforme', $ip);
 
         if ($this->request->isAjax()) {
-            Response::success('Connexion réussie.', ['redirect' => url('/dashboard')]);
+            Response::success('Connexion réussie.', ['redirect' => url('/ai')]);
         }
-        Response::redirect('/dashboard');
+        Response::redirect('/ai');
     }
 
     private function respondLoginError(string $message): void
