@@ -237,7 +237,11 @@ const VoiceAssistant = (() => {
 
         try {
             console.log('[VoiceAssistant] Envoi de la commande:', transcript);
-            const response = await fetch('/api/v1/voice/command', {
+            // Build API URL from app base tag to support subpath deployments
+            const base = document.querySelector('meta[name="app-base-url"]')?.getAttribute('content') || '';
+            const apiUrl = (base.endsWith('/') ? base.slice(0, -1) : base) + '/api/v1/voice/command';
+
+            const response = await fetch(apiUrl, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',

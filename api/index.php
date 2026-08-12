@@ -29,6 +29,12 @@ $segments = explode('/', $uri);
 $apiIndex = array_search('api', $segments, true);
 $segments = $apiIndex !== false ? array_slice($segments, $apiIndex + 1) : $segments;
 
+// Remove any stray 'index.php' segments that may appear when
+// the server exposes the API through a front file (e.g. /api/index.php/v1/...)
+$segments = array_values(array_filter($segments, function ($s) {
+    return $s !== 'index.php' && $s !== '';
+}));
+
 $version   = $segments[0] ?? 'v1';
 $resource  = $segments[1] ?? null;
 $id        = $segments[2] ?? null;
