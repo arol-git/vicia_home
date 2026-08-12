@@ -48,6 +48,11 @@ class HouseController extends Controller
     public function store(): void
     {
         Auth::requireLogin();
+        // Only platform admins may create houses now (business rule)
+        if (Auth::user()['role'] !== 'admin') {
+            Response::error('Seul un administrateur peut créer une maison.', 403);
+            return;
+        }
         $this->verifyCsrf();
 
         $data = [
@@ -103,7 +108,12 @@ class HouseController extends Controller
 
     public function destroy(int $id): void
     {
-        $this->requireOwnerOrAdmin($id);
+        // Only platform admins may delete houses
+        Auth::requireLogin();
+        if (Auth::user()['role'] !== 'admin') {
+            Response::error('Seule un administrateur peut supprimer une maison.', 403);
+            return;
+        }
         $this->verifyCsrf();
 
         $house = House::find($id);

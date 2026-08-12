@@ -16,9 +16,11 @@ $pageScripts = ['houses.js'];
         <div class="page-header__title">Mes maisons</div>
         <div class="page-header__subtitle"><?= count($houses) ?> maison(s) accessible(s) à votre compte</div>
     </div>
+    <?php if (Auth::user()['role'] === 'admin'): ?>
     <button type="button" class="btn btn-primary" data-open-modal="modal-add-house">
         <i class="fa-solid fa-plus"></i> Ajouter une maison
     </button>
+    <?php endif; ?>
 </div>
 
 <?php if (empty($houses)): ?>

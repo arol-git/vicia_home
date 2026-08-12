@@ -4,6 +4,7 @@ namespace App\Models;
 
 use App\Core\Database;
 use App\Core\Model;
+use App\Models\House;
 
 /**
  * Class Device
@@ -94,7 +95,8 @@ class Device extends Model
     public static function generateTopic(array $house, string $domain, string $zone, string $measure): string
     {
         $slugify = fn(string $v) => trim(preg_replace('/[^a-z0-9]+/', '-', strtolower($v)), '-');
-        return sprintf('home/%s/%s/%s/%s', $house['slug'], $slugify($domain), $slugify($zone), $slugify($measure));
+        $houseSlug = trim((string) ($house['slug'] ?? '')) ?: House::generateSlug($house['name'] ?? 'maison');
+        return sprintf('home/%s/%s/%s/%s', $slugify($houseSlug), $slugify($domain), $slugify($zone), $slugify($measure));
     }
 
     /**
