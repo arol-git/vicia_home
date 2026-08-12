@@ -65,6 +65,11 @@ class EquipmentController extends Controller
         $defaultTopic = Device::generateTopic($house, $type, $zone ?: 'zone', $deviceId . '-' . $nameSlug);
         $mqttTopic = trim((string) $this->request->input('mqtt_topic', '')) ?: $defaultTopic;
 
+        if (Device::topicExists($mqttTopic)) {
+            Response::error('Ce topic MQTT est déjà utilisé.', 422);
+            return;
+        }
+
         $data = [
             'room_id'    => $roomId,
             'device_id'  => $deviceId,
@@ -220,44 +225,5 @@ class EquipmentController extends Controller
         $topic = Device::generateUniqueTopic($house, $type, $zone ?: 'zone', $deviceId . '-' . $nameSlug);
 
         Response::json(['success' => true, 'mqtt_topic' => $topic]);
-    }
-
-    /**
-     * Génère un topic MQTT pour un équipement en fonction du type,
-     * de la zone et du nom fournis. Vérifie aussi que le topic
-     * n'existe pas déjà dans la base de données de cette maison.
-     */
-    public function generateTopic(): void
-    {
-        $houseId = Auth::requireHouseRole(['admin', 'owner', 'technician']);
-
-        $type = trim((string) $this->request->input('type'));
-        $name = trim((string) $this->request->input('name'));
-        $zone = trim((string) $this->request->input('zone'));
-        $deviceId = (int) $this->request->input('device_id', 0);
-
-        if (!$type || !$name || !$deviceId) {
-            Response::error('Paramètres incomplets : type, name et device_id sont requis.', 422);
-            return;
-        }
-
-        $house = House::find($houseId);
-        if (!$house) {
-            Response::error('Maison introuvable.', 404);
-            return;
-        }
-
-        $nameSlug = trim(preg_replace('/[^a-z0-9]+/', '-', strtolower($name)), '-') ?: 'equipment';
-        $topic = Device::generateTopic($house, $type, $zone ?: 'zone', $deviceId . '-' . $nameSlug);
-
-        // Vérifie que le topic n'existe pas déjà
-        $exists = (bool) Equipment::where('mqtt_topic', '=', $topic)->first();
-
-        Response::json([
-            'success' => true,
-            'topic' => $topic,
-            'exists' => $exists,
-            'message' => $exists ? 'Ce topic existe déjà.' : 'Topic généré avec succès.',
-        ]);
     }
 }
