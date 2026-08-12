@@ -49,8 +49,8 @@ use App\Core\Auth;
 
     <script>
         // Passer la maison courante au module vocal
-        window.__vicia_house_id = <?= Auth::currentHouseId() ?>;
-    </script>>
+        window.__vicia_house_id = <?= (int) (Auth::check() ? (Auth::currentHouseId() ?? 0) : 0) ?>;
+    </script>
 </head>
 <body>
 <div class="app-shell">

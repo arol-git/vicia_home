@@ -17,9 +17,12 @@ use Mqtt\Publisher;
 
 function handle_voice(string $method, ?string $id, ?string $subaction): void
 {
+    error_log('[voice-api] Requête reçue: method=' . $method . ' subaction=' . ($subaction ?? 'none'));
+
     // Authentifier via bearer token OU session HTTP
     $user = api_authenticate_or_session();
     if (!$user) {
+        error_log('[voice-api] Authentification refusée');
         api_response(['success' => false, 'message' => 'Authentification requise'], 401);
     }
 
@@ -105,9 +108,11 @@ function handleVoiceCommand(array $user, int $houseId, array $input): void
     }
 
     // Parser la commande vocale
+    error_log('[voice-api] Commande reçue: ' . $command);
     $parsed = VoiceCommandService::parse($command, $houseId);
 
     if (!$parsed['success']) {
+        error_log('[voice-api] Parse impossible: ' . ($parsed['message'] ?? 'unknown'));
         api_response([
             'success' => false,
             'message' => $parsed['message'] ?? 'Erreur de traitement',

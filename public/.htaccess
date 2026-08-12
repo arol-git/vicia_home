@@ -4,6 +4,10 @@
 
 <IfModule mod_rewrite.c>
     RewriteEngine On
+
+    # Redirige l'API vers le front controller API avant le catch-all Web.
+    RewriteRule ^api/(.*)$ ../api/index.php [L,QSA]
+
     RewriteCond %{REQUEST_FILENAME} !-f
     RewriteCond %{REQUEST_FILENAME} !-d
     RewriteRule ^ index.php [L]

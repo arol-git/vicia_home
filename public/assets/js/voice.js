@@ -30,17 +30,27 @@ const VoiceAssistant = (() => {
      * Appelé une seule fois au chargement de la page.
      */
     const init = () => {
+        createUI();
+        attachEventListeners();
+
         // Vérifier le support Web Speech API
         const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
         if (!SpeechRecognition) {
-            console.warn('[VoiceAssistant] Web Speech API non supportée');
+            console.warn('[VoiceAssistant] Web Speech API non supportée sur ce navigateur.');
+            statusEl.textContent = 'Navigateur non compatible';
+            showMessage('Votre navigateur ne prend pas en charge la reconnaissance vocale Web Speech API. Essayez Chrome ou Edge.', 'error');
+
+            const startBtn = modal.querySelector('.voice-start-btn');
+            if (startBtn) {
+                startBtn.disabled = true;
+                startBtn.innerHTML = '<i class="fa-solid fa-circle-exclamation"></i> Non compatible';
+            }
             return;
         }
 
         recognition = new SpeechRecognition();
         setupRecognition();
-        createUI();
-        attachEventListeners();
+        console.log('[VoiceAssistant] Initialisation OK');
     };
 
     /**
@@ -226,6 +236,7 @@ const VoiceAssistant = (() => {
         showMessage(`Vous avez dit: « ${transcript} »`, 'info');
 
         try {
+            console.log('[VoiceAssistant] Envoi de la commande:', transcript);
             const response = await fetch('/api/v1/voice/command', {
                 method: 'POST',
                 headers: {
@@ -238,6 +249,7 @@ const VoiceAssistant = (() => {
                 }),
             });
 
+            console.log('[VoiceAssistant] Réponse HTTP:', response.status, response.statusText);
             const data = await response.json();
 
             if (data.success) {
