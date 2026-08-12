@@ -8,6 +8,7 @@
  * App\Core\Controller::render().
  */
 use App\Core\Csrf;
+use App\Core\Auth;
 ?>
 <!DOCTYPE html>
 <html lang="fr" data-theme="light">
@@ -44,6 +45,12 @@ use App\Core\Csrf;
     <link rel="stylesheet" href="<?= asset('css/components.css') ?>">
     <link rel="stylesheet" href="<?= asset('css/dashboard.css') ?>">
     <link rel="stylesheet" href="<?= asset('css/dark-mode.css') ?>">
+    <link rel="stylesheet" href="<?= asset('css/voice.css') ?>">
+
+    <script>
+        // Passer la maison courante au module vocal
+        window.__vicia_house_id = <?= Auth::currentHouseId() ?>;
+    </script>>
 </head>
 <body>
 <div class="app-shell">
