@@ -240,6 +240,10 @@ const VoiceAssistant = (() => {
             // Build API URL from app base tag to support subpath deployments
             const base = document.querySelector('meta[name="app-base-url"]')?.getAttribute('content') || '';
             const apiUrl = (base.endsWith('/') ? base.slice(0, -1) : base) + '/api/v1/voice/command';
+            
+            console.log('[VoiceAssistant] Base URL:', base);
+            console.log('[VoiceAssistant] API URL:', apiUrl);
+            console.log('[VoiceAssistant] House ID:', window.__vicia_house_id);
 
             const response = await fetch(apiUrl, {
                 method: 'POST',

@@ -1,13 +1,21 @@
 # public/.htaccess
 # Redirige toutes les requêtes qui ne correspondent pas à un fichier
 # ou un dossier existant vers le front controller (public/index.php).
+# 
+# Note: Si DocumentRoot = racine/ du projet, les requêtes /api/* ne
+# passent jamais par ce fichier (traitées par /.htaccess).
+# Si DocumentRoot = public/, les requêtes /api/* sont traitées ici.
 
 <IfModule mod_rewrite.c>
     RewriteEngine On
 
-    # Redirige l'API vers le front controller API avant le catch-all Web.
+    # /api/v1/* est redirigé vers ../api/index.php
+    # Cela s'applique UNIQUEMENT si DocumentRoot est public/
+    RewriteCond %{REQUEST_URI} ^/api/
     RewriteRule ^api/(.*)$ ../api/index.php [L,QSA]
 
+    # Sinon, si la requête ne correspond à aucun fichier/dossier,
+    # redirige vers le front controller Web (public/index.php)
     RewriteCond %{REQUEST_FILENAME} !-f
     RewriteCond %{REQUEST_FILENAME} !-d
     RewriteRule ^ index.php [L]

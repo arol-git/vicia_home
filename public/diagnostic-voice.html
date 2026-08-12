@@ -1,0 +1,164 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Diagnostic - Assistante Vocale</title>
+    <style>
+        body { font-family: monospace; margin: 2rem; background: #f5f5f5; }
+        .section { background: white; padding: 1rem; margin: 1rem 0; border-radius: 4px; box-shadow: 0 1px 3px rgba(0,0,0,0.1); }
+        h2 { color: #333; border-bottom: 2px solid #007bff; padding-bottom: 0.5rem; }
+        button { padding: 0.75rem 1.5rem; margin: 0.5rem; background: #007bff; color: white; border: none; border-radius: 4px; cursor: pointer; }
+        button:hover { background: #0056b3; }
+        .log { background: #f9f9f9; border-left: 4px solid #007bff; padding: 1rem; margin: 0.5rem 0; max-height: 300px; overflow-y: auto; font-size: 0.9rem; }
+        .success { border-left-color: #28a745; color: #155724; background: #d4edda; }
+        .error { border-left-color: #dc3545; color: #721c24; background: #f8d7da; }
+        .warning { border-left-color: #ffc107; color: #856404; background: #fff3cd; }
+        .info { border-left-color: #17a2b8; color: #0c5460; background: #d1ecf1; }
+        .status { display: inline-block; padding: 0.25rem 0.75rem; border-radius: 3px; font-weight: bold; margin: 0.5rem 0; }
+        .status.ok { background: #28a745; color: white; }
+        .status.fail { background: #dc3545; color: white; }
+        .status.unknown { background: #6c757d; color: white; }
+    </style>
+</head>
+<body>
+    <h1>🔍 Diagnostic - Assistante Vocale</h1>
+
+    <div class="section">
+        <h2>1️⃣ Vérifications Système</h2>
+        <div id="system-checks"></div>
+    </div>
+
+    <div class="section">
+        <h2>2️⃣ Test Endpoint API Simple</h2>
+        <button onclick="testSimpleAPI()">Tester /api/v1/test</button>
+        <div id="test-api-log" class="log info" style="display:none;"></div>
+    </div>
+
+    <div class="section">
+        <h2>3️⃣ Test Voice Command API</h2>
+        <button onclick="testVoiceAPI('test command')">Tester /api/v1/voice/command</button>
+        <div id="voice-api-log" class="log info" style="display:none;"></div>
+    </div>
+
+    <div class="section">
+        <h2>4️⃣ Logs du Serveur</h2>
+        <button onclick="fetchServerLogs()">Charger les logs (api-voice.log)</button>
+        <div id="server-logs" class="log info" style="display:none;"></div>
+    </div>
+
+    <script>
+        // === Vérifications système ===
+        document.addEventListener('DOMContentLoaded', () => {
+            const checks = document.getElementById('system-checks');
+            const items = [];
+
+            // 1. Web Speech API
+            const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+            items.push(`<p><span class="status ${SpeechRecognition ? 'ok' : 'fail'}">Web Speech API</span>: ${SpeechRecognition ? '✅ Supportée' : '❌ Non supportée (Firefox?)'}</p>`);
+
+            // 2. Session utilisateur
+            const userId = localStorage.getItem('user_id') || 'Pas d\'info';
+            items.push(`<p><span class="status unknown">Session</span>: Vérifiez que vous êtes connecté(e)</p>`);
+
+            // 3. URL de base
+            const base = document.querySelector('meta[name="app-base-url"]')?.getAttribute('content') || '/';
+            items.push(`<p><span class="status info">App Base URL</span>: <code>${base}</code></p>`);
+
+            // 4. House ID
+            if (typeof window.__vicia_house_id !== 'undefined') {
+                items.push(`<p><span class="status ok">House ID</span>: <code>${window.__vicia_house_id}</code></p>`);
+            } else {
+                items.push(`<p><span class="status fail">House ID</span>: Non défini (fenêtre n'est pas chargée?)</p>`);
+            }
+
+            checks.innerHTML = items.join('');
+        });
+
+        async function testSimpleAPI() {
+            const logDiv = document.getElementById('test-api-log');
+            logDiv.style.display = 'block';
+            logDiv.innerHTML = '⏳ Requête en cours...';
+
+            try {
+                const base = document.querySelector('meta[name="app-base-url"]')?.getAttribute('content') || '';
+                const apiUrl = (base.endsWith('/') ? base.slice(0, -1) : base) + '/api/v1/test';
+                
+                const response = await fetch(apiUrl);
+                const data = await response.json();
+
+                logDiv.classList.remove('error', 'warning');
+                if (response.ok) {
+                    logDiv.classList.add('success');
+                    logDiv.innerHTML = `<strong>✅ Succès (${response.status})</strong><pre>${JSON.stringify(data, null, 2)}</pre>`;
+                } else {
+                    logDiv.classList.add('error');
+                    logDiv.innerHTML = `<strong>❌ Erreur (${response.status})</strong><pre>${JSON.stringify(data, null, 2)}</pre>`;
+                }
+            } catch (err) {
+                logDiv.classList.add('error');
+                logDiv.innerHTML = `<strong>❌ Erreur réseau/CORS</strong><p>${err.message}</p>`;
+            }
+        }
+
+        async function testVoiceAPI(command) {
+            const logDiv = document.getElementById('voice-api-log');
+            logDiv.style.display = 'block';
+            logDiv.innerHTML = '⏳ Requête en cours...';
+
+            try {
+                const base = document.querySelector('meta[name="app-base-url"]')?.getAttribute('content') || '';
+                const apiUrl = (base.endsWith('/') ? base.slice(0, -1) : base) + '/api/v1/voice/command';
+                
+                const response = await fetch(apiUrl, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-Requested-With': 'XMLHttpRequest',
+                    },
+                    body: JSON.stringify({
+                        command: command,
+                        house_id: window.__vicia_house_id || null,
+                    }),
+                });
+
+                const data = await response.json();
+
+                logDiv.classList.remove('error', 'warning');
+                if (response.ok) {
+                    logDiv.classList.add('success');
+                    logDiv.innerHTML = `<strong>✅ Succès (${response.status})</strong><pre>${JSON.stringify(data, null, 2)}</pre>`;
+                } else {
+                    logDiv.classList.add('error');
+                    logDiv.innerHTML = `<strong>❌ Erreur (${response.status})</strong><pre>${JSON.stringify(data, null, 2)}</pre>`;
+                }
+            } catch (err) {
+                logDiv.classList.add('error');
+                logDiv.innerHTML = `<strong>❌ Erreur réseau</strong><p>${err.message}</p>`;
+            }
+        }
+
+        async function fetchServerLogs() {
+            const logDiv = document.getElementById('server-logs');
+            logDiv.style.display = 'block';
+            logDiv.innerHTML = '⏳ Chargement des logs...';
+
+            try {
+                // Essayer de charger le fichier de log (vous devrez peut-être adapter le chemin)
+                const response = await fetch('/storage/logs/api-voice.log');
+                if (response.ok) {
+                    const text = await response.text();
+                    logDiv.classList.add('success');
+                    logDiv.innerHTML = `<strong>📝 Logs du serveur</strong><pre>${text}</pre>`;
+                } else {
+                    logDiv.classList.add('warning');
+                    logDiv.innerHTML = `<strong>⚠️ Fichier de log non accessible (${response.status})</strong><p>Les logs sont stockés côté serveur. Accédez-y via SSH/FTP.</p>`;
+                }
+            } catch (err) {
+                logDiv.classList.add('warning');
+                logDiv.innerHTML = `<strong>⚠️ Impossible de charger les logs</strong><p>${err.message}</p><p>Vérifiez le chemin ou utilisez SSH pour consulter: <code>tail -f storage/logs/api-voice.log</code></p>`;
+            }
+        }
+    </script>
+</body>
+</html>
