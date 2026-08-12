@@ -28,6 +28,32 @@ document.addEventListener('DOMContentLoaded', () => {
 
     const createForm = document.getElementById('equipment-create-form');
     if (createForm) {
+        const typeInput = createForm.querySelector('[name="type"]');
+        const nameInput = createForm.querySelector('[name="name"]');
+        const zoneInput = createForm.querySelector('[name="zone"]');
+        const deviceInput = createForm.querySelector('[name="device_id"]');
+        const topicInput = createForm.querySelector('[name="mqtt_topic"]');
+
+        // Auto-génère le topic lorsque les champs dépendants changent
+        const generateTopic = () => {
+            if (!typeInput?.value || !nameInput?.value || !deviceInput?.value || !topicInput) return;
+            const url = `/equipments/generate-topic?device_id=${encodeURIComponent(deviceInput.value)}&zone=${encodeURIComponent(zoneInput.value || '')}&type=${encodeURIComponent(typeInput.value)}&name=${encodeURIComponent(nameInput.value)}`;
+            ViciaAjax.get(url)
+            .then((res) => {
+                if (res && res.mqtt_topic) {
+                    topicInput.value = res.mqtt_topic;
+                    topicInput.style.borderColor = '';
+                    topicInput.title = '';
+                }
+            })
+            .catch(() => {});
+        };
+
+        typeInput?.addEventListener('change', generateTopic);
+        nameInput?.addEventListener('input', generateTopic);
+        zoneInput?.addEventListener('input', generateTopic);
+        deviceInput?.addEventListener('change', generateTopic);
+
         createForm.addEventListener('submit', (e) => {
             e.preventDefault();
             ViciaAjax.post('/equipments', new FormData(createForm))

@@ -96,4 +96,33 @@ class Device extends Model
         $slugify = fn(string $v) => trim(preg_replace('/[^a-z0-9]+/', '-', strtolower($v)), '-');
         return sprintf('home/%s/%s/%s/%s', $house['slug'], $slugify($domain), $slugify($zone), $slugify($measure));
     }
+
+    /**
+     * Vérifie si un topic MQTT existe déjà (équipements ou capteurs).
+     */
+    public static function topicExists(string $topic): bool
+    {
+        $row = Database::query('SELECT 1 FROM equipments WHERE mqtt_topic = :t LIMIT 1', ['t' => $topic])->fetch();
+        if ($row) return true;
+        $row = Database::query('SELECT 1 FROM sensors WHERE mqtt_topic = :t LIMIT 1', ['t' => $topic])->fetch();
+        return (bool) $row;
+    }
+
+    /**
+     * Génère un topic à partir des paramètres fournis et s'assure
+     * qu'il est unique en ajoutant un suffixe numérique si besoin.
+     */
+    public static function generateUniqueTopic(array $house, string $domain, string $zone, string $measure): string
+    {
+        $base = self::generateTopic($house, $domain, $zone, $measure);
+        $candidate = $base;
+        $i = 2;
+        while (self::topicExists($candidate)) {
+            $candidate = $base . '-' . $i;
+            $i++;
+            // safety guard to avoid infinite loop
+            if ($i > 1000) break;
+        }
+        return $candidate;
+    }
 }

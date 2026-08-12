@@ -71,6 +71,7 @@ $router->delete('/rooms/{id}', 'RoomController@destroy');
 
 // ------------------------- Équipements -------------------------------------
 $router->get('/equipments', 'EquipmentController@index');
+$router->get('/equipments/generate-topic', 'EquipmentController@generateTopic');
 $router->post('/equipments', 'EquipmentController@store');
 $router->put('/equipments/{id}', 'EquipmentController@update');
 $router->delete('/equipments/{id}', 'EquipmentController@destroy');
@@ -78,6 +79,7 @@ $router->post('/equipments/{id}/toggle', 'EquipmentController@toggle');
 
 // ------------------------- Capteurs -----------------------------------------
 $router->get('/sensors', 'SensorController@index');
+$router->get('/sensors/generate-topic', 'SensorController@generateTopic');
 $router->post('/sensors', 'SensorController@store');
 $router->put('/sensors/{id}', 'SensorController@update');
 $router->delete('/sensors/{id}', 'SensorController@destroy');

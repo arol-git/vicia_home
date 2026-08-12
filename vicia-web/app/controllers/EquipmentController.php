@@ -196,4 +196,68 @@ class EquipmentController extends Controller
 
         Response::success('Commande envoyée avec succès.', ['state' => $newState]);
     }
+
+    /**
+     * Génère automatiquement un topic MQTT stable et unique pour
+     * pré-remplir le formulaire côté client. Retourne JSON.
+     */
+    public function generateTopic(): void
+    {
+        $houseId = Auth::requireHouseRole(['admin', 'owner', 'technician']);
+
+        $deviceId = (int) $this->request->query('device_id');
+        $zone = trim((string) $this->request->query('zone'));
+        $type = (string) $this->request->query('type');
+        $name = trim((string) $this->request->query('name'));
+
+        $house = House::find($houseId);
+        if (!$house) {
+            Response::error('Maison introuvable.', 404);
+            return;
+        }
+
+        $nameSlug = trim(preg_replace('/[^a-z0-9]+/', '-', strtolower($name)), '-') ?: 'equipment';
+        $topic = Device::generateUniqueTopic($house, $type, $zone ?: 'zone', $deviceId . '-' . $nameSlug);
+
+        Response::json(['success' => true, 'mqtt_topic' => $topic]);
+    }
+
+    /**
+     * Génère un topic MQTT pour un équipement en fonction du type,
+     * de la zone et du nom fournis. Vérifie aussi que le topic
+     * n'existe pas déjà dans la base de données de cette maison.
+     */
+    public function generateTopic(): void
+    {
+        $houseId = Auth::requireHouseRole(['admin', 'owner', 'technician']);
+
+        $type = trim((string) $this->request->input('type'));
+        $name = trim((string) $this->request->input('name'));
+        $zone = trim((string) $this->request->input('zone'));
+        $deviceId = (int) $this->request->input('device_id', 0);
+
+        if (!$type || !$name || !$deviceId) {
+            Response::error('Paramètres incomplets : type, name et device_id sont requis.', 422);
+            return;
+        }
+
+        $house = House::find($houseId);
+        if (!$house) {
+            Response::error('Maison introuvable.', 404);
+            return;
+        }
+
+        $nameSlug = trim(preg_replace('/[^a-z0-9]+/', '-', strtolower($name)), '-') ?: 'equipment';
+        $topic = Device::generateTopic($house, $type, $zone ?: 'zone', $deviceId . '-' . $nameSlug);
+
+        // Vérifie que le topic n'existe pas déjà
+        $exists = (bool) Equipment::where('mqtt_topic', '=', $topic)->first();
+
+        Response::json([
+            'success' => true,
+            'topic' => $topic,
+            'exists' => $exists,
+            'message' => $exists ? 'Ce topic existe déjà.' : 'Topic généré avec succès.',
+        ]);
+    }
 }
