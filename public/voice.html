@@ -1,0 +1,47 @@
+<!doctype html>
+<html lang="fr">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Vicia Voice — MQTT WebSocket Prototype</title>
+  <link rel="stylesheet" href="/assets/css/voice-ws.css">
+</head>
+<body>
+  <main class="container">
+    <h1>Assistante vocale — MQTT WebSocket</h1>
+
+    <section class="card">
+      <h2>Connexion MQTT (WebSocket)</h2>
+      <label>Broker URL (ws:// or wss://) <input id="broker" placeholder="ws://broker.example:9001" /></label>
+      <label>Topic de publication <input id="topic" placeholder="home/<house>/voice/command" /></label>
+      <label>Username <input id="username" placeholder="(optionnel)" /></label>
+      <label>Password <input id="password" type="password" placeholder="(optionnel)" /></label>
+      <div class="row">
+        <button id="connect">Connecter</button>
+        <button id="disconnect" disabled>Déconnecter</button>
+      </div>
+      <div id="connStatus" class="status">Non connecté</div>
+    </section>
+
+    <section class="card">
+      <h2>Contrôle vocal</h2>
+      <div class="row">
+        <button id="startListen">Démarrer reconnaissance</button>
+        <button id="stopListen" disabled>Arrêter</button>
+      </div>
+      <div id="transcript" class="transcript">Aucun texte</div>
+      <div class="row">
+        <button id="publish" disabled>Publier commande</button>
+      </div>
+    </section>
+
+    <section class="card">
+      <h2>Journal</h2>
+      <pre id="log" class="log"></pre>
+    </section>
+  </main>
+
+  <script src="https://unpkg.com/mqtt/dist/mqtt.min.js"></script>
+  <script src="/assets/js/voice-ws.js"></script>
+</body>
+</html>
