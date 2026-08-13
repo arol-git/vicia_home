@@ -136,4 +136,7 @@ $router->post('/ai/message', 'AIController@send');
 $router->post('/ai/debug', 'AIController@debug');
 $router->post('/ai/reset', 'AIController@reset');
 
+// ------------------------- Assistante vocale simple -----------------------------------
+$router->post('/voice/command', 'VoiceController@command');
+
 $router->dispatch(new Request());

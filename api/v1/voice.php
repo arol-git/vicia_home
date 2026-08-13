@@ -17,8 +17,9 @@ use Mqtt\Publisher;
 
 function handle_voice(string $method, ?string $id, ?string $subaction): void
 {
-    $logfile = __DIR__ . '/../../storage/logs/api-voice.log';
+    $logfile = __DIR__ . '/../../../storage/logs/api-voice.log';
     @file_put_contents($logfile, "[voice] HANDLER CALLED: method=$method, id=$id, subaction=$subaction\n", FILE_APPEND);
+    $action = $subaction ?? ($id === 'command' ? 'command' : null);
 
     // Authentifier via bearer token OU session HTTP
     @file_put_contents($logfile, "[voice] Attempting authentication...\n", FILE_APPEND);
@@ -35,13 +36,13 @@ function handle_voice(string $method, ?string $id, ?string $subaction): void
     $houseId = api_authorize_house($user, $input);
     @file_put_contents($logfile, "[voice] House authorized: house_id=$houseId\n", FILE_APPEND);
 
-    if ($method === 'POST' && $subaction === 'command') {
+    if ($method === 'POST' && $action === 'command') {
         @file_put_contents($logfile, "[voice] Processing voice command...\n", FILE_APPEND);
         handleVoiceCommand($user, $houseId, $input);
         return;
     }
 
-    @file_put_contents($logfile, "[voice] Invalid endpoint: method=$method, subaction=$subaction\n", FILE_APPEND);
+    @file_put_contents($logfile, "[voice] Invalid endpoint: method=$method, id=$id, subaction=$subaction, action=$action\n", FILE_APPEND);
     api_response(['success' => false, 'message' => 'Endpoint non reconnu.'], 400);
 }
 
@@ -102,7 +103,7 @@ function api_authenticate_token(): ?array
  */
 function handleVoiceCommand(array $user, int $houseId, array $input): void
 {
-    $logfile = __DIR__ . '/../../storage/logs/api-voice.log';
+    $logfile = __DIR__ . '/../../../storage/logs/api-voice.log';
     $command = trim((string) ($input['command'] ?? ''));
 
     @file_put_contents($logfile, "[handleVoiceCommand] START: command='$command', house_id=$houseId\n", FILE_APPEND);

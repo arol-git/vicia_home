@@ -28,6 +28,9 @@ $logfile = __DIR__ . '/../storage/logs/api-voice.log';
 require __DIR__ . '/../app/core/bootstrap.php';
 require __DIR__ . '/v1/helpers.php';
 
+\App\Core\Session::start();
+\App\Core\Auth::restoreFromRememberCookie();
+
 header('Content-Type: application/json; charset=utf-8');
 
 $uri    = trim(parse_url($_SERVER['REQUEST_URI'], PHP_URL_PATH), '/');

@@ -9,6 +9,9 @@
  */
 use App\Core\Csrf;
 use App\Core\Auth;
+
+$appBaseUrl = rtrim(config('base_url'), '/');
+$apiBaseUrl = preg_replace('#/public$#', '', $appBaseUrl) . '/api';
 ?>
 <!DOCTYPE html>
 <html lang="fr" data-theme="light">
@@ -17,6 +20,7 @@ use App\Core\Auth;
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="csrf-token" content="<?= e(Csrf::token()) ?>">
     <meta name="app-base-url" content="<?= e(url('/')) ?>">
+    <meta name="api-base-url" content="<?= e($apiBaseUrl) ?>">
     <script>
         (function () {
             try {

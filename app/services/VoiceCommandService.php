@@ -24,9 +24,9 @@ class VoiceCommandService
      */
     private const INTENT_PATTERNS = [
         // Allumer
-        '/^(allume|active|mets|ouvre)/i' => 'on',
+        '/^(allume|active|mets|met|ouvre|ouvrir)/i' => 'on',
         // Éteindre
-        '/^(éteins|désactive|coupe|ferme|arrête)/i' => 'off',
+        '/^(eteins|eteindre|desactive|coupe|ferme|arrete|arreter)/i' => 'off',
         // Bascule
         '/^(bascule|inverse|toggle)/i' => 'toggle',
     ];
@@ -35,6 +35,18 @@ class VoiceCommandService
      * Mots-clés ignorables dans les commandes (articles, prépositions).
      */
     private const STOP_WORDS = ['la', 'le', 'les', 'de', 'du', 'un', 'une', 'des', 'et', 'ou', 'l\''];
+
+    private const TYPE_SYNONYMS = [
+        'led' => ['lampe', 'lampes', 'lumiere', 'lumieres', 'eclairage', 'eclairages', 'led'],
+        'relais' => ['prise', 'prises', 'relais'],
+        'ventilateur' => ['ventilateur', 'ventilateurs', 'ventilo', 'climatisation', 'clim'],
+        'pompe' => ['pompe', 'arrosage'],
+        'porte' => ['porte', 'portes', 'portail', 'garage'],
+        'fenetre' => ['fenetre', 'fenetres'],
+        'sirene' => ['sirene', 'alarme'],
+        'camera' => ['camera', 'cameras'],
+        'servo' => ['servo', 'moteur'],
+    ];
 
     /**
      * Parse une commande vocale et retourne les détails du traitement.
@@ -48,9 +60,7 @@ class VoiceCommandService
             return ['success' => false, 'message' => 'Commande vide'];
         }
 
-        // Normalisation : minuscules, accents préservés, suppression ponctuation
-        $normalized = mb_strtolower($command);
-        $normalized = preg_replace('/[.,!?]/', '', $normalized);
+        $normalized = self::normalize($command);
 
         // Détection de l'intention
         $intent = self::detectIntent($normalized);
@@ -102,40 +112,98 @@ class VoiceCommandService
         }
 
         // Récupérer toutes les pièces
-        $rooms = Room::forHouse($houseId);
-        $roomMap = array_combine(array_map(fn($r) => mb_strtolower($r['name']), $rooms), $rooms);
+        $detectedRoom = self::detectRoom($normalized, Room::forHouse($houseId));
+        $detectedType = self::detectType($normalized);
 
         // Cherche la meilleure correspondance : équipement + pièce
         $bestMatch = null;
         $bestScore = 0;
 
         foreach ($equipments as $eq) {
-            $eqNameLower = mb_strtolower($eq['name']);
-            $roomNameLower = mb_strtolower($eq['room_name']);
+            $eqName = self::normalize($eq['name']);
+            $roomName = self::normalize($eq['room_name']);
+            $eqType = self::normalize($eq['type']);
 
-            // Score : distance de Levenshtein pour l'équipement + présence de la pièce
-            $eqScore = self::fuzzyMatch($eqNameLower, $normalized);
-            $roomScore = self::fuzzyMatch($roomNameLower, $normalized);
+            if ($detectedRoom && $roomName !== self::normalize($detectedRoom['name'])) {
+                continue;
+            }
 
-            // Si l'équipement est trouvé avec une certaine confiance
-            if ($eqScore > 0.6) {
-                $score = $eqScore + ($roomScore > 0.6 ? 1 : 0);
-                if ($score > $bestScore) {
-                    $bestScore = $score;
-                    $bestMatch = [
-                        'equipment_id' => $eq['id'],
-                        'equipment_name' => $eq['name'],
-                        'room_name' => $eq['room_name'],
-                    ];
-                }
+            if ($detectedType && $eqType !== $detectedType) {
+                continue;
+            }
+
+            $score = 0.0;
+
+            if (str_contains($normalized, $eqName)) {
+                $score += 3;
+            } else {
+                $score += self::fuzzyMatch($eqName, $normalized);
+            }
+
+            if ($detectedType && $eqType === $detectedType) {
+                $score += 2;
+            }
+
+            if ($detectedRoom && $roomName === self::normalize($detectedRoom['name'])) {
+                $score += 2;
+            } elseif (str_contains($normalized, $roomName)) {
+                $score += 1;
+            }
+
+            if ($score > $bestScore) {
+                $bestScore = $score;
+                $bestMatch = [
+                    'equipment_id' => $eq['id'],
+                    'equipment_name' => $eq['name'],
+                    'room_name' => $eq['room_name'],
+                ];
             }
         }
 
-        if (!$bestMatch) {
+        if (!$bestMatch || $bestScore < 1.0) {
             return ['success' => false, 'message' => 'Équipement non reconnu dans la commande'];
         }
 
         return array_merge(['success' => true], $bestMatch);
+    }
+
+    private static function detectRoom(string $normalized, array $rooms): ?array
+    {
+        foreach ($rooms as $room) {
+            $name = self::normalize($room['name']);
+            $type = self::normalize($room['type'] ?? '');
+
+            if (($name && str_contains($normalized, $name)) || ($type && str_contains($normalized, $type))) {
+                return $room;
+            }
+        }
+
+        return null;
+    }
+
+    private static function detectType(string $normalized): ?string
+    {
+        foreach (self::TYPE_SYNONYMS as $type => $words) {
+            foreach ($words as $word) {
+                if (preg_match('/\b' . preg_quote($word, '/') . '\b/u', $normalized)) {
+                    return $type;
+                }
+            }
+        }
+
+        return null;
+    }
+
+    private static function normalize(string $text): string
+    {
+        $text = mb_strtolower(trim($text));
+        $text = str_replace(['’', "'"], ' ', $text);
+        $ascii = iconv('UTF-8', 'ASCII//TRANSLIT//IGNORE', $text);
+        $text = $ascii ?: $text;
+        $text = preg_replace('/[^a-z0-9\s]+/', ' ', $text);
+        $text = preg_replace('/\s+/', ' ', $text);
+
+        return trim($text);
     }
 
     /**

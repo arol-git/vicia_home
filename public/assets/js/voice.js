@@ -237,41 +237,80 @@ const VoiceAssistant = (() => {
 
         try {
             console.log('[VoiceAssistant] Envoi de la commande:', transcript);
-            // Build API URL from app base tag to support subpath deployments
-            const base = document.querySelector('meta[name="app-base-url"]')?.getAttribute('content') || '';
-            const apiUrl = (base.endsWith('/') ? base.slice(0, -1) : base) + '/api/v1/voice/command';
+            const apiUrl = buildAppUrl('/voice/command');
             
-            console.log('[VoiceAssistant] Base URL:', base);
             console.log('[VoiceAssistant] API URL:', apiUrl);
             console.log('[VoiceAssistant] House ID:', window.__vicia_house_id);
 
             const response = await fetch(apiUrl, {
                 method: 'POST',
+                credentials: 'same-origin',
                 headers: {
                     'Content-Type': 'application/json',
                     'X-Requested-With': 'XMLHttpRequest',
+                    'Accept': 'application/json',
                 },
                 body: JSON.stringify({
                     command: transcript,
                     house_id: window.__vicia_house_id || null,
+                    csrf_token: csrfToken(),
                 }),
             });
 
             console.log('[VoiceAssistant] Réponse HTTP:', response.status, response.statusText);
+            const contentType = response.headers.get('content-type') || '';
+            if (!contentType.includes('application/json')) {
+                const text = await response.text();
+                console.error('[VoiceAssistant] Réponse non JSON:', text.slice(0, 500));
+                throw new Error('Endpoint vocal introuvable ou mal routé.');
+            }
+
             const data = await response.json();
 
-            if (data.success) {
+            if (response.ok && data.success) {
                 setState(STATE.SUCCESS);
                 statusEl.textContent = '✅ Commande exécutée';
                 showMessage(data.message || 'Commande exécutée', 'success');
+                speak(data.message || 'Commande exécutée');
                 setTimeout(() => closeModal(), 2000);
             } else {
                 handleError(data.message || 'Commande non reconnue');
             }
         } catch (error) {
             console.error('[VoiceAssistant] Erreur API:', error);
-            handleError('Erreur de connexion. Vérifiez votre connexion Internet.');
+            handleError(error.message || 'Erreur de connexion. Vérifiez votre connexion Internet.');
         }
+    };
+
+    const buildAppUrl = (path) => {
+        const appBase = document.querySelector('meta[name="app-base-url"]')?.getAttribute('content') || '';
+        if (appBase) {
+            return appBase.replace(/\/+$/, '') + '/' + String(path).replace(/^\/+/, '');
+        }
+
+        return '/' + String(path).replace(/^\/+/, '');
+    };
+
+    const csrfToken = () => {
+        return document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || '';
+    };
+
+    const speak = (text) => {
+        if (!('speechSynthesis' in window) || !text) return;
+
+        window.speechSynthesis.cancel();
+        const utterance = new SpeechSynthesisUtterance(text);
+        utterance.lang = 'fr-FR';
+        utterance.rate = 0.95;
+        utterance.pitch = 1;
+
+        const voices = window.speechSynthesis.getVoices();
+        const frenchVoice = voices.find((voice) => voice.lang && voice.lang.toLowerCase().startsWith('fr'));
+        if (frenchVoice) {
+            utterance.voice = frenchVoice;
+        }
+
+        window.speechSynthesis.speak(utterance);
     };
 
     /**
