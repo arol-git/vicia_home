@@ -171,7 +171,7 @@ CREATE TABLE `sensors` (
     `id`            INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
     `room_id`       INT UNSIGNED    NOT NULL,
     `name`          VARCHAR(100)    NOT NULL,
-    `type`          ENUM('pir','dht22_temp','dht22_hum','mq2','mq135','ldr','rfid','humidite_sol') NOT NULL,
+    `type`          ENUM('pir','dht22_temp','dht22_hum','mq2','mq135','ldr','rfid','humidite_sol','energy_power','energy_kwh','energy_consumption') NOT NULL,
     `unit`          VARCHAR(20)     NOT NULL DEFAULT '',
     `icon`          VARCHAR(50)     NOT NULL DEFAULT 'fa-microchip',
     `mqtt_topic`    VARCHAR(150)    NOT NULL,

@@ -27,11 +27,17 @@ document.addEventListener('DOMContentLoaded', () => {
                 ldr: 'lighting',
                 rfid: 'access',
                 humidite_sol: 'garden',
+                energy_power: 'energy',
+                energy_kwh: 'energy',
+                energy_consumption: 'energy',
             }[typeSelect.value] || 'sensors';
             const metric = {
                 dht22_temp: 'temp',
                 dht22_hum: 'hum',
                 humidite_sol: 'soil',
+                energy_power: 'power',
+                energy_kwh: 'kwh',
+                energy_consumption: 'consumption',
             }[typeSelect.value] || typeSelect.value;
             topicInput.value = `home/${houseSlug}/${domain}/${roomSlug}/${metric}`;
         };

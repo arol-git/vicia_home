@@ -60,6 +60,13 @@ echo "\n=== Tests des fonctions utilitaires ===\n";
 assertTrue(e('<script>') === '&lt;script&gt;', "e() doit échapper les caractères HTML dangereux");
 assertTrue(equipment_icon('led') === 'fa-lightbulb', "equipment_icon('led') doit retourner 'fa-lightbulb'");
 assertTrue(sensor_icon('mq2') === 'fa-smog', "sensor_icon('mq2') doit retourner 'fa-smog'");
+assertTrue(sensor_icon('energy_consumption') === 'fa-bolt', "sensor_icon('energy_consumption') doit retourner 'fa-bolt'");
+
+$telemetryRef = new ReflectionMethod('App\\Services\\TelemetryService', 'extractReadingsFromArray');
+$telemetryRef->setAccessible(true);
+$result = $telemetryRef->invoke(null, 'home/demo/energy/salon', ['power' => 42.5]);
+assertTrue($result[0]['topic'] === 'home/demo/energy/salon/power', "Les messages ESP32 en puissance doivent être normalisés vers un topic exploitable");
+
 assertTrue(role_label('admin') === 'Administrateur', "role_label('admin') doit retourner 'Administrateur'");
 assertTrue(can_manage_hardware_inventory('admin'), "Seul le rôle admin doit pouvoir gérer l'inventaire matériel");
 assertTrue(!can_manage_hardware_inventory('owner'), "Le rôle owner ne doit pas pouvoir ajouter d'équipements ou capteurs");

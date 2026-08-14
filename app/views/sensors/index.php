@@ -15,6 +15,8 @@ $sensorTypes = [
     'pir' => 'PIR (mouvement)', 'dht22_temp' => 'DHT22 — Température', 'dht22_hum' => 'DHT22 — Humidité',
     'mq2' => 'MQ-2 (gaz/fumée)', 'mq135' => 'MQ-135 (qualité air)', 'ldr' => 'LDR (luminosité)',
     'rfid' => 'RFID', 'humidite_sol' => 'Humidité du sol',
+    'energy_power' => 'Consommation — Puissance', 'energy_kwh' => 'Consommation — Énergie',
+    'energy_consumption' => 'Consommation — Énergie',
 ];
 $houseRole = Auth::roleOnHouse(Auth::currentHouseId() ?? 0);
 // Les topics MQTT sont des informations techniques sensibles. Pour

@@ -18,7 +18,7 @@ use App\Models\Sensor;
  */
 class SensorController extends Controller
 {
-    private array $allowedTypes = ['pir', 'dht22_temp', 'dht22_hum', 'mq2', 'mq135', 'ldr', 'rfid', 'humidite_sol'];
+    private array $allowedTypes = ['pir', 'dht22_temp', 'dht22_hum', 'mq2', 'mq135', 'ldr', 'rfid', 'humidite_sol', 'energy_power', 'energy_kwh', 'energy_consumption'];
 
     public function index(): void
     {

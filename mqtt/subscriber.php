@@ -17,7 +17,7 @@ require __DIR__ . '/../app/core/bootstrap.php';
 
 use App\Core\Database;
 use App\Models\AutomationRule;
-use App\Models\Sensor;
+use App\Services\TelemetryService;
 use Mqtt\MqttClient;
 use Mqtt\Publisher;
 
@@ -72,12 +72,12 @@ $client->loop(function (string $topic, string $payload) {
     );
 
     // --- Cas 1 : message de télémétrie d'un capteur connu ---
-    // Le capteur est retrouvé par son topic complet, ce qui détermine
-    // sans ambiguïté sa maison par transitivité (capteur -> pièce -> maison).
-    $sensor = Sensor::findByTopic($topic);
-    if ($sensor && is_numeric($payload)) {
-        Sensor::recordReading((int) $sensor['id'], (float) $payload);
-        evaluateSensorRules((int) $sensor['id'], (float) $payload);
+    // Accepte un payload numérique brut ou JSON, ex. {"value":25.4}.
+    $telemetry = TelemetryService::ingest($topic, $payload);
+    if (!empty($telemetry['saved'])) {
+        foreach ($telemetry['saved'] as $reading) {
+            evaluateSensorRules((int) $reading['sensor_id'], (float) $reading['value']);
+        }
         return;
     }
 

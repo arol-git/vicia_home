@@ -242,9 +242,12 @@ function sensor_icon(string $type): string
         'mq2'          => 'fa-smog',
         'mq135'        => 'fa-wind',
         'ldr'          => 'fa-sun',
-        'rfid'         => 'fa-id-card',
-        'humidite_sol' => 'fa-seedling',
-        default        => 'fa-microchip',
+        'rfid'            => 'fa-id-card',
+        'humidite_sol'    => 'fa-seedling',
+        'energy_power'    => 'fa-bolt',
+        'energy_kwh'      => 'fa-gauge-high',
+        'energy_consumption' => 'fa-bolt',
+        default           => 'fa-microchip',
     };
 }
 

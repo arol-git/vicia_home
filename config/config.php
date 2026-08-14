@@ -51,14 +51,14 @@ return [
 
 
     'mqtt' => [
-    'host'       => 'f0f51473e19f4dc89f2813a0a491dcbb.s1.eu.hivemq.cloud',  // Votre cluster
-    'port'       => 8883,  // Port TLS
-    'tls'        => true,   // Activer TLS
-    'username'   => 'viciaHome',    // Username créé
-    'password'   => 'viciaSecure',   // Password créé
-    'client_id'  => 'vicia_home_web',
-    'base_topic' => 'home',
-],
+        'host'       => getenv('MQTT_HOST') ?: 'f0f51473e19f4dc89f2813a0a491dcbb.s1.eu.hivemq.cloud',
+        'port'       => (int) (getenv('MQTT_PORT') ?: 8883),
+        'tls'        => filter_var(getenv('MQTT_TLS') ?: true, FILTER_VALIDATE_BOOLEAN),
+        'username'   => getenv('MQTT_USER') ?: 'viciaHome',
+        'password'   => getenv('MQTT_PASS') ?: 'viciaSecure',
+        'client_id'  => getenv('MQTT_CLIENT_ID') ?: 'vicia_home_web',
+        'base_topic' => getenv('MQTT_BASE_TOPIC') ?: 'home',
+    ],
 /*
 'mqtt' => [
     'host'       => getenv('MQTT_HOST'),
@@ -78,6 +78,10 @@ return [
         'model'    => getenv('AI_LLM_MODEL') ?: 'gpt-4o-mini',
         'base_url' => getenv('AI_LLM_BASE_URL') ?: '',
     ],
+
+    // Clé optionnelle pour les mesures ESP32 envoyées via POST /api/v1/telemetry.
+    // Si elle est renseignée, l'ESP32 doit envoyer X-Telemetry-Key avec cette valeur.
+    'telemetry_api_key' => getenv('TELEMETRY_API_KEY') ?: '',
 
     // Journalisation applicative
     'log_path' => __DIR__ . '/../storage/logs/app.log',
