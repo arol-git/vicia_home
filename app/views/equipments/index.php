@@ -24,7 +24,7 @@ $canSeeMqttTopics = $canSeeMqttTopics ?? can_view_mqtt_topics($houseRole);
 $columnsCount = $canSeeMqttTopics ? 7 : 6;
 ?>
 
-<div class="page-header">
+<div class="page-header" data-current-house-slug="<?= e($house['slug'] ?? '') ?>">
     <div>
         <div class="page-header__title">Équipements</div>
         <div class="page-header__subtitle"><?= count($equipments) ?> équipement(s) — <?= count(array_filter($equipments, fn($e) => $e['state'])) ?> actif(s)</div>

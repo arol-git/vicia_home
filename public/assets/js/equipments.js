@@ -44,10 +44,16 @@ document.addEventListener('DOMContentLoaded', () => {
         const typeSelect = createForm.querySelector('[name="type"]');
         const roomSelect = createForm.querySelector('[name="room_id"]');
         const topicInput = createForm.querySelector('[name="mqtt_topic"]');
-        const houseSlug = createForm.dataset.houseSlug || 'maison';
+        
+        // Récupère le slug depuis l'attribut data ou depuis la page
+        let houseSlug = createForm.dataset.houseSlug || document.querySelector('[data-current-house-slug]')?.dataset.currentHouseSlug || 'maison';
 
         const suggestTopic = () => {
             if (!typeSelect.value || !roomSelect.value || topicInput.dataset.touched === 'true') return;
+            
+            // Mets à jour le slug à chaque fois au cas où il aurait changé
+            houseSlug = createForm.dataset.houseSlug || document.querySelector('[data-current-house-slug]')?.dataset.currentHouseSlug || 'maison';
+            
             const roomSlug = roomSelect.options[roomSelect.selectedIndex]?.text
                 .toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/\s+/g, '');
             const domain = {
@@ -66,6 +72,7 @@ document.addEventListener('DOMContentLoaded', () => {
         typeSelect?.addEventListener('change', suggestTopic);
         roomSelect?.addEventListener('change', suggestTopic);
         topicInput?.addEventListener('input', () => { topicInput.dataset.touched = 'true'; });
+        suggestTopic();
     }
 
     document.querySelectorAll('[data-delete-equipment]').forEach((btn) => {
