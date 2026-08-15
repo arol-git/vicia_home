@@ -8,6 +8,7 @@ use App\Core\Response;
 use App\Models\ActivityLog;
 use App\Models\Equipment;
 use App\Services\VoiceCommandService;
+use App\Services\BatchCommandExecutor;
 use Mqtt\Publisher;
 
 class VoiceController extends Controller
@@ -28,52 +29,25 @@ class VoiceController extends Controller
             return;
         }
 
+        // Parse la commande et récupère la liste de toutes les commandes à exécuter
         $parsed = VoiceCommandService::parse($command, $houseId);
         if (!$parsed['success']) {
             Response::error($parsed['message'] ?? 'Commande non reconnue.', 400);
             return;
         }
 
-        $equipment = Equipment::find((int) $parsed['equipment_id']);
-        if (!$equipment || !Equipment::belongsToHouse((int) $equipment['id'], $houseId)) {
-            Response::error('Équipement introuvable.', 404);
-            return;
-        }
-
-        if (isset($equipment['is_active']) && !(int) $equipment['is_active']) {
-            Response::error('Cet équipement est désactivé et ne peut pas être piloté.', 409);
-            return;
-        }
-
-        $newState = match ($parsed['intent']) {
-            'on' => 1,
-            'off' => 0,
-            'toggle' => (int) $equipment['state'] ? 0 : 1,
-            default => null,
-        };
-
-        if ($newState === null) {
-            Response::error('Intention non supportée.', 400);
-            return;
-        }
-
-        Equipment::setState((int) $equipment['id'], $newState);
-        $published = Publisher::publish($equipment['mqtt_topic'] . '/set', $newState ? '1' : '0');
-
-        ActivityLog::record(
-            Auth::id(),
-            'commande_vocale',
-            "Commande vocale « {$command} » exécutée sur « {$equipment['name']} »",
-            $this->request->ip(),
-            $houseId
+        // Exécuter toutes les commandes en batch
+        $result = BatchCommandExecutor::execute(
+            $parsed['commands'],
+            $houseId,
+            Auth::id()
         );
 
-        Response::success($parsed['message'] ?? 'Commande exécutée.', [
-            'equipment_id' => (int) $equipment['id'],
-            'equipment_name' => $equipment['name'],
-            'room_name' => $parsed['room_name'],
-            'new_state' => $newState,
-            'mqtt_published' => $published,
-        ]);
+        if (!$result['success']) {
+            Response::error($result['message'] ?? 'Erreur lors de l\'exécution.', 400);
+            return;
+        }
+
+        Response::success($result['message'], $result);
     }
 }

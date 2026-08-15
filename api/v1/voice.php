@@ -13,6 +13,7 @@ use App\Core\Auth;
 use App\Core\Database;
 use App\Models\Equipment;
 use App\Services\VoiceCommandService;
+use App\Services\BatchCommandExecutor;
 use Mqtt\Publisher;
 
 function handle_voice(string $method, ?string $id, ?string $subaction): void
@@ -136,56 +137,30 @@ function handleVoiceCommand(array $user, int $houseId, array $input): void
         return;
     }
 
-    // Récupérer l'équipement complet
-    $equipment = Equipment::find((int) $parsed['equipment_id']);
+    // Exécuter toutes les commandes en batch
+    @file_put_contents($logfile, "[handleVoiceCommand] Executing " . count($parsed['commands']) . " command(s)\n", FILE_APPEND);
+    $result = BatchCommandExecutor::execute(
+        $parsed['commands'],
+        $houseId,
+        $user['id']
+    );
 
-    if (!$equipment) {
-        api_response(['success' => false, 'message' => 'Équipement introuvable'], 404);
+    @file_put_contents($logfile, "[handleVoiceCommand] Result: executed={$result['executed']}, failed={$result['failed']}\n", FILE_APPEND);
+
+    if (!$result['success']) {
+        api_response([
+            'success' => false,
+            'message' => $result['message'] ?? 'Erreur lors de l\'exécution',
+        ], 400);
         return;
     }
 
-    // Vérifier que l'équipement appartient à la maison
-    if (!Equipment::belongsToHouse($equipment['id'], $houseId)) {
-        api_response(['success' => false, 'message' => 'Accès refusé'], 403);
-        return;
-    }
-
-    // Exécuter la commande selon l'intention
-    $intent = $parsed['intent'];
-    $newState = null;
-
-    if ($intent === 'on') {
-        $newState = 1;
-    } elseif ($intent === 'off') {
-        $newState = 0;
-    } elseif ($intent === 'toggle') {
-        $newState = $equipment['state'] ? 0 : 1;
-    }
-
-    if ($newState === null) {
-        api_response(['success' => false, 'message' => 'Intention non supportée'], 400);
-        return;
-    }
-
-    // Mettre à jour l'état en base de données
-    Equipment::setState($equipment['id'], $newState);
-
-    // Publier le message MQTT
-    $payload = $newState ? '1' : '0';
-    $mqttTopic = $equipment['mqtt_topic'] . '/set';
-    $published = Publisher::publish($mqttTopic, $payload);
-
-    if (!$published) {
-        app_log("[Voice Command] Échec de publication MQTT pour l'équipement #{$equipment['id']}");
-    }
-
-    // Réponse de succès
     api_response([
         'success' => true,
-        'message' => $parsed['message'] ?? 'Commande exécutée',
-        'equipment_id' => $equipment['id'],
-        'equipment_name' => $equipment['name'],
-        'room_name' => $parsed['room_name'],
-        'new_state' => $newState,
+        'message' => $result['message'],
+        'executed' => $result['executed'],
+        'failed' => $result['failed'],
+        'commands' => $result['commands'],
     ]);
 }
+

@@ -21,35 +21,104 @@ use App\Models\Room;
  */
 class IntentClassifier
 {
+    private const ROOM_CACHE = []; // Optimisation: cache des pièces pour éviter N requêtes
     /** Verbes d'action -> état cible (1 = activer/ouvrir, 0 = désactiver/fermer). */
     private const ACTION_VERBS = [
-        'allume'      => 1, 'allumer'     => 1, 'active'   => 1, 'activer'  => 1,
-        'ouvre'       => 1, 'ouvrir'      => 1, 'déverrouille' => 1, 'déverrouiller' => 1,
-        'lance'       => 1, 'lancer'      => 1, 'démarre'  => 1, 'démarrer' => 1,
-        'éteins'      => 0, 'éteindre'    => 0, 'désactive' => 0, 'désactiver' => 0,
-        'ferme'       => 0, 'fermer'      => 0, 'verrouille' => 0, 'verrouiller' => 0,
-        'coupe'       => 0, 'couper'      => 0, 'stoppe'   => 0, 'arrête'   => 0, 'arrêter' => 0,
+        // Activation (1)
+        'allume'        => 1, 'allumer'       => 1, 'allumez'    => 1, 'allumé'  => 1,
+        'active'        => 1, 'activer'      => 1, 'activez'    => 1, 'activé'  => 1,
+        'ouvre'         => 1, 'ouvrir'       => 1, 'ouvrez'     => 1, 'ouvert'  => 1,
+        'déverrouille'  => 1, 'déverrouiller' => 1, 'déverrouille-moi' => 1,
+        'lance'         => 1, 'lancer'       => 1, 'lancez'     => 1, 'lancé'   => 1,
+        'démarre'       => 1, 'démarrer'     => 1, 'démarrez'   => 1, 'démarré' => 1,
+        'mets'          => 1, 'mettre'       => 1, 'mettez'     => 1, 'mis'     => 1,
+        'passe'         => 1, 'passer'       => 1, 'passez'     => 1, 'passé'   => 1,
+        'allume-moi'    => 1, 'active-moi'   => 1,
+        
+        // Désactivation (0)
+        'éteins'        => 0, 'éteindre'     => 0, 'éteignez'   => 0, 'éteint'  => 0,
+        'etéins'        => 0, 'éteins-moi'   => 0,
+        'désactive'     => 0, 'désactiver'   => 0, 'désactivez' => 0, 'désactivé' => 0,
+        'ferme'         => 0, 'fermer'       => 0, 'fermez'     => 0, 'fermé'   => 0,
+        'verrouille'    => 0, 'verrouiller'  => 0, 'verrouille-moi' => 0,
+        'coupe'         => 0, 'couper'       => 0, 'coupez'     => 0, 'coupé'   => 0,
+        'stoppe'        => 0, 'stopper'      => 0, 'stoppez'    => 0, 'stoppé'  => 0,
+        'arrête'        => 0, 'arrêter'      => 0, 'arrêtez'    => 0, 'arrêté'  => 0,
+        'coupe-moi'     => 0, 'arrête-moi'   => 0, 'stoppe-moi'  => 0,
     ];
 
     /** Mots-clés de cible -> type d'équipement (voir enum equipments.type). */
     private const TARGET_TYPES = [
-        'lampe' => 'led', 'lampes' => 'led', 'lumière' => 'led', 'lumières' => 'led', 'lumiere' => 'led', 'lumieres' => 'led',
-        'éclairage' => 'led', 'eclairage' => 'led',
-        'porte' => 'porte', 'portes' => 'porte', 'portail' => 'porte',
-        'fenêtre' => 'fenetre', 'fenêtres' => 'fenetre', 'fenetre' => 'fenetre', 'fenetres' => 'fenetre',
-        'ventilateur' => 'ventilateur', 'ventilateurs' => 'ventilateur', 'climatisation' => 'ventilateur',
-        'pompe' => 'pompe', 'arrosage' => 'pompe',
-        'alarme' => 'sirene', 'sirène' => 'sirene', 'sirene' => 'sirene',
-        'caméra' => 'camera', 'camera' => 'camera', 'caméras' => 'camera',
-        'relais' => 'relais', 'prise' => 'relais', 'prises' => 'relais',
+        // LED
+        'lampe'     => 'led', 'lampes'    => 'led', 'lumière'   => 'led', 'lumières'  => 'led',
+        'lumiere'   => 'led', 'lumieres'  => 'led', 'éclairage' => 'led', 'eclairage' => 'led',
+        'light'     => 'led', 'lights'    => 'led', 'lamp'      => 'led', 'lamps'     => 'led',
+        'led'       => 'led', 'leds'      => 'led',
+        
+        // Porte
+        'porte'     => 'porte', 'portes'    => 'porte', 'portail'  => 'porte', 'portails' => 'porte',
+        'gate'      => 'porte', 'gates'     => 'porte', 'door'     => 'porte', 'doors'    => 'porte',
+        
+        // Fenêtre
+        'fenêtre'   => 'fenetre', 'fenêtres' => 'fenetre', 'fenetre'  => 'fenetre', 'fenetres' => 'fenetre',
+        'window'    => 'fenetre', 'windows'  => 'fenetre',
+        
+        // Ventilateur/Climatisation
+        'ventilateur'   => 'ventilateur', 'ventilateurs' => 'ventilateur',
+        'climatisation' => 'ventilateur', 'clim'  => 'ventilateur', 'climat' => 'ventilateur',
+        'climate'       => 'ventilateur', 'fan'   => 'ventilateur', 'fans'   => 'ventilateur',
+        'ac'            => 'ventilateur', 'air'   => 'ventilateur',
+        
+        // Pompe
+        'pompe'     => 'pompe', 'pompes'   => 'pompe', 'arrosage' => 'pompe', 'arroseur' => 'pompe',
+        'irrigation'=> 'pompe', 'pump'     => 'pompe', 'pumps'    => 'pompe',
+        'sprinkler' => 'pompe', 'sprinklers' => 'pompe',
+        
+        // Sirène/Alarme
+        'alarme'    => 'sirene', 'alarmes' => 'sirene', 'sirène'   => 'sirene', 'sirene'   => 'sirene',
+        'alerte'    => 'sirene', 'alertes' => 'sirene', 'alarm'    => 'sirene', 'alarms'   => 'sirene',
+        'siren'     => 'sirene', 'sirens'  => 'sirene',
+        
+        // Caméra
+        'caméra'    => 'camera', 'caméras' => 'camera', 'camera'   => 'camera', 'cameras'  => 'camera',
+        'video'     => 'camera', 'cam'     => 'camera', 'cams'     => 'camera',
+        
+        // Relais/Prise
+        'relais'    => 'relais', 'prise'   => 'relais', 'prises'   => 'relais',
+        'relay'     => 'relais', 'plug'    => 'relais', 'outlet'   => 'relais', 'outlets'  => 'relais',
+        'socket'    => 'relais',
+        
+        // Servo
+        'servo'     => 'servo', 'servos'   => 'servo', 'moteur'    => 'servo', 'moteurs'  => 'servo',
+        'motor'     => 'servo', 'motors'   => 'servo',
     ];
 
-    private const MODE_WORDS = ['confort' => 'confort', 'nuit' => 'nuit', 'absence' => 'absence', 'urgence' => 'urgence'];
+    private const MODE_WORDS = [
+        'confort'   => 'confort', 'nuit' => 'nuit', 'absence' => 'absence', 'urgence' => 'urgence',
+        'day'       => 'confort', 'night' => 'nuit', 'away'    => 'absence', 'emergency' => 'urgence',
+    ];
 
-    private const QUESTION_STARTERS = ['quel', 'quelle', 'quels', 'quelles', 'combien', 'y a-t-il', 'y a t il', 'qui', 'toutes', 'tous', 'est-ce', 'est ce'];
-    private const ANALYSIS_WORDS = ['résumé', 'resume', 'analyse', 'rapport', 'suggestion', 'conseil', 'conseille', 'recommand'];
-    private const CONFIRM_YES = ['oui', 'confirme', 'confirmer', "d'accord", 'daccord', 'ok', 'vas-y', 'go'];
-    private const CONFIRM_NO = ['non', 'annule', 'annuler', 'stop', 'laisse'];
+    private const QUESTION_STARTERS = [
+        'quel', 'quelle', 'quels', 'quelles', 'quoi', 'comment', 'pourquoi', 'où',
+        'combien', 'y a-t-il', 'y a t il', 'y atil', 'qui', 'toutes', 'tous',
+        'est-ce', 'est ce', 'estce', 'is', 'are', 'what', 'how', 'why',
+    ];
+    
+    private const ANALYSIS_WORDS = [
+        'résumé', 'resume', 'analyse', 'rapport', 'suggestion', 'conseil', 'conseille',
+        'recommand', 'summary', 'status', 'état', 'etat', 'check', 'diagnostic',
+        'problème', 'probleme', 'bug', 'issue', 'alert', 'alerte',
+    ];
+    
+    private const CONFIRM_YES = [
+        'oui', 'confirme', 'confirmer', "d'accord", 'daccord', 'ok', 'vas-y', 'vaxy',
+        'go', 'yes', 'ouais', 'agreed', 'amen', 'c\'est bon', 'cestbon', 'allô',
+    ];
+    
+    private const CONFIRM_NO = [
+        'non', 'annule', 'annuler', 'stop', 'laisse', 'non merci', 'nope', 'cancel',
+        'abort', 'arrête-toi', 'arrete-toi', 'ne fais pas', 'ne fais rien',
+    ];
 
     /**
      * @return array{type: string, ...} Toujours au moins la clé "type"
@@ -106,13 +175,16 @@ class IntentClassifier
     private static function detectEquipmentCommand(string $normalized, int $houseId): ?array
     {
         $verbState = null;
+        $matchedVerb = null;
+        
         foreach (self::ACTION_VERBS as $verb => $state) {
             if (str_starts_with($normalized, $verb) || str_contains($normalized, " $verb ") || str_contains($normalized, " $verb")) {
                 $verbState = $state;
                 $matchedVerb = $verb;
-                break;
+                break; // Prendre le premier match (par ordre de déclaration)
             }
         }
+        
         if ($verbState === null) {
             return null;
         }
@@ -124,18 +196,24 @@ class IntentClassifier
                 break;
             }
         }
+        
         if ($targetType === null) {
             return null;
         }
 
-        $scopeAll = (bool) preg_match('/\btout(es)?\b/', $normalized);
+        // Détection de commande batch : "tous/toutes/partout"
+        $scopeAll = (bool) preg_match('/\b(tous?|toutes?|partout|partous)\b/iu', $normalized);
 
+        // Détection de la pièce (seulement si ce n'est pas une commande batch)
         $roomName = null;
-        foreach (Room::forHouse($houseId) as $room) {
-            $roomNormalized = self::normalize($room['name']);
-            if (str_contains($normalized, $roomNormalized)) {
-                $roomName = $room['name'];
-                break;
+        if (!$scopeAll) {
+            $rooms = Room::forHouse($houseId); // Optimisation possible : cache
+            foreach ($rooms as $room) {
+                $roomNormalized = self::normalize($room['name']);
+                if (str_contains($normalized, $roomNormalized)) {
+                    $roomName = $room['name'];
+                    break;
+                }
             }
         }
 
@@ -146,6 +224,7 @@ class IntentClassifier
             'target_state' => $verbState,
             'scope_all'   => $scopeAll,
             'room'        => $roomName,
+            'matched_verb' => $matchedVerb, // Pour debug et logs
         ];
     }
 

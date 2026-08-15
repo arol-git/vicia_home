@@ -50,6 +50,38 @@ class Equipment extends Model
         return $row ?: null;
     }
 
+    /**
+     * Récupère plusieurs équipements d'un coup.
+     * Optimisé pour les requêtes batch : retourne un array [id => equipment]
+     * et vérifie les permissions de la maison.
+     *
+     * @param int[] $ids IDs des équipements
+     * @param int $houseId Maison pour vérification d'accès
+     * @return array{int => array} id => equipment
+     */
+    public static function findMultiple(array $ids, int $houseId): array
+    {
+        if (empty($ids)) {
+            return [];
+        }
+
+        $placeholders = implode(',', array_fill(0, count($ids), '?'));
+        $sql = "SELECT eq.*, r.name AS room_name, r.house_id
+                FROM equipments eq
+                INNER JOIN rooms r ON r.id = eq.room_id
+                WHERE eq.id IN ($placeholders) AND r.house_id = ?
+                ORDER BY eq.id ASC";
+
+        $params = array_merge($ids, [$houseId]);
+        $rows = Database::query($sql, $params)->fetchAll();
+
+        $result = [];
+        foreach ($rows as $row) {
+            $result[(int) $row['id']] = $row;
+        }
+        return $result;
+    }
+
     public static function belongsToHouse(int $equipmentId, int $houseId): bool
     {
         $sql = "SELECT eq.id FROM equipments eq
