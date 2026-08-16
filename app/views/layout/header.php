@@ -38,6 +38,15 @@ $apiBaseUrl = preg_replace('#/public$#', '', $appBaseUrl) . '/api';
     <title><?= e($title ?? 'Vicia Home') ?> — Vicia Home</title>
 
     <link rel="icon" type="image/png" href="<?= asset('img/favicon.png') ?>">
+    <link rel="manifest" href="<?= asset('manifest.json') ?>">
+    <link rel="apple-touch-icon" href="<?= asset('img/icon-192.png') ?>">
+
+    <!-- PWA Meta Tags -->
+    <meta name="theme-color" content="#1e40af">
+    <meta name="description" content="Smart Home Automation Platform with IoT Integration">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="Vicia Home">
 
     <!-- Polices d'icônes -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
@@ -50,6 +59,7 @@ $apiBaseUrl = preg_replace('#/public$#', '', $appBaseUrl) . '/api';
     <link rel="stylesheet" href="<?= asset('css/dashboard.css') ?>">
     <link rel="stylesheet" href="<?= asset('css/dark-mode.css') ?>">
     <link rel="stylesheet" href="<?= asset('css/voice.css') ?>">
+    <link rel="stylesheet" href="<?= asset('css/pwa.css') ?>">
 
     <script>
         // Passer la maison courante au module vocal

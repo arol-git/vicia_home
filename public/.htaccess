@@ -24,9 +24,20 @@
 # Empêche l'exploration des répertoires
 Options -Indexes
 
-# En-têtes de sécurité de base
+# En-têtes de sécurité de base et PWA
 <IfModule mod_headers.c>
     Header set X-Content-Type-Options "nosniff"
     Header set X-Frame-Options "SAMEORIGIN"
+    
+    # Service Worker et Manifest doivent être accessibles partout
+    <FilesMatch "\.(js|json)$">
+        Header set Cache-Control "public, max-age=3600"
+    </FilesMatch>
+    
+    # Types MIME pour PWA
+    AddType application/json .json
+    AddType application/javascript .js
+    AddType image/png .png
+    AddType image/webp .webp
     Header set Referrer-Policy "strict-origin-when-cross-origin"
 </IfModule>
