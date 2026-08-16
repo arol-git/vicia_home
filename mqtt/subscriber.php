@@ -166,6 +166,9 @@ function executeRule(array $rule, string $reason): void
         $resultParts[] = 'Notification e-mail envoyée';
     }
 
+    \App\Helpers\Notifier::sendBrowserPush((int) $rule['house_id'], 'Règle activée', "La règle « {$rule['name']} » a été déclenchée.");
+    $resultParts[] = 'Notification navigateur envoyée';
+
     AutomationRule::logExecution((int) $rule['id'], implode(' — ', $resultParts));
     app_log("[Automation] Règle « {$rule['name']} » exécutée : " . implode(' — ', $resultParts));
 }

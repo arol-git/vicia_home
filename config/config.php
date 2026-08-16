@@ -83,6 +83,13 @@ return [
     // Si elle est renseignée, l'ESP32 doit envoyer X-Telemetry-Key avec cette valeur.
     'telemetry_api_key' => getenv('TELEMETRY_API_KEY') ?: '',
 
+    // Paramètres Web Push / notifications PWA.
+    'web_push' => [
+        'subject'    => getenv('VAPID_SUBJECT') ?: 'mailto:admin@vicia-home.local',
+        'public_key' => getenv('VAPID_PUBLIC_KEY') ?: '',
+        'private_key' => getenv('VAPID_PRIVATE_KEY') ?: '',
+    ],
+
     // Journalisation applicative
     'log_path' => __DIR__ . '/../storage/logs/app.log',
 ];

@@ -4,6 +4,7 @@ namespace App\Models;
 
 use App\Core\Database;
 use App\Core\Model;
+use App\Helpers\Notifier;
 
 /**
  * Class Alert
@@ -64,9 +65,44 @@ class Alert extends Model
         Database::query('UPDATE alerts SET is_read = 1 WHERE house_id = :house_id AND is_read = 0', ['house_id' => $houseId]);
     }
 
+    public static function shouldNotify(array $data): bool
+    {
+        $type = strtolower((string) ($data['type'] ?? ''));
+        $severity = strtolower((string) ($data['severity'] ?? 'info'));
+
+        if (in_array($type, ['test_email', 'test_telegram', 'test'], true)) {
+            return false;
+        }
+
+        if (in_array($type, ['intrusion', 'reseau', 'capteur', 'systeme', 'alarm', 'alarme', 'security'], true)) {
+            return true;
+        }
+
+        return $severity === 'critical';
+    }
+
     public static function create(array $data): int
     {
         $data += ['severity' => 'info', 'is_read' => 0];
-        return parent::create($data);
+        $alertId = parent::create($data);
+
+        if (!self::shouldNotify($data)) {
+            return $alertId;
+        }
+
+        $houseId = isset($data['house_id']) ? (int) $data['house_id'] : null;
+        if ($houseId === null || $houseId <= 0) {
+            return $alertId;
+        }
+
+        $label = ucfirst(str_replace(['_', '-'], ' ', (string) ($data['type'] ?? 'systeme')));
+        $message = trim((string) ($data['message'] ?? ''));
+        $text = "Alerte {$label} ({$data['severity']})\n" . ($message !== '' ? $message : 'Déclenchée sur la maison #' . $houseId);
+
+        Notifier::sendTelegram($houseId, $text);
+        Notifier::sendAlertEmail($houseId, "Alerte Vicia Home : {$label}", $text);
+        Notifier::sendBrowserPush($houseId, "Alerte {$label}", $message !== '' ? $message : 'Nouvelle alerte sur Vicia Home');
+
+        return $alertId;
     }
 }

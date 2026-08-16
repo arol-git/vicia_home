@@ -69,6 +69,14 @@ class Database
     }
 
     /**
+     * Alias pour getInstance() pour compatibilité avec le code existant.
+     */
+    public static function getConnection(): PDO
+    {
+        return self::getInstance();
+    }
+
+    /**
      * Exécute une requête préparée et retourne le PDOStatement associé.
      *
      * @param string $sql    Requête SQL avec marqueurs nommés ou positionnels

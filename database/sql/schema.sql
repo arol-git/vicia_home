@@ -494,6 +494,27 @@ INSERT INTO `automation_rules`
 (1, 'Extinction ventilateur si température basse', 'sensor', 2, '<', '20', 3, 0, 0, 0, 1),
 (1, 'Alerte gaz cuisine', 'sensor', 4, '>=', '400', NULL, NULL, 1, 1, 1);
 
+-- Table : push_subscriptions
+-- Stockage des souscriptions aux notifications push du navigateur (PWA),
+-- scopées par utilisateur et maison.
+CREATE TABLE IF NOT EXISTS `push_subscriptions` (
+    `id`            INT UNSIGNED AUTO_INCREMENT PRIMARY KEY,
+    `user_id`       INT UNSIGNED    NOT NULL,
+    `house_id`      INT UNSIGNED    NULL,
+    `endpoint`      TEXT            NOT NULL COMMENT 'URL unique du navigateur pour les push',
+    `p256dh`        TEXT            NOT NULL COMMENT 'Clé publique ECDH du navigateur',
+    `auth`          TEXT            NOT NULL COMMENT 'Jeton d''authentification du navigateur',
+    `user_agent`    VARCHAR(255)    NULL COMMENT 'User-Agent au moment de la souscription',
+    `is_active`     TINYINT(1)      NOT NULL DEFAULT 1,
+    `created_at`    DATETIME        NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    `updated_at`    DATETIME        NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+    UNIQUE KEY `uq_push_subscriptions_endpoint` (`endpoint`(255)),
+    KEY `idx_push_subscriptions_user` (`user_id`),
+    KEY `idx_push_subscriptions_house` (`house_id`),
+    CONSTRAINT `fk_push_subscriptions_user` FOREIGN KEY (`user_id`) REFERENCES `users` (`id`) ON DELETE CASCADE,
+    CONSTRAINT `fk_push_subscriptions_house` FOREIGN KEY (`house_id`) REFERENCES `houses` (`id`) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
 -- Paramètres globaux de la plateforme (hors maisons)
 INSERT INTO `settings` (`setting_key`, `setting_value`) VALUES
 ('site_name', 'Vicia Home'),

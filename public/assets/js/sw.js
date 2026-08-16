@@ -270,20 +270,30 @@ async function syncTelemetry() {
 // ============================================================================
 
 self.addEventListener('push', event => {
+  console.log('[SW] Push event received');
+
   if (!event.data) {
+    console.warn('[SW] Push event has no data');
     return;
   }
 
-  const data = event.data.json();
+  let data = {};
+  try {
+    data = event.data.json();
+  } catch (e) {
+    data = { title: 'Vicia Home', body: event.data.text() };
+  }
+
   const options = {
     body: data.body || 'Vicia Home notification',
-    icon: '/assets/img/icon-192.png',
-    badge: '/assets/img/icon-96.png',
+    badge: '/assets/img/favicon.png',
+    icon: '/assets/img/favicon.png',
     tag: data.tag || 'vicia-notification',
-    requireInteraction: data.requireInteraction || false,
+    requireInteraction: data.requireInteraction !== false,
     data: data.data || {}
   };
 
+  console.log('[SW] Showing notification:', data.title, options);
   event.waitUntil(
     self.registration.showNotification(data.title || 'Vicia Home', options)
   );
@@ -291,17 +301,21 @@ self.addEventListener('push', event => {
 
 self.addEventListener('notificationclick', event => {
   event.notification.close();
+  const notificationData = event.notification.data || {};
+  const houseId = notificationData.house_id;
+  const targetUrl = houseId ? `/dashboard?house=${houseId}` : '/dashboard';
+
   event.waitUntil(
     clients.matchAll({ type: 'window', includeUncontrolled: true })
       .then(clientList => {
         for (let i = 0; i < clientList.length; i++) {
           const client = clientList[i];
-          if (client.url === '/' && 'focus' in client) {
+          if ('focus' in client) {
             return client.focus();
           }
         }
         if (clients.openWindow) {
-          return clients.openWindow('/');
+          return clients.openWindow(targetUrl);
         }
       })
   );

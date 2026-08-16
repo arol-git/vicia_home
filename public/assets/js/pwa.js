@@ -23,7 +23,7 @@ class PWAManager {
 
     try {
       await this.registerServiceWorker();
-      this.setupUpdateNotifications();
+      this.setupPushNotifications();
       this.setupInstallPrompt();
       this.setupInstallButton();
     } catch (error) {
@@ -36,6 +36,84 @@ class PWAManager {
    */
   isPWASupported() {
     return 'serviceWorker' in navigator && 'caches' in window;
+  }
+
+  /**
+   * Activer les notifications push du navigateur si l'utilisateur le
+   * permet. La clé publique VAPID est récupérée depuis l'API interne.
+   */
+  async setupPushNotifications() {
+    if (!('Notification' in window) || !('PushManager' in window)) {
+      console.log('[PWA] Browser does not support Web Push');
+      return;
+    }
+
+    if (Notification.permission === 'default') {
+      try {
+        const permission = await Notification.requestPermission();
+        if (permission !== 'granted') {
+          console.log('[PWA] Push denied by user');
+          return;
+        }
+      } catch (error) {
+        console.warn('[PWA] Push permission request failed:', error);
+        return;
+      }
+    }
+
+    if (Notification.permission !== 'granted') {
+      return;
+    }
+
+    try {
+      const registration = await navigator.serviceWorker.ready;
+      const keyResponse = await fetch('/api/v1/push/public-key', { credentials: 'same-origin' });
+      const keyData = await keyResponse.json();
+      const publicKey = keyData?.publicKey;
+
+      if (!publicKey) {
+        console.warn('[PWA] No VAPID public key available');
+        return;
+      }
+
+      const subscription = await registration.pushManager.subscribe({
+        userVisibleOnly: true,
+        applicationServerKey: this.urlBase64ToUint8Array(publicKey)
+      });
+
+      const response = await fetch('/api/v1/push/subscribe', {
+        method: 'POST',
+        credentials: 'same-origin',
+        headers: { 'Content-Type': 'application/json', 'X-Requested-With': 'XMLHttpRequest' },
+        body: JSON.stringify({
+          subscription,
+          house_id: Number(document.body.dataset.houseId || 0) || null,
+          user_agent: navigator.userAgent
+        })
+      });
+      
+      if (!response.ok) {
+        throw new Error('Push subscription failed: ' + response.statusText);
+      }
+
+      console.log('[PWA] Push subscription registered');
+    } catch (error) {
+      console.error('[PWA] Push registration failed:', error);
+    }
+  }
+
+  urlBase64ToUint8Array(base64String) {
+    const padding = '='.repeat((4 - (base64String.length % 4)) % 4);
+    const normalized = (base64String + padding)
+      .replace(/-/g, '+')
+      .replace(/_/g, '/');
+
+    const binary = atob(normalized);
+    const output = new Uint8Array(binary.length);
+    for (let i = 0; i < binary.length; i++) {
+      output[i] = binary.charCodeAt(i);
+    }
+    return output;
   }
 
   /**

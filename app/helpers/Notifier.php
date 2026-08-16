@@ -3,6 +3,8 @@
 namespace App\Helpers;
 
 use App\Core\Database;
+use Minishlink\WebPush\Subscription;
+use Minishlink\WebPush\WebPush;
 
 /**
  * Class Notifier
@@ -72,6 +74,64 @@ class Notifier
         $sent = false;
         foreach ($recipients as $to) {
             $sent = Mailer::send($to, "[Vicia Home] $subject", $body) || $sent;
+        }
+
+        return $sent;
+    }
+
+    public static function sendBrowserPush(int $houseId, string $title, string $body, ?array $data = null): bool
+    {
+        $webPushConfig = config('web_push') ?? [];
+        $publicKey = trim((string) ($webPushConfig['public_key'] ?? getenv('VAPID_PUBLIC_KEY') ?: ''));
+        $privateKey = trim((string) ($webPushConfig['private_key'] ?? getenv('VAPID_PRIVATE_KEY') ?: ''));
+        if ($publicKey === '' || $privateKey === '') {
+            app_log('[Notifier] Push navigateur ignoré : clés VAPID absentes.');
+            return false;
+        }
+
+        $subscriptions = \App\Models\PushSubscription::forHouse($houseId);
+        if (empty($subscriptions)) {
+            app_log('[Notifier] Push navigateur ignoré : aucun abonnement pour la maison #' . $houseId . '.');
+            return false;
+        }
+
+        $webPush = new WebPush([
+            'VAPID' => [
+                'subject' => (string) ($webPushConfig['subject'] ?? 'mailto:admin@vicia-home.local'),
+                'publicKey' => $publicKey,
+                'privateKey' => $privateKey,
+            ],
+        ]);
+
+        $payload = json_encode([
+            'title' => $title,
+            'body' => $body,
+            'tag' => 'vicia-home',
+            'requireInteraction' => true,
+            'data' => $data ?? ['house_id' => $houseId],
+        ], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
+
+        $sent = false;
+        foreach ($subscriptions as $subscription) {
+            $endpoint = trim((string) ($subscription['endpoint'] ?? ''));
+            $p256dh = trim((string) ($subscription['p256dh'] ?? ''));
+            $auth = trim((string) ($subscription['auth'] ?? ''));
+            if ($endpoint === '' || $p256dh === '' || $auth === '') {
+                continue;
+            }
+
+            try {
+                $webPush->sendOneNotification(
+                    Subscription::create([
+                        'endpoint' => $endpoint,
+                        'keys' => ['p256dh' => $p256dh, 'auth' => $auth],
+                    ]),
+                    $payload
+                );
+                $sent = true;
+            } catch (\Throwable $e) {
+                app_log('[Notifier] Push navigateur refusé pour ' . $endpoint . ' : ' . $e->getMessage());
+            }
         }
 
         return $sent;
