@@ -1,6 +1,5 @@
 <?php
 /**
- * app/views/layout/header.php
  *
  * En-tête HTML commun à toutes les pages authentifiées de la
  * plateforme. Attend les variables $title (titre de la page) et
