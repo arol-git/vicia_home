@@ -29,6 +29,16 @@ class Sensor extends Model
         return Database::query($sql, ['house_id' => $houseId])->fetchAll();
     }
 
+    public static function activeForHouse(int $houseId): array
+    {
+        $sql = "SELECT s.*
+                FROM sensors s
+                INNER JOIN rooms r ON r.id = s.room_id
+                WHERE r.house_id = :house_id
+                ORDER BY s.name ASC";
+        return Database::query($sql, ['house_id' => $houseId])->fetchAll();
+    }
+
     public static function findWithRoom(int $id): ?array
     {
         $sql = "SELECT s.*, r.name AS room_name, r.house_id
@@ -77,6 +87,11 @@ class Sensor extends Model
             ['sensor_id' => $sensorId, 'value' => $value]
         );
         return (int) Database::lastInsertId();
+    }
+
+    public static function setActive(int $id, bool $active): void
+    {
+        self::update($id, ['is_active' => $active ? 1 : 0]);
     }
 
     /**
