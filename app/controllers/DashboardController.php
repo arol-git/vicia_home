@@ -230,7 +230,7 @@ class DashboardController extends Controller
 
             Equipment::setState((int) $equipment['id'], $state);
             if (!empty($equipment['mqtt_topic'])) {
-                Publisher::publish($equipment['mqtt_topic'] . '/set', $state ? '1' : '0');
+                Publisher::publish($equipment['mqtt_topic'] . '/set', $state ? '1' : '0');  
             }
             $changed++;
         }

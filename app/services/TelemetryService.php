@@ -42,10 +42,9 @@ class TelemetryService
             }
 
             app_log('[TelemetryService] SUCCES: Capteur trouve #' . $sensor['id'] . ' (' . $sensor['name'] . ')');
-                continue;
-            }
 
             if (!is_numeric($reading['value'])) {
+                app_log('[TelemetryService] ERREUR: Valeur non numerique: ' . var_export($reading['value'], true));
                 $errors[] = [
                     'topic' => $reading['topic'],
                     'message' => 'Valeur non numérique.',
@@ -53,7 +52,9 @@ class TelemetryService
                 continue;
             }
 
+            app_log('[TelemetryService] -> Enregistrement mesure: capteur #' . $sensor['id'] . ' = ' . $reading['value']);
             $readingId = Sensor::recordReading((int) $sensor['id'], (float) $reading['value']);
+            app_log('[TelemetryService] SUCCES: Mesure enregistree #' . $readingId);
             $saved[] = [
                 'reading_id' => $readingId,
                 'sensor_id' => (int) $sensor['id'],
