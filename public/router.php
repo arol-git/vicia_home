@@ -43,6 +43,19 @@ if (str_starts_with($path, '/vicia-bot/public')) {
 
 /*
  * ============================================================
+ * VICIA HOME API
+ * ============================================================
+ */
+
+// Rediriger les routes API vers le vrai fichier api/index.php
+if (str_starts_with($path, '/api/')) {
+    // Reconstruire la REQUEST_URI pour que api/index.php le reçoive correctement
+    require __DIR__ . '/../api/index.php';
+    exit;
+}
+
+/*
+ * ============================================================
  * VICIA HOME
  * ============================================================
  */
