@@ -2,10 +2,11 @@
 // public/dump_env.php - temporary debug only. Remove after use.
 header('Content-Type: text/plain');
 
-$keys = [
+$keys = [  //
     'APP_URL','SITE_URL','MYSQL_HOST','MYSQL_DATABASE','MYSQL_USER','MYSQL_PASSWORD',
     'MQTT_HOST','MQTT_PORT','MQTT_TLS','MQTT_USER','MQTT_PASS',
-    'AI_LLM_API_KEY'
+    'AI_LLM_API_KEY','AI_LLM_PROVIDER','TELEMETRY_API_KEY',
+    'VAPID_SUBJECT','VAPID_PUBLIC_KEY','VAPID_PRIVATE_KEY'
 ];
 
 echo "=== getenv() values ===\n";
