@@ -444,7 +444,7 @@
         display: inline-flex;
     }
     .sidebar.is-open {
-        width: min(80%, 320px);
+        width: min(80vw, 320px);
         transform: translateX(0);
         position: fixed;
         z-index: 60;
@@ -459,7 +459,7 @@
     .sidebar.is-open .sidebar__footer,
     .sidebar.is-open .house-switcher__current,
     .sidebar.is-open .house-switcher__manage {
-        display: unset;
+        display: block;
     }
     .sidebar.is-open .sidebar__link {
         justify-content: flex-start;
@@ -486,16 +486,14 @@
         display: none;
     }
 
-    /* Mobile: hide the sidebar by default and use an off-canvas panel */
     .topbar__menu-btn { display: inline-flex; }
 
     .sidebar {
-        transform: translateX(-110%);
+        width: min(82vw, 320px);
+        transform: translateX(-112%);
         transition: transform 260ms cubic-bezier(.2,.9,.2,1), box-shadow 180ms ease-in-out;
         position: fixed;
         z-index: 60;
-        width: 80%;
-        max-width: 320px;
         left: 0;
         top: 0;
         bottom: 0;
@@ -506,6 +504,7 @@
 
     .sidebar.is-open {
         transform: translateX(0);
+        opacity: 1;
     }
 
     .sidebar__close-btn {
@@ -524,7 +523,6 @@
     }
     .sidebar__close-btn:hover { background: rgba(255,255,255,0.04); }
 
-    /* Invisible edge area to capture swipe-open gestures */
     .edge-swipe-area {
         position: fixed;
         left: 0;
@@ -535,7 +533,6 @@
         touch-action: none;
     }
 
-    /* Backdrop shown when sidebar is open */
     .mobile-backdrop {
         display: none;
         position: fixed;
@@ -546,8 +543,11 @@
         opacity: 0;
         pointer-events: none;
     }
-    .mobile-backdrop.is-visible { display: block; opacity: 1; pointer-events: auto; }
+    .mobile-backdrop.is-visible {
+        display: block;
+        opacity: 1;
+        pointer-events: auto;
+    }
 
-    /* Content takes full width when sidebar hidden */
     .content-wrapper { margin-left: 0; }
 }

@@ -226,6 +226,7 @@ const ViciaApp = (() => {
         }
 
         toggleBtns.forEach((btn) => btn.addEventListener('click', (e) => {
+            e.preventDefault();
             e.stopPropagation();
             if (sidebar.classList.contains('is-open')) {
                 closeSidebar();
@@ -233,6 +234,14 @@ const ViciaApp = (() => {
                 openSidebar();
             }
         }));
+
+        document.querySelectorAll('.sidebar__link').forEach((link) => {
+            link.addEventListener('click', () => {
+                if (window.innerWidth <= 640) {
+                    closeSidebar();
+                }
+            });
+        });
 
         backdrop.addEventListener('click', closeSidebar);
 
