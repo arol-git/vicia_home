@@ -122,13 +122,19 @@ class MqttClient  // il s'agit de la classe principale du client MQTT, qui gère
      */
     public function subscribe(array $topics): void
     {
-        static $packetId = 1;
-        $body = $this->encodeShort($packetId++);
         foreach ($topics as $topic) {
+            static $packetId = 1;
+            $body = $this->encodeShort($packetId++);
             $body .= $this->encodeString($topic) . "\x00";
+            $this->writePacket(0x82, $body);
+
+            // Pour un filtre unique, le SUBACK MQTT 3.1.1 fait 5 octets
+            // au total : en-tête, longueur, identifiant et code d'accord.
+            $suback = fread($this->socket, 5);
+            if (strlen($suback) !== 5 || (ord($suback[0]) & 0xF0) !== 0x90) {
+                throw new \RuntimeException('Réponse SUBACK MQTT invalide.');
+            }
         }
-        $this->writePacket(0x82, $body);
-        fread($this->socket, 5); // consomme le SUBACK
     }
 
     /**
