@@ -31,16 +31,19 @@ const STATIC_ASSETS = [
 // Installation du Service Worker
 // ============================================================================
 self.addEventListener('install', event => {
-  console.log('[SW] Installing service worker...');
+  console.log('[SW] 🔧 INSTALLATION du Service Worker commençante...');
   event.waitUntil(
     caches.open(CACHE_STATIC)
       .then(cache => {
-        console.log('[SW] Precaching static assets');
+        console.log('[SW] → Précaching ' + STATIC_ASSETS.length + ' ressources statiques...');
         return cache.addAll(STATIC_ASSETS).catch(err => {
-          console.warn('[SW] Some static assets failed to cache:', err);
+          console.warn('[SW] ⚠️  Certaines ressources n\'ont pas pu être cachées:', err);
         });
       })
-      .then(() => self.skipWaiting())
+      .then(() => {
+        console.log('[SW] ✅ Installation complète, skip waiting...');
+        self.skipWaiting();
+      })
   );
 });
 
@@ -48,20 +51,23 @@ self.addEventListener('install', event => {
 // Activation du Service Worker
 // ============================================================================
 self.addEventListener('activate', event => {
-  console.log('[SW] Activating service worker...');
+  console.log('[SW] 🚀 ACTIVATION du Service Worker commençante...');
   event.waitUntil(
     caches.keys()
       .then(cacheNames => {
+        const obsolete = cacheNames.filter(name => name.startsWith('vicia-') && name !== CACHE_STATIC && name !== CACHE_DYNAMIC && name !== CACHE_API);
+        console.log('[SW] → Caches obsolètes trouvés:', obsolete);
         return Promise.all(
-          cacheNames
-            .filter(name => name.startsWith('vicia-') && name !== CACHE_STATIC && name !== CACHE_DYNAMIC && name !== CACHE_API)
-            .map(name => {
-              console.log('[SW] Deleting old cache:', name);
-              return caches.delete(name);
-            })
+          obsolete.map(name => {
+            console.log('[SW] → Suppression du cache:', name);
+            return caches.delete(name);
+          })
         );
       })
-      .then(() => self.clients.claim())
+      .then(() => {
+        console.log('[SW] ✅ Activation complète, claim clients...');
+        return self.clients.claim();
+      })
   );
 });
 
@@ -71,9 +77,11 @@ self.addEventListener('activate', event => {
 self.addEventListener('fetch', event => {
   const { request } = event;
   const url = new URL(request.url);
+  console.log('[SW] FETCH:', request.method, url.pathname);
 
   // Ignorer les requêtes non-GET
   if (request.method !== 'GET') {
+    console.log('[SW] → Non-GET, ignoré');
     return;
   }
 
@@ -270,17 +278,21 @@ async function syncTelemetry() {
 // ============================================================================
 
 self.addEventListener('push', event => {
-  console.log('[SW] Push event received');
+  console.log('[SW] === PUSH EVENT RECU ===');
+  console.log('[SW] Timestamp:', new Date().toISOString());
 
   if (!event.data) {
-    console.warn('[SW] Push event has no data');
+    console.error('[SW] ERREUR: Push event sans donnees!');
     return;
   }
 
+  console.log('[SW] Donnees brutes disponibles');
   let data = {};
   try {
     data = event.data.json();
+    console.log('[SW] SUCCES: Donnees JSON parsees:', data);
   } catch (e) {
+    console.warn('[SW] ATTENTION: JSON parsing echoue, utilisation du texte brut:', e);
     data = { title: 'Vicia Home', body: event.data.text() };
   }
 
@@ -293,30 +305,46 @@ self.addEventListener('push', event => {
     data: data.data || {}
   };
 
-  console.log('[SW] Showing notification:', data.title, options);
+  console.log('[SW] Options de notification:', options);
+  console.log('[SW] Affichage notification: "' + (data.title || 'Vicia Home') + '" / "' + options.body + '"');
   event.waitUntil(
     self.registration.showNotification(data.title || 'Vicia Home', options)
+      .then(() => {
+        console.log('[SW] SUCCES: Notification affichee');
+      })
+      .catch(err => {
+        console.error('[SW] ERREUR affichage notification:', err);
+      })
   );
 });
 
 self.addEventListener('notificationclick', event => {
+  console.log('[SW] === NOTIFICATION CLICK ===');
+  console.log('[SW] Notification data:', event.notification.data);
   event.notification.close();
   const notificationData = event.notification.data || {};
   const houseId = notificationData.house_id;
   const targetUrl = houseId ? `/dashboard?house=${houseId}` : '/dashboard';
+  console.log('[SW] Navigation vers:', targetUrl);
 
   event.waitUntil(
     clients.matchAll({ type: 'window', includeUncontrolled: true })
       .then(clientList => {
+        console.log('[SW] Fenetre(s) trouvee(s):', clientList.length);
         for (let i = 0; i < clientList.length; i++) {
           const client = clientList[i];
           if ('focus' in client) {
+            console.log('[SW] Focus sur fenetre existante');
             return client.focus();
           }
         }
         if (clients.openWindow) {
+          console.log('[SW] Ouverture nouvelle fenetre');
           return clients.openWindow(targetUrl);
         }
+      })
+      .catch(err => {
+        console.error('[SW] ERREUR lors du click notification:', err);
       })
   );
 });

@@ -64,6 +64,8 @@ function resolveHouseIdFromTopic(string $topic): ?int
 }
 
 $client->loop(function (string $topic, string $payload) {
+    echo "[" . date('Y-m-d H:i:s') . "] ✓ MQTT TOPIC REÇU: $topic\n";
+    echo "[" . date('Y-m-d H:i:s') . "] PAYLOAD: $payload\n";
     app_log("[MQTT Subscriber] Message reçu — topic: $topic | payload: $payload");
 
     Database::query(
@@ -73,9 +75,12 @@ $client->loop(function (string $topic, string $payload) {
 
     // --- Cas 1 : message de télémétrie d'un capteur connu ---
     // Accepte un payload numérique brut ou JSON, ex. {"value":25.4}.
+    echo "[" . date('Y-m-d H:i:s') . "] → Tentative d'ingestion télémétrie...\n";
     $telemetry = TelemetryService::ingest($topic, $payload);
     if (!empty($telemetry['saved'])) {
+        echo "[" . date('Y-m-d H:i:s') . "] ✓ Télémétrie sauvegardée: " . count($telemetry['saved']) . " lecture(s)\n";
         foreach ($telemetry['saved'] as $reading) {
+            echo "[" . date('Y-m-d H:i:s') . "] → Évaluation règles pour capteur #" . $reading['sensor_id'] . " (valeur={$reading['value']})\n";
             evaluateSensorRules((int) $reading['sensor_id'], (float) $reading['value']);
         }
         return;
@@ -83,11 +88,14 @@ $client->loop(function (string $topic, string $payload) {
 
     // --- Cas 2 : événement de sécurité (intrusion, PIR déclenché...) ---
     if (str_contains($topic, '/security/') && $payload === '1') {
+        echo "[" . date('Y-m-d H:i:s') . "] ⚠️  ÉVÉNEMENT SÉCURITÉ détecté sur: $topic\n";
         $houseId = resolveHouseIdFromTopic($topic);
         if ($houseId === null) {
+            echo "[" . date('Y-m-d H:i:s') . "] ✗ ERREUR: Aucune maison trouvée pour le slug du topic $topic\n";
             app_log("[MQTT Subscriber] Topic $topic ignoré : aucune maison ne correspond à ce slug.");
             return;
         }
+        echo "[" . date('Y-m-d H:i:s') . "] ✓ Maison trouvée #$houseId pour le topic\n";
 
         \App\Models\Alert::create([
             'house_id' => $houseId,
@@ -107,9 +115,12 @@ $client->loop(function (string $topic, string $payload) {
  */
 function evaluateSensorRules(int $sensorId, float $value): void
 {
+    echo "[" . date('Y-m-d H:i:s') . "] 🔍 Recherche règles pour capteur #$sensorId (valeur=$value)\n";
     $rules = AutomationRule::activeForSensor($sensorId);
+    echo "[" . date('Y-m-d H:i:s') . "] → Trouvé " . count($rules) . " règle(s) active(s)\n";
 
     foreach ($rules as $rule) {
+        echo "[" . date('Y-m-d H:i:s') . "] ✓ Vérification règle #" . $rule['id'] . " (" . $rule['condition_operator'] . " " . $rule['condition_value'] . ")\n";
         $threshold = (float) $rule['condition_value'];
         $matched = match ($rule['condition_operator']) {
             '>'  => $value > $threshold,
@@ -122,7 +133,10 @@ function evaluateSensorRules(int $sensorId, float $value): void
         };
 
         if ($matched) {
+            echo "[" . date('Y-m-d H:i:s') . "] ✅ CONDITION VALIDÉE! Exécution de la règle...\n";
             executeRule($rule, "Condition capteur satisfaite (valeur=$value)");
+        } else {
+            echo "[" . date('Y-m-d H:i:s') . "] ✗ Condition non satisfaite\n";
         }
     }
 }
@@ -145,6 +159,7 @@ function evaluateEventRules(int $houseId, string $event): void
  */
 function executeRule(array $rule, string $reason): void
 {
+    echo "[" . date('Y-m-d H:i:s') . "] 🎬 EXÉCUTION RÈGLE #" . $rule['id'] . ": $reason\n";
     $resultParts = [$reason];
 
     if ($rule['action_equipment_id'] && $rule['action_state'] !== null) {

@@ -16,18 +16,25 @@ class PWAManager {
    * Initialiser le PWA
    */
   async init() {
+    console.log('[PWA] 🚀 Initialisation PWA commençante...');
     if (!this.isPWASupported()) {
-      console.log('[PWA] Browser does not support PWA');
+      console.warn('[PWA] ✗ Navigateur ne supporte pas PWA (serviceWorker ou caches manquant)');
       return;
     }
+    console.log('[PWA] ✓ PWA supportée');
 
     try {
+      console.log('[PWA] → Enregistrement Service Worker...');
       await this.registerServiceWorker();
+      console.log('[PWA] → Configuration notifications push...');
       this.setupPushNotifications();
+      console.log('[PWA] → Configuration prompt d\'installation...');
       this.setupInstallPrompt();
+      console.log('[PWA] → Bouton d\'installation configuré');
       this.setupInstallButton();
+      console.log('[PWA] ✅ PWA entièrement initialisée');
     } catch (error) {
-      console.error('[PWA] Initialization failed:', error);
+      console.error('[PWA] ✗ Erreur lors de l\'initialisation:', error);
     }
   }
 
@@ -43,62 +50,78 @@ class PWAManager {
    * permet. La clé publique VAPID est récupérée depuis l'API interne.
    */
   async setupPushNotifications() {
+    console.log('[PWA] 🔔 Configuration des notifications push...');
     if (!('Notification' in window) || !('PushManager' in window)) {
-      console.log('[PWA] Browser does not support Web Push');
+      console.warn('[PWA] ✗ Navigateur ne supporte pas Web Push (Notification ou PushManager manquant)');
       return;
     }
+    console.log('[PWA] ✓ Navigateur supporte Web Push');
+    console.log('[PWA] → Permission actuelle:', Notification.permission);
 
     if (Notification.permission === 'default') {
+      console.log('[PWA] → Demande de permission utilisateur...');
       try {
         const permission = await Notification.requestPermission();
+        console.log('[PWA] → Réponse utilisateur:', permission);
         if (permission !== 'granted') {
-          console.log('[PWA] Push denied by user');
+          console.warn('[PWA] ✗ Notifications refusées par l\'utilisateur');
           return;
         }
       } catch (error) {
-        console.warn('[PWA] Push permission request failed:', error);
+        console.error('[PWA] ✗ Erreur lors de la demande de permission:', error);
         return;
       }
     }
 
     if (Notification.permission !== 'granted') {
+      console.warn('[PWA] ✗ Permission notifications non accordée (actuelle:', Notification.permission + ')');
       return;
     }
 
     try {
+      console.log('[PWA] → Service Worker ready, récupération clé VAPID...');
       const registration = await navigator.serviceWorker.ready;
       const keyResponse = await fetch('/api/v1/push/public-key', { credentials: 'same-origin' });
+      console.log('[PWA] → Réponse clé VAPID:', keyResponse.status, keyResponse.statusText);
       const keyData = await keyResponse.json();
+      console.log('[PWA] → Données clé:', keyData);
       const publicKey = keyData?.publicKey;
 
       if (!publicKey) {
-        console.warn('[PWA] No VAPID public key available');
+        console.error('[PWA] ✗ VAPID clé publique non disponible', keyData);
         return;
       }
+      console.log('[PWA] ✓ Clé VAPID reçue, abonnement push...');
 
       const subscription = await registration.pushManager.subscribe({
         userVisibleOnly: true,
         applicationServerKey: this.urlBase64ToUint8Array(publicKey)
       });
+      console.log('[PWA] ✓ Abonnement créé, endpoint:', subscription.endpoint);
 
+      const houseId = Number(document.body.dataset.houseId || 0) || null;
+      console.log('[PWA] → Envoi abonnement au serveur (house_id:', houseId + ')');
       const response = await fetch('/api/v1/push/subscribe', {
         method: 'POST',
         credentials: 'same-origin',
         headers: { 'Content-Type': 'application/json', 'X-Requested-With': 'XMLHttpRequest' },
         body: JSON.stringify({
           subscription,
-          house_id: Number(document.body.dataset.houseId || 0) || null,
+          house_id: houseId,
           user_agent: navigator.userAgent
         })
       });
       
+      console.log('[PWA] → Réponse serveur:', response.status, response.statusText);
       if (!response.ok) {
-        throw new Error('Push subscription failed: ' + response.statusText);
+        const errorText = await response.text();
+        throw new Error('Push subscription failed: ' + response.statusText + ' - ' + errorText);
       }
 
-      console.log('[PWA] Push subscription registered');
+      console.log('[PWA] ✅ Abonnement push enregistré avec succès');
     } catch (error) {
-      console.error('[PWA] Push registration failed:', error);
+      console.error('[PWA] ✗ Erreur lors de l\'enregistrement du push:', error);
+      console.error('[PWA] Détails:', error.stack);
     }
   }
 
@@ -121,10 +144,11 @@ class PWAManager {
    */
   async registerServiceWorker() {
     try {
+      console.log('[PWA] → Enregistrement du Service Worker (/assets/js/sw.js)...');
       this.registration = await navigator.serviceWorker.register('/assets/js/sw.js', {
         scope: '/'
       });
-      console.log('[PWA] Service Worker registered:', this.registration);
+      console.log('[PWA] ✓ Service Worker enregistré:', this.registration);
 
       // Vérifier les mises à jour toutes les minutes
       this.updateCheckInterval = setInterval(() => this.checkForUpdates(), 60000);

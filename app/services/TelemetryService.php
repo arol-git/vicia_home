@@ -19,18 +19,29 @@ class TelemetryService
      */
     public static function ingest(string $topic, mixed $payload): array
     {
+        app_log('[TelemetryService] === INGEST TELEMETRIE ===');
+        app_log('[TelemetryService] Topic: ' . $topic . ' | Payload: ' . substr((string)$payload, 0, 100));
+        
         $readings = self::extractReadings($topic, $payload);
+        app_log('[TelemetryService] Lectures extraites: ' . count($readings));
+        
         $saved = [];
         $errors = [];
 
         foreach ($readings as $reading) {
+            app_log('[TelemetryService] -> Recherche capteur pour topic: ' . $reading['topic']);
             $sensor = Sensor::findByTopicWithRoom($reading['topic']);
             if (!$sensor) {
+                $msg = 'Aucun capteur ne correspond a ce topic.';
+                app_log('[TelemetryService] ERREUR: ' . $msg);
                 $errors[] = [
                     'topic' => $reading['topic'],
-                    'message' => 'Aucun capteur ne correspond à ce topic.',
+                    'message' => $msg,
                 ];
-                app_log("[Telemetry] Topic inconnu ignoré : {$reading['topic']}");
+                continue;
+            }
+
+            app_log('[TelemetryService] SUCCES: Capteur trouve #' . $sensor['id'] . ' (' . $sensor['name'] . ')');
                 continue;
             }
 
