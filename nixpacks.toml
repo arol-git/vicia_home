@@ -1,0 +1,8 @@
+[phases.setup]
+nixPkgs = ["php84", "php84Extensions.pdo_mysql"]
+
+[phases.build]
+cmds = ["composer install --no-dev --prefer-dist --no-interaction --optimize-autoloader"]
+
+[start]
+cmd = "sh -c 'mkdir -p storage/logs && php mqtt/subscriber.php >> storage/logs/mqtt.log 2>&1 & exec php -S 0.0.0.0:$PORT -t public public/router.php'"
