@@ -500,11 +500,11 @@
         box-shadow: 0 8px 24px rgba(2,6,23,0.15);
         will-change: transform;
         touch-action: pan-y;
+        opacity: 1;
     }
 
     .sidebar.is-open {
         transform: translateX(0);
-        opacity: 1;
     }
 
     .sidebar__close-btn {

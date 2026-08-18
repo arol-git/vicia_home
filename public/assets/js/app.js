@@ -187,28 +187,27 @@ const ViciaApp = (() => {
         const toggleBtns = document.querySelectorAll('[data-toggle-sidebar]');
         if (!sidebar || toggleBtns.length === 0) return;
 
-        // Create backdrop
         let backdrop = document.createElement('div');
         backdrop.className = 'mobile-backdrop';
         document.body.appendChild(backdrop);
 
-        // Create small left-edge area to capture swipe-open gestures on mobile
         let edge = document.createElement('div');
         edge.className = 'edge-swipe-area';
         document.body.appendChild(edge);
 
         function openSidebar() {
+            if (window.innerWidth > 640) {
+                return;
+            }
             sidebar.classList.add('is-open');
             sidebar.setAttribute('aria-hidden', 'false');
             toggleBtns.forEach(b => b.setAttribute('aria-expanded', 'true'));
             backdrop.classList.add('is-visible');
             document.body.style.overflow = 'hidden';
             document.documentElement.style.overflow = 'hidden';
-            // focus management: move focus to first focusable element inside sidebar
             const focusable = sidebar.querySelector('a,button,input,select,textarea,[tabindex]:not([tabindex="-1"])');
             if (focusable) focusable.focus();
             trapFocus(sidebar);
-            // Ensure house switcher menu stays closed when opening the sidebar
             const hsMenu = sidebar.querySelector('.house-switcher__menu');
             if (hsMenu) hsMenu.classList.remove('is-open');
         }
@@ -221,13 +220,14 @@ const ViciaApp = (() => {
             document.body.style.overflow = '';
             document.documentElement.style.overflow = '';
             releaseFocusTrap();
-            // return focus to the first toggle button
-            if (toggleBtns[0]) toggleBtns[0].focus();
         }
 
         toggleBtns.forEach((btn) => btn.addEventListener('click', (e) => {
             e.preventDefault();
             e.stopPropagation();
+            if (window.innerWidth > 640) {
+                return;
+            }
             if (sidebar.classList.contains('is-open')) {
                 closeSidebar();
             } else {
@@ -243,13 +243,19 @@ const ViciaApp = (() => {
             });
         });
 
+        document.querySelectorAll('[data-close-sidebar]').forEach((btn) => {
+            btn.addEventListener('click', (e) => {
+                e.preventDefault();
+                closeSidebar();
+            });
+        });
+
         backdrop.addEventListener('click', closeSidebar);
 
         document.addEventListener('keydown', (e) => {
             if (e.key === 'Escape') closeSidebar();
         });
 
-        // Ensure sidebar state resets when resizing to desktop
         window.addEventListener('resize', () => {
             if (window.innerWidth > 640) {
                 sidebar.classList.remove('is-open');
@@ -259,10 +265,6 @@ const ViciaApp = (() => {
             }
         });
 
-        // Close button inside sidebar
-        document.querySelectorAll('[data-close-sidebar]').forEach((btn) => btn.addEventListener('click', closeSidebar));
-
-        // Touch handling: swipe to close on sidebar
         let startX = 0;
         let currentX = 0;
         let touchingSidebar = false;
@@ -282,7 +284,7 @@ const ViciaApp = (() => {
             backdrop.style.opacity = String(Math.max(0, 0.45 + translateX / 300));
         }, { passive: true });
 
-        sidebar.addEventListener('touchend', (e) => {
+        sidebar.addEventListener('touchend', () => {
             if (!touchingSidebar) return;
             touchingSidebar = false;
             sidebar.style.transition = '';
@@ -292,17 +294,15 @@ const ViciaApp = (() => {
             if (diff < -60) {
                 closeSidebar();
             } else {
-                // restore
                 openSidebar();
             }
             startX = currentX = 0;
         });
 
-        // Edge swipe to open
         let edgeStartX = 0;
         let edgeActive = false;
         edge.addEventListener('touchstart', (e) => {
-            if (sidebar.classList.contains('is-open')) return;
+            if (sidebar.classList.contains('is-open') || window.innerWidth > 640) return;
             edgeStartX = e.touches[0].clientX;
             edgeActive = true;
         }, { passive: true });
