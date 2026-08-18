@@ -66,4 +66,4 @@ if ($path !== '/' && is_file($file)) {
     return false;
 }
 
-require __DIR__ . '/index.php';
+require __DIR__ . '/index.php';// Force redeploy mar. 18 août 2026 17:05:54 WAT
