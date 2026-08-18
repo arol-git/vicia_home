@@ -23,6 +23,7 @@ class MqttClient  // il s'agit de la classe principale du client MQTT, qui gère
     private string $host;  // private indique que la variable est accessible uniquement à l'intérieur de la classe MqttClient. Le type string indique que la variable doit contenir une chaîne de caractères.
     private int $port;
     private bool $tls;
+    private bool $tlsVerify;
     private string $clientId;
     private string $username;
     private string $password;
@@ -32,6 +33,7 @@ class MqttClient  // il s'agit de la classe principale du client MQTT, qui gère
         $this->host     = $config['host'];   //this permtet de récupérer l'adresse du broker MQTT à partir du tableau de configuration et de l'assigner à la propriété $host de l'objet MqttClient.
         $this->port     = (int) $config['port'];
         $this->tls      = (bool) ($config['tls'] ?? false);
+        $this->tlsVerify = (bool) ($config['tls_verify'] ?? true);
         $this->clientId = $config['client_id'] . '_' . substr(md5(uniqid('', true)), 0, 6);
         $this->username = $config['username'] ?? '';
         $this->password = $config['password'] ?? '';
@@ -43,11 +45,18 @@ class MqttClient  // il s'agit de la classe principale du client MQTT, qui gère
     public function connect(int $keepAlive = 60): bool
     {
         $scheme = $this->tls ? 'ssl' : 'tcp';
+        $sslOptions = [
+            'verify_peer'      => $this->tlsVerify,
+            'verify_peer_name' => $this->tlsVerify,
+        ];
+
+        if (!$this->tlsVerify) {
+            $sslOptions['allow_self_signed'] = true;
+            $sslOptions['verify_depth'] = 0;
+        }
+
         $context = stream_context_create([
-            'ssl' => [
-                'verify_peer'      => true,
-                'verify_peer_name' => true,
-            ],
+            'ssl' => $sslOptions,
         ]);
 
         $this->socket = @stream_socket_client(

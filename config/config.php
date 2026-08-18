@@ -54,6 +54,7 @@ return [
         'host'       => getenv('MQTT_HOST') ?: 'f0f51473e19f4dc89f2813a0a491dcbb.s1.eu.hivemq.cloud',
         'port'       => (int) (getenv('MQTT_PORT') ?: 8883),
         'tls'        => filter_var(getenv('MQTT_TLS') ?: true, FILTER_VALIDATE_BOOLEAN),
+        'tls_verify' => filter_var(getenv('MQTT_TLS_VERIFY') ?: true, FILTER_VALIDATE_BOOLEAN),
         'username'   => getenv('MQTT_USER') ?: 'viciaHome',
         'password'   => getenv('MQTT_PASS') ?: 'viciaSecure',
         'client_id'  => getenv('MQTT_CLIENT_ID') ?: 'vicia_home_web',
