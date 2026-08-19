@@ -33,6 +33,10 @@ Options -Indexes
     <FilesMatch "\.(js|json)$">
         Header set Cache-Control "public, max-age=3600"
     </FilesMatch>
+
+    <FilesMatch "^sw\.js$">
+        Header set Service-Worker-Allowed "/"
+    </FilesMatch>
     
     # Types MIME pour PWA
     AddType application/json .json

@@ -19,6 +19,7 @@
         </div>
         <div class="pwa-install-buttons">
             <button type="button" class="pwa-btn pwa-btn-primary" data-pwa-install><i class="fa-solid fa-download"></i> Installer</button>
+            <button type="button" class="pwa-btn pwa-btn-primary" data-pwa-notifications><i class="fa-solid fa-bell"></i> Activer les notifications</button>
             <button type="button" class="pwa-btn pwa-btn-secondary" data-pwa-cancel>Plus tard</button>
         </div>
     </div>

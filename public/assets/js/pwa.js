@@ -27,7 +27,7 @@ class PWAManager {
       console.log('[PWA] → Enregistrement Service Worker...');
       await this.registerServiceWorker();
       console.log('[PWA] → Configuration notifications push...');
-      this.setupPushNotifications();
+      this.setupPushNotifications(false);
       console.log('[PWA] → Configuration prompt d\'installation...');
       this.setupInstallPrompt();
       console.log('[PWA] → Bouton d\'installation configuré');
@@ -49,7 +49,7 @@ class PWAManager {
    * Activer les notifications push du navigateur si l'utilisateur le
    * permet. La clé publique VAPID est récupérée depuis l'API interne.
    */
-  async setupPushNotifications() {
+  async setupPushNotifications(requestPermission = false) {
     console.log('[PWA] 🔔 Configuration des notifications push...');
     if (!('Notification' in window) || !('PushManager' in window)) {
       console.warn('[PWA] ✗ Navigateur ne supporte pas Web Push (Notification ou PushManager manquant)');
@@ -58,7 +58,7 @@ class PWAManager {
     console.log('[PWA] ✓ Navigateur supporte Web Push');
     console.log('[PWA] → Permission actuelle:', Notification.permission);
 
-    if (Notification.permission === 'default') {
+    if (Notification.permission === 'default' && requestPermission) {
       console.log('[PWA] → Demande de permission utilisateur...');
       try {
         const permission = await Notification.requestPermission();
@@ -119,6 +119,7 @@ class PWAManager {
       }
 
       console.log('[PWA] ✅ Abonnement push enregistré avec succès');
+      window.ViciaApp?.toast('Notifications activées sur cet appareil.', 'success');
     } catch (error) {
       console.error('[PWA] ✗ Erreur lors de l\'enregistrement du push:', error);
       console.error('[PWA] Détails:', error.stack);
@@ -259,6 +260,8 @@ class PWAManager {
       if (installButton) installButton.style.display = 'inline-flex';
     });
 
+    window.setTimeout(() => this.showInstallPrompt(), 1200);
+
     window.addEventListener('appinstalled', () => {
       console.log('[PWA] App installed');
       this.deferredPrompt = null;
@@ -286,12 +289,18 @@ class PWAManager {
     container.style.display = 'flex';
     
     const installBtn = container.querySelector('[data-pwa-install]');
+    const notificationsBtn = container.querySelector('[data-pwa-notifications]');
     const cancelBtn = container.querySelector('[data-pwa-cancel]');
 
     container.style.display = 'flex';
 
     if (installBtn) {
       installBtn.onclick = () => this.installApp();
+    }
+
+    if (notificationsBtn) {
+      notificationsBtn.onclick = () => this.setupPushNotifications(true);
+      notificationsBtn.style.display = ('Notification' in window && 'PushManager' in window) ? 'inline-flex' : 'none';
     }
 
     if (cancelBtn) {
@@ -307,6 +316,7 @@ class PWAManager {
    */
   async installApp() {
     if (!this.deferredPrompt) {
+      window.alert('Dans le menu du navigateur, choisissez « Installer l’application » ou « Ajouter à l’écran d’accueil ».');
       return;
     }
 

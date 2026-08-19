@@ -37,7 +37,7 @@ $apiBaseUrl = preg_replace('#/public$#', '', $appBaseUrl) . '/api';
     <title><?= e($title ?? 'Vicia Home') ?> — Vicia Home</title>
 
     <link rel="icon" type="image/png" href="<?= asset('img/favicon.png') ?>">
-    <link rel="manifest" href="<?= asset('manifest.json') ?>">
+    <link rel="manifest" href="<?= url('/manifest.json') ?>">
     <link rel="apple-touch-icon" href="<?= asset('img/icon-192.png') ?>">
 
     <!-- PWA Meta Tags -->

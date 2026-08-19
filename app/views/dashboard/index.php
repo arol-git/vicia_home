@@ -39,12 +39,15 @@ $attentionCount = (int) ($stats['alerts_unread'] ?? 0);
 </section>
 
 <div class="home-mode-control" data-current-mode="<?= e($currentMode) ?>">
-    <span><i class="fa-solid fa-sliders"></i> Mode maison</span>
-    <select class="form-control" data-dashboard-mode aria-label="Choisir le mode de la maison">
-        <option value="comfort" <?= $currentMode === 'comfort' ? 'selected' : '' ?>>Confort</option>
-        <option value="night" <?= $currentMode === 'night' ? 'selected' : '' ?>>Nuit</option>
-        <option value="away" <?= $currentMode === 'away' ? 'selected' : '' ?>>Absence</option>
-    </select>
+    <label for="dashboard-mode-select"><i class="fa-solid fa-sliders"></i> Mode maison</label>
+    <div class="home-mode-control__select">
+        <select id="dashboard-mode-select" class="form-control" data-dashboard-mode aria-label="Choisir le mode de la maison">
+            <option value="comfort" <?= $currentMode === 'comfort' ? 'selected' : '' ?>>Confort</option>
+            <option value="night" <?= $currentMode === 'night' ? 'selected' : '' ?>>Nuit</option>
+            <option value="away" <?= $currentMode === 'away' ? 'selected' : '' ?>>Absence</option>
+        </select>
+        <i class="fa-solid fa-chevron-down" aria-hidden="true"></i>
+    </div>
 </div>
 
 <section class="home-section" aria-labelledby="rooms-title">
