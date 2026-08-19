@@ -18,6 +18,7 @@
 <script src="<?= asset('js/ajax.js') ?><?= file_exists($ajaxScript) ? '?v=' . filemtime($ajaxScript) : '' ?>"></script>
 <script src="<?= asset('js/app.js') ?>"></script>
 <script src="<?= asset('js/charts.js') ?>"></script>
+<script src="<?= asset('js/realtime.js') ?>"></script>
 <script src="<?= asset('js/voice.js') ?>"></script>
 <script src="<?= asset('js/pwa.js') ?>"></script>
 <?php if (!empty($pageScripts)): foreach ($pageScripts as $script): ?>

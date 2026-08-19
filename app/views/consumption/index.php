@@ -65,7 +65,6 @@ $colors = ['#2f5fa8', '#2e7d5b', '#c98a1c', '#c1442f', '#2f80a8', '#8a6d3b', '#5
     </div>
 </div>
 
-<script>
 <div class="grid grid-cols-1 mt-4">
     <div class="card">
         <div class="card__header"><div class="card__title">Détail par équipement</div></div>
@@ -76,17 +75,25 @@ $colors = ['#2f5fa8', '#2e7d5b', '#c98a1c', '#c1442f', '#2f80a8', '#8a6d3b', '#5
                 <?php if (empty($equipments)): ?>
                     <tr><td colspan="5"><div class="empty-state"><i class="fa-solid fa-plug"></i><p>Aucun équipement.</p></div></td></tr>
                 <?php endif; ?>
-                <?php
-                    $typeLabels = ['led' => 'LED', 'relais' => 'Relais', 'ventilateur' => 'Ventilateur', 'pompe' => 'Pompe', 'servo' => 'Servo-moteur', 'porte' => 'Porte', 'fenetre' => 'Fenêtre', 'sirene' => 'Sirène'];
-                    $powerWatts = ['led' => 9, 'relais' => 5, 'ventilateur' => 45, 'pompe' => 60, 'servo' => 3, 'porte' => 3, 'fenetre' => 3, 'sirene' => 4];
+                <?php   // cette estimation est basée sur des valeurs par défaut pour chaque type d'équipement, car la puissance réelle peut varier selon le modèle et l'utilisation.
+                    $powerWatts = [
+                        'led' => 9,
+                        'relais' => 5,
+                        'ventilateur' => 45,
+                        'pompe' => 60,
+                        'servo' => 3,
+                        'porte' => 3,
+                        'fenetre' => 3,
+                        'sirene' => 4,
+                    ];
                 ?>
                 <?php foreach ($equipments as $eq): ?>
                     <tr class="<?= $eq['state'] ? 'is-active-row' : '' ?>">
                         <td data-label="Équipement"><?= e($eq['name']) ?></td>
                         <td data-label="Pièce"><?= e($eq['room_name']) ?></td>
                         <td data-label="Type"><span class="badge badge-neutral"><?= e($typeLabels[$eq['type']] ?? $eq['type']) ?></span></td>
-                        <td data-label="État"><span class="badge <?= $eq['state'] ? 'badge-success' : 'badge-gray' ?>"><?= $eq['state'] ? 'Actif' : 'Inactif' ?></span></td>
-                        <td data-label="Puissance"><strong><?= ($powerWatts[$eq['type']] ?? 10) ?></strong> W</td>
+                        <td data-label="État"><span class="badge <?= $eq['state'] ? 'badge-success' : 'badge-neutral' ?>"><?= $eq['state'] ? 'Actif' : 'Inactif' ?></span></td>
+                        <td data-label="Puissance"><strong><?= (int) ($powerWatts[$eq['type']] ?? 10) ?></strong> W</td>
                     </tr>
                 <?php endforeach; ?>
                 </tbody>

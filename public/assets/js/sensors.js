@@ -74,18 +74,36 @@ document.addEventListener('DOMContentLoaded', () => {
     document.querySelectorAll('[data-view-history]').forEach((btn) => {
         btn.addEventListener('click', () => {
             const id = btn.dataset.id;
-            document.getElementById('history-modal-title').textContent = `Historique — ${btn.dataset.name}`;
+            const modalTitle = document.getElementById('history-modal-title');
+            const emptyState = document.getElementById('history-empty');
+            if (modalTitle) modalTitle.textContent = `Historique — ${btn.dataset.name}`;
+            if (emptyState) emptyState.style.display = 'none';
+            if (historyChart) {
+                historyChart.destroy();
+                historyChart = null;
+            }
             ViciaApp.openModal('modal-sensor-history');
 
-            ViciaAjax.get(`/sensors/${id}/history?hours=24`).then((res) => {
-                if (historyChart) historyChart.destroy();
-                if (!res.labels.length) {
-                    document.getElementById('history-empty').style.display = 'block';
-                    return;
-                }
-                document.getElementById('history-empty').style.display = 'none';
-                historyChart = ViciaCharts.lineChart('sensor-history-chart', res.labels, res.values, `Valeur (${res.unit})`);
-            });
+            ViciaAjax.get(`/sensors/${id}/history?hours=24`)
+                .then((res) => {
+                    const labels = Array.isArray(res?.labels) ? res.labels : [];
+                    const values = Array.isArray(res?.values) ? res.values : [];
+
+                    if (!labels.length || !values.length) {
+                        if (emptyState) emptyState.style.display = 'block';
+                        return;
+                    }
+
+                    if (emptyState) emptyState.style.display = 'none';
+                    historyChart = ViciaCharts.lineChart('sensor-history-chart', labels, values, `Valeur (${res.unit || ''})`);
+                })
+                .catch((err) => {
+                    if (emptyState) {
+                        emptyState.innerHTML = '<i class="fa-solid fa-circle-exclamation"></i><p>Impossible de charger l’historique du capteur.</p>';
+                        emptyState.style.display = 'block';
+                    }
+                    ViciaApp.toast(err.message || 'Historique indisponible.', 'error');
+                });
         });
     });
 });

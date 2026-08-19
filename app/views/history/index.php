@@ -26,14 +26,14 @@
                         <div class="activity-item__icon"><i class="fa-solid fa-clock"></i></div>
                         <div class="activity-item__body">
                             <div class="activity-item__title"><?= e($activity['description']) ?></div>
-                            <div class="activity-item__meta"><?= e($activity['user_name'] ?? 'Système') ?> · <?= e($activity['ip_address']) ?> · <?= e(format_date($activity['created_at'])) ?></div>
+                            <div class="activity-item__meta"><span><?= e($activity['user_name'] ?? 'Système') ?></span> <span><?= e($activity['ip_address']) ?></span> <span><?= e(format_date($activity['created_at'])) ?></span></div>
                         </div>
                     </div>
                 <?php endforeach; ?>
             </div>
 
             <?php if ($totalPages > 1): ?>
-            <div class="flex flex-gap-2 mt-4" style="justify-content:center;">
+            <div class="flex flex-gap-2 mt-4" style="justify-content:center;flex-wrap:wrap;">
                 <?php for ($p = 1; $p <= $totalPages; $p++): ?>
                     <a href="<?= url('/history?page=' . $p) ?>" class="btn btn-sm <?= $p === $page ? 'btn-primary' : 'btn-secondary' ?>"><?= $p ?></a>
                 <?php endfor; ?>
