@@ -78,6 +78,9 @@ $unreadAlerts = $currentHouseId ? Alert::countUnread($currentHouseId) : 0;
         </a>
 
         <div class="sidebar__section-label">Automatisation</div>
+        <a href="<?= url('/consumption') ?>" class="sidebar__link">
+            <i class="fa-solid fa-plug"></i><span>Consommation</span>
+        </a>
         <a href="<?= url('/automation') ?>" class="sidebar__link">
             <i class="fa-solid fa-diagram-project"></i><span>Automatisation</span>
         </a>
