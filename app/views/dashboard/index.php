@@ -9,6 +9,7 @@ $rooms = $rooms ?? [];
 $allEquipments = $allEquipments ?? [];
 $allSensors = $allSensors ?? [];
 $currentHouse = $currentHouse ?? null;
+$currentMode = $currentMode ?? 'comfort';
 
 $equipmentsByRoom = [];
 foreach ($allEquipments as $equipment) {
@@ -36,6 +37,15 @@ $attentionCount = (int) ($stats['alerts_unread'] ?? 0);
         <i class="fa-solid fa-bell"></i> Voir les alertes
     </a>
 </section>
+
+<div class="home-mode-control" data-current-mode="<?= e($currentMode) ?>">
+    <span><i class="fa-solid fa-sliders"></i> Mode maison</span>
+    <select class="form-control" data-dashboard-mode aria-label="Choisir le mode de la maison">
+        <option value="comfort" <?= $currentMode === 'comfort' ? 'selected' : '' ?>>Confort</option>
+        <option value="night" <?= $currentMode === 'night' ? 'selected' : '' ?>>Nuit</option>
+        <option value="away" <?= $currentMode === 'away' ? 'selected' : '' ?>>Absence</option>
+    </select>
+</div>
 
 <section class="home-section" aria-labelledby="rooms-title">
     <div class="home-section__header">

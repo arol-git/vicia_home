@@ -11,6 +11,8 @@ use App\Models\Equipment;
 use App\Models\House;
 use App\Models\Room;
 use App\Models\Sensor;
+use App\Models\Setting;
+use Mqtt\Publisher;
 
 /**
  * Affiche l'état actuel de la maison sélectionnée.
@@ -56,6 +58,44 @@ class DashboardController extends Controller
             'allEquipments' => Equipment::allWithRoom($houseId),
             'allSensors' => Sensor::allWithRoom($houseId),
             'currentHouse' => House::find($houseId),
+            'currentMode' => Setting::get('dashboard_mode_' . $houseId, 'comfort'),
+        ]);
+    }
+
+    public function setMode(): void
+    {
+        $houseId = Auth::requireHouseRole(['admin', 'owner', 'technician']);
+        $this->verifyCsrf();
+        $mode = (string) $this->request->input('mode', '');
+        $labels = ['comfort' => 'Confort', 'night' => 'Nuit', 'away' => 'Absence'];
+        if (!isset($labels[$mode])) {
+            Response::error('Mode inconnu.', 422);
+            return;
+        }
+
+        $targets = [
+            'comfort' => ['led' => 1, 'relais' => 1, 'ventilateur' => 1, 'pompe' => 0, 'porte' => 0, 'fenetre' => 0, 'sirene' => 0],
+            'night' => ['led' => 0, 'relais' => 0, 'ventilateur' => 0, 'pompe' => 0, 'porte' => 1, 'fenetre' => 1, 'sirene' => 0],
+            'away' => ['led' => 0, 'relais' => 0, 'ventilateur' => 0, 'pompe' => 0, 'porte' => 1, 'fenetre' => 1, 'sirene' => 0],
+        ][$mode];
+        $changed = 0;
+        foreach (Equipment::activeForHouse($houseId) as $equipment) {
+            if (!array_key_exists($equipment['type'], $targets) || (int) $equipment['state'] === $targets[$equipment['type']]) {
+                continue;
+            }
+            $state = (int) $targets[$equipment['type']];
+            Equipment::setState((int) $equipment['id'], $state);
+            if (!empty($equipment['mqtt_topic'])) {
+                Publisher::publish($equipment['mqtt_topic'] . '/set', $state ? '1' : '0');
+            }
+            $changed++;
+        }
+        Setting::set('dashboard_mode_' . $houseId, $mode);
+        Response::success("Mode {$labels[$mode]} activé.", [
+            'mode' => $mode,
+            'changed' => $changed,
+            'equipmentsActive' => Equipment::countActive($houseId),
+            'equipmentsCount' => Equipment::countForHouse($houseId),
         ]);
     }
 }

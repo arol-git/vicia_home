@@ -51,6 +51,7 @@ $router->post('/reset-password', 'AuthController@resetPassword');
 
 // ------------------------- Tableau de bord --------------------------------
 $router->get('/dashboard', 'DashboardController@index');
+$router->post('/dashboard/mode', 'DashboardController@setMode');
 
 $router->get('/api/v1/push/public-key', 'PushController@getPublicKey');
 $router->post('/api/v1/push/subscribe', 'PushController@subscribe');

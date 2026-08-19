@@ -263,6 +263,18 @@
     font-size: var(--fs-sm);
 }
 .home-status__action { margin-left: auto; white-space: nowrap; }
+.home-mode-control {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--space-3);
+    max-width: 360px;
+    margin: calc(var(--space-6) * -1) 0 var(--space-6) auto;
+    color: var(--color-text-muted);
+    font-size: var(--fs-sm);
+}
+.home-mode-control span { display: inline-flex; align-items: center; gap: var(--space-2); }
+.home-mode-control .form-control { width: auto; min-width: 130px; padding: 8px 10px; }
 .home-section { margin-bottom: var(--space-6); }
 .home-section__header {
     display: flex;
@@ -406,6 +418,8 @@
         flex-direction: column;
     }
     .home-status__action { margin-left: 0; }
+    .home-mode-control { max-width: none; margin: calc(var(--space-4) * -1) 0 var(--space-5); width: 100%; }
+    .home-mode-control .form-control { flex: 1; }
     .home-room-grid,
     .home-equipment-grid {
         grid-template-columns: 1fr;

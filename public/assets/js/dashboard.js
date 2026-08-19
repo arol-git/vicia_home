@@ -2,6 +2,15 @@
  * Actions simples du tableau de bord.
  */
 document.addEventListener('DOMContentLoaded', () => {
+    const modeSelect = document.querySelector('[data-dashboard-mode]');
+    modeSelect?.addEventListener('change', () => {
+        modeSelect.disabled = true;
+        ViciaAjax.post('/dashboard/mode', { mode: modeSelect.value })
+            .then((response) => ViciaApp.toast(response.message || 'Mode mis à jour.'))
+            .catch((error) => ViciaApp.toast(error.message || 'Impossible de changer le mode.', 'error'))
+            .finally(() => { modeSelect.disabled = false; });
+    });
+
     document.querySelectorAll('[data-dashboard-toggle-equipment]').forEach((button) => {
         button.addEventListener('click', () => {
             const equipmentId = button.dataset.id;
