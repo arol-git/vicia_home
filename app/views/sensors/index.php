@@ -62,7 +62,7 @@ $columnsCount = $canSeeMqttTopics ? 8 : 7;
         <?php endif; ?>
         <?php foreach ($sensors as $sensor): ?>
             <tr>
-                <td>
+                <td data-label="Capteur">
                     <div class="flex items-center flex-gap-3">
                         <div class="room-mini-card__icon" style="width:36px;height:36px;font-size:0.95rem;">
                             <i class="fa-solid <?= e($sensor['icon']) ?>"></i>
@@ -70,15 +70,15 @@ $columnsCount = $canSeeMqttTopics ? 8 : 7;
                         <strong><?= e($sensor['name']) ?></strong>
                     </div>
                 </td>
-                <td><span class="badge badge-neutral"><?= e($sensorTypes[$sensor['type']] ?? $sensor['type']) ?></span></td>
-                <td><?= e($sensor['room_name']) ?></td>
-                <td><strong><?= $sensor['latest_value'] !== null ? e($sensor['latest_value']) . ' ' . e($sensor['unit']) : '—' ?></strong></td>
-                <td class="text-xs text-muted"><?= e(time_ago($sensor['last_recorded_at'])) ?></td>
-                <td class="text-xs text-muted"><?= $sensor['alert_threshold'] !== null ? e($sensor['alert_threshold']) . ' ' . e($sensor['unit']) : '—' ?></td>
+                <td data-label="Type"><span class="badge badge-neutral"><?= e($sensorTypes[$sensor['type']] ?? $sensor['type']) ?></span></td>
+                <td data-label="Pièce"><?= e($sensor['room_name']) ?></td>
+                <td data-label="Dernière valeur"><strong><?= $sensor['latest_value'] !== null ? e($sensor['latest_value']) . ' ' . e($sensor['unit']) : '—' ?></strong></td>
+                <td data-label="Relevé" class="text-xs text-muted"><?= e(time_ago($sensor['last_recorded_at'])) ?></td>
+                <td data-label="Seuil" class="text-xs text-muted"><?= $sensor['alert_threshold'] !== null ? e($sensor['alert_threshold']) . ' ' . e($sensor['unit']) : '—' ?></td>
                 <?php if ($canSeeMqttTopics): ?>
-                <td class="text-xs text-muted"><?= e($sensor['mqtt_topic']) ?></td>
+                <td data-label="Adresse technique" class="text-xs text-muted"><?= e($sensor['mqtt_topic']) ?></td>
                 <?php endif; ?>
-                <td>
+                <td data-label="Actions">
                     <div class="table-actions">
                         <button type="button" class="btn btn-icon btn-secondary" title="Historique"
                                 data-view-history data-id="<?= (int) $sensor['id'] ?>" data-name="<?= e($sensor['name']) ?>">

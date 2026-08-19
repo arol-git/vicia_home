@@ -48,8 +48,8 @@ $eventLabels = ['intrusion' => 'Intrusion détectée', 'appareil_inconnu' => 'Ap
             <?php endif; ?>
             <?php foreach ($rules as $rule): ?>
                 <tr>
-                    <td><strong><?= e($rule['name']) ?></strong></td>
-                    <td class="text-sm">
+                    <td data-label="Règle"><strong><?= e($rule['name']) ?></strong></td>
+                    <td data-label="Condition" class="text-sm">
                         <?php if ($rule['condition_source'] === 'sensor'): ?>
                             SI <strong><?= e($rule['sensor_name'] ?? '—') ?></strong>
                             <?= e($operatorLabels[$rule['condition_operator']] ?? $rule['condition_operator']) ?>
@@ -58,21 +58,21 @@ $eventLabels = ['intrusion' => 'Intrusion détectée', 'appareil_inconnu' => 'Ap
                             SI <strong><?= e($eventLabels[$rule['condition_event']] ?? $rule['condition_event']) ?></strong>
                         <?php endif; ?>
                     </td>
-                    <td class="text-sm">
+                    <td data-label="Action" class="text-sm">
                         <?= $rule['equipment_name'] ? 'Régler « ' . e($rule['equipment_name']) . ' » à ' . ($rule['action_state'] ? 'ON' : 'OFF') : '—' ?>
                     </td>
-                    <td class="text-sm">
+                    <td data-label="Notifications" class="text-sm">
                         <?php if ($rule['notify_telegram']): ?><span class="badge badge-info"><i class="fa-brands fa-telegram"></i> Telegram</span><?php endif; ?>
                         <?php if ($rule['notify_email']): ?><span class="badge badge-neutral"><i class="fa-solid fa-envelope"></i> E-mail</span><?php endif; ?>
                         <?php if (!$rule['notify_telegram'] && !$rule['notify_email']): ?>—<?php endif; ?>
                     </td>
-                    <td>
+                    <td data-label="Active">
                         <label class="switch">
                             <input type="checkbox" data-toggle-rule data-id="<?= (int) $rule['id'] ?>" <?= $rule['is_active'] ? 'checked' : '' ?> <?= $canManage ? '' : 'disabled' ?>>
                             <span class="switch__track"></span>
                         </label>
                     </td>
-                    <td>
+                    <td data-label="Actions">
                         <?php if ($canDelete): ?>
                         <button type="button" class="btn btn-icon btn-secondary" title="Supprimer"
                                 data-delete-rule data-id="<?= (int) $rule['id'] ?>" data-name="<?= e($rule['name']) ?>">

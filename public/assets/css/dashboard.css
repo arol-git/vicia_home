@@ -412,4 +412,16 @@
     }
     .home-equipment-card__button span { display: none; }
     .home-equipment-card__button { padding: 12px; }
+    .home-room-card,
+    .home-equipment-card,
+    .home-alert-item {
+        min-width: 0;
+    }
+    .home-reading {
+        grid-template-columns: 22px minmax(0, 1fr);
+    }
+    .home-reading strong {
+        grid-column: 2;
+        justify-self: start;
+    }
 }

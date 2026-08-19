@@ -57,7 +57,7 @@ $columnsCount = $canSeeMqttTopics ? 7 : 6;
         <?php endif; ?>
         <?php foreach ($equipments as $eq): ?>
             <tr>
-                <td>
+                <td data-label="Équipement">
                     <div class="flex items-center flex-gap-3">
                         <div class="room-mini-card__icon" style="width:36px;height:36px;font-size:0.95rem;">
                             <i class="fa-solid <?= e($eq['icon']) ?>"></i>
@@ -65,19 +65,19 @@ $columnsCount = $canSeeMqttTopics ? 7 : 6;
                         <strong><?= e($eq['name']) ?></strong>
                     </div>
                 </td>
-                <td><span class="badge badge-neutral"><?= e($equipmentTypes[$eq['type']] ?? $eq['type']) ?></span></td>
-                <td><?= e($eq['room_name']) ?></td>
+                <td data-label="Type"><span class="badge badge-neutral"><?= e($equipmentTypes[$eq['type']] ?? $eq['type']) ?></span></td>
+                <td data-label="Pièce"><?= e($eq['room_name']) ?></td>
                 <?php if ($canSeeMqttTopics): ?>
-                <td class="text-xs text-muted"><?= e($eq['mqtt_topic']) ?></td>
+                <td data-label="Adresse technique" class="text-xs text-muted"><?= e($eq['mqtt_topic']) ?></td>
                 <?php endif; ?>
-                <td class="text-xs text-muted"><?= e(time_ago($eq['last_state_change'])) ?></td>
-                <td>
+                <td data-label="Dernier changement" class="text-xs text-muted"><?= e(time_ago($eq['last_state_change'])) ?></td>
+                <td data-label="État">
                     <label class="switch">
                         <input type="checkbox" data-toggle-equipment data-id="<?= (int) $eq['id'] ?>" <?= $eq['state'] ? 'checked' : '' ?> <?= $eq['is_active'] ? '' : 'disabled' ?>>
                         <span class="switch__track"></span>
                     </label>
                 </td>
-                <td>
+                <td data-label="Actions">
                     <?php if ($canDelete): ?>
                     <div class="table-actions">
                         <button type="button" class="btn btn-icon btn-secondary" title="Supprimer"

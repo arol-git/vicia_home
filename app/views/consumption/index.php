@@ -54,9 +54,9 @@ $colors = ['#2f5fa8', '#2e7d5b', '#c98a1c', '#c1442f', '#2f80a8', '#8a6d3b', '#5
                 <?php endif; ?>
                 <?php foreach ($active as $eq): ?>
                     <tr>
-                        <td><?= e($eq['name']) ?></td>
-                        <td><?= e($eq['room_name']) ?></td>
-                        <td><span class="badge badge-neutral"><?= e($typeLabels[$eq['type']] ?? $eq['type']) ?></span></td>
+                        <td data-label="Équipement"><?= e($eq['name']) ?></td>
+                        <td data-label="Pièce"><?= e($eq['room_name']) ?></td>
+                        <td data-label="Type"><span class="badge badge-neutral"><?= e($typeLabels[$eq['type']] ?? $eq['type']) ?></span></td>
                     </tr>
                 <?php endforeach; ?>
                 </tbody>

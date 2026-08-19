@@ -427,6 +427,9 @@
     .main-content {
         padding: var(--space-4);
     }
+    .main-content > * {
+        max-width: 100%;
+    }
     .topbar__user-info {
         display: none;
     }

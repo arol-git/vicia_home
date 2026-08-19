@@ -53,16 +53,16 @@
                 <?php endif; ?>
                 <?php foreach ($logins as $login): ?>
                     <tr>
-                        <td><?= e($login['user_name'] ?? $login['email_used']) ?></td>
-                        <td class="text-xs text-muted"><?= e($login['ip_address']) ?></td>
-                        <td>
+                        <td data-label="Utilisateur"><?= e($login['user_name'] ?? $login['email_used']) ?></td>
+                        <td data-label="Adresse IP" class="text-xs text-muted"><?= e($login['ip_address']) ?></td>
+                        <td data-label="Statut">
                             <?php if ($login['status'] === 'success'): ?>
                                 <span class="badge badge-success">Réussie</span>
                             <?php else: ?>
                                 <span class="badge badge-critical">Échouée</span>
                             <?php endif; ?>
                         </td>
-                        <td class="text-xs text-muted"><?= e(format_date($login['created_at'])) ?></td>
+                        <td data-label="Date" class="text-xs text-muted"><?= e(format_date($login['created_at'])) ?></td>
                     </tr>
                 <?php endforeach; ?>
                 </tbody>
