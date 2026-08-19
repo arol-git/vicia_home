@@ -9,6 +9,7 @@
  * propriétaire.
  */
 $pageScripts = ['houses.js'];
+$isPlatformAdmin = ($currentUser['role'] ?? null) === 'admin';
 ?>
 
 <div class="page-header">
@@ -16,16 +17,18 @@ $pageScripts = ['houses.js'];
         <div class="page-header__title">Mes maisons</div>
         <div class="page-header__subtitle"><?= count($houses) ?> maison(s) accessible(s) à votre compte</div>
     </div>
+    <?php if ($isPlatformAdmin): ?>
     <button type="button" class="btn btn-primary" data-open-modal="modal-add-house">
         <i class="fa-solid fa-plus"></i> Ajouter une maison
     </button>
+    <?php endif; ?>
 </div>
 
 <?php if (empty($houses)): ?>
     <div class="card">
         <div class="empty-state">
             <i class="fa-solid fa-house-circle-check"></i>
-            <p>Vous n'êtes rattaché à aucune maison pour le moment.<br>Créez votre première maison pour commencer à la piloter.</p>
+            <p>Vous n'êtes rattaché à aucune maison pour le moment. Contactez l'administrateur pour obtenir un accès.</p>
         </div>
     </div>
 <?php else: ?>
@@ -46,7 +49,7 @@ $pageScripts = ['houses.js'];
                 <button type="button" class="btn btn-sm btn-primary" data-switch-house-card data-id="<?= (int) $house['id'] ?>">
                     <i class="fa-solid fa-right-left"></i> Sélectionner
                 </button>
-                <?php if (in_array($house['role_in_house'], ['owner', 'admin'], true)): ?>
+                <?php if ($isPlatformAdmin): ?>
                 <button type="button" class="btn btn-sm btn-secondary"
                         data-edit-house
                         data-id="<?= (int) $house['id'] ?>"
@@ -99,6 +102,7 @@ $pageScripts = ['houses.js'];
 </div>
 <?php endif; ?>
 
+<?php if ($isPlatformAdmin): ?>
 <div class="modal-overlay" id="modal-add-house">
     <div class="modal">
         <div class="modal__header">
@@ -130,3 +134,4 @@ $pageScripts = ['houses.js'];
         </form>
     </div>
 </div>
+<?php endif; ?>

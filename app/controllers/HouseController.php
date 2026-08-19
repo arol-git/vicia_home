@@ -41,13 +41,12 @@ class HouseController extends Controller
     }
 
     /**
-     * Crée une nouvelle maison. Tout utilisateur authentifié peut en
-     * créer une : il en devient automatiquement propriétaire (owner).
-     * C'est le point d'entrée d'onboarding d'un nouveau client.
+     * Crée une maison. Cette opération est réservée à l'administrateur
+     * de la plateforme.
      */
     public function store(): void
     {
-        Auth::requireLogin();
+        Auth::requireRole(['admin']);
         $this->verifyCsrf();
 
         $data = [
@@ -80,7 +79,7 @@ class HouseController extends Controller
 
     public function update(int $id): void
     {
-        $this->requireOwnerOrAdmin($id);
+        Auth::requireRole(['admin']);
         $this->verifyCsrf();
 
         $house = House::find($id);
@@ -113,7 +112,7 @@ class HouseController extends Controller
 
     public function destroy(int $id): void
     {
-        $this->requireOwnerOrAdmin($id);
+        Auth::requireRole(['admin']);
         $this->verifyCsrf();
 
         $house = House::find($id);
