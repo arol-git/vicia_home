@@ -3,5 +3,10 @@
         "php-mqtt/client": "^2.3",
         "phpmailer/phpmailer": "^7.1",
         "minishlink/web-push": "^11.0"
+    },
+    "config": {
+        "allow-plugins": {
+            "php-http/discovery": false
+        }
     }
 }

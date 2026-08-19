@@ -3,9 +3,12 @@
  * app/views/settings/index.php
  *
  * Paramètres généraux de la plateforme : identité du site, thème par
- * défaut, notifications Telegram et e-mail.
+ * défaut, notifications Telegram, e-mail et navigateur.
  */
-$pageScripts = [];
+use App\Core\Auth;
+
+$pageScripts = ['settings.js'];
+$isAdmin = Auth::role() === 'admin';
 ?>
 
 <div class="page-header">
@@ -15,6 +18,7 @@ $pageScripts = [];
     </div>
 </div>
 
+<?php if ($isAdmin): ?>
 <form id="settings-form">
     <div class="grid grid-cols-2">
         <div class="card">
@@ -88,9 +92,26 @@ $pageScripts = [];
 
     <button type="submit" class="btn btn-primary mt-4"><i class="fa-solid fa-floppy-disk"></i> Enregistrer les paramètres</button>
 </form>
+<?php endif; ?>
+
+<div class="card mt-4">
+    <div class="card__header"><div class="card__title"><i class="fa-solid fa-bell"></i> Notifications de la maison</div></div>
+    <p class="text-muted">Recevez les alertes importantes de votre maison, même lorsque Vicia Home n’est pas ouvert.</p>
+    <div class="flex items-center flex-gap-3 mt-4">
+        <span class="badge badge-neutral" data-push-status>Notifications désactivées</span>
+        <button type="button" class="btn btn-primary" data-push-enable><i class="fa-solid fa-bell"></i> Activer les notifications</button>
+        <button type="button" class="btn btn-secondary" data-push-disable hidden><i class="fa-solid fa-bell-slash"></i> Désactiver</button>
+    </div>
+</div>
+
+<div class="card mt-4">
+    <div class="card__header"><div class="card__title"><i class="fa-solid fa-mobile-screen-button"></i> Application Vicia Home</div></div>
+    <p class="text-muted">Installez Vicia Home parmi les applications de votre appareil pour l’ouvrir sans barre d’adresse.</p>
+    <button type="button" id="pwa-install-button" class="btn btn-secondary mt-4"><i class="fa-solid fa-download"></i> Installer Vicia Home</button>
+</div>
 
 <script>
-document.getElementById('settings-form').addEventListener('submit', (e) => {
+document.getElementById('settings-form')?.addEventListener('submit', (e) => {
     e.preventDefault();
     ViciaAjax.post('/settings', new FormData(e.target))
         .then((res) => ViciaApp.toast(res.message, 'success'))

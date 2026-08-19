@@ -74,4 +74,11 @@ class PushSubscription
             ':endpoint' => $endpoint,
         ]);
     }
+
+    public static function deactivate(int $id): bool
+    {
+        $db = Database::getConnection();
+        $stmt = $db->prepare('UPDATE push_subscriptions SET is_active = 0, updated_at = NOW() WHERE id = :id');
+        return $stmt->execute([':id' => $id]);
+    }
 }

@@ -1,6 +1,6 @@
 {
   "name": "Vicia Home",
-  "short_name": "Vicia",
+  "short_name": "Vicia Home",
   "description": "Smart Home Automation Platform with IoT Integration",
   "start_url": "./dashboard",
   "scope": "./",
@@ -35,47 +35,5 @@
     }
   ],
   "categories": ["productivity", "utilities"],
-  "screenshots": [
-    {
-      "src": "/assets/img/screenshot-540.png",
-      "sizes": "540x720",
-      "type": "image/png",
-      "form_factor": "narrow"
-    },
-    {
-      "src": "/assets/img/screenshot-1280.png",
-      "sizes": "1280x720",
-      "type": "image/png",
-      "form_factor": "wide"
-    }
-  ],
-  "shortcuts": [
-    {
-      "name": "Dashboard",
-      "short_name": "Dashboard",
-      "description": "Go to dashboard",
-      "url": "/dashboard",
-      "icons": [
-        {
-          "src": "/assets/img/icon-96.png",
-          "sizes": "96x96",
-          "type": "image/png"
-        }
-      ]
-    },
-    {
-      "name": "Rooms",
-      "short_name": "Rooms",
-      "description": "Manage rooms",
-      "url": "/rooms",
-      "icons": [
-        {
-          "src": "/assets/img/icon-96.png",
-          "sizes": "96x96",
-          "type": "image/png"
-        }
-      ]
-    }
-  ],
   "prefer_related_applications": false
 }

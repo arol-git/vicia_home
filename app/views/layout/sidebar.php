@@ -96,10 +96,10 @@ $unreadAlerts = $currentHouseId ? Alert::countUnread($currentHouseId) : 0;
         <a href="<?= url('/users') ?>" class="sidebar__link">
             <i class="fa-solid fa-users"></i><span>Utilisateurs</span>
         </a>
+        <?php endif; ?>
         <a href="<?= url('/settings') ?>" class="sidebar__link">
             <i class="fa-solid fa-sliders"></i><span>Paramètres</span>
         </a>
-        <?php endif; ?>
         <a href="<?= url('/profile') ?>" class="sidebar__link">
             <i class="fa-solid fa-user-gear"></i><span>Mon profil</span>
         </a>

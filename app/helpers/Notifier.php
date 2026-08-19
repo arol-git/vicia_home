@@ -3,8 +3,6 @@
 namespace App\Helpers;
 
 use App\Core\Database;
-use Minishlink\WebPush\Subscription;
-use Minishlink\WebPush\WebPush;
 
 /**
  * Class Notifier
@@ -81,69 +79,7 @@ class Notifier
 
     public static function sendBrowserPush(int $houseId, string $title, string $body, ?array $data = null): bool
     {
-        app_log('[Notifier] 🔔 ENVOI PUSH NAVIGATEUR: maison #' . $houseId . ', titre="' . $title . '"');
-        $webPushConfig = config('web_push') ?? [];
-        $publicKey = trim((string) ($webPushConfig['public_key'] ?? getenv('VAPID_PUBLIC_KEY') ?: ''));
-        $privateKey = trim((string) ($webPushConfig['private_key'] ?? getenv('VAPID_PRIVATE_KEY') ?: ''));
-        app_log('[Notifier] → Vérification clés VAPID: public=' . (strlen($publicKey) > 0 ? 'OK' : 'MANQUANT') . ', private=' . (strlen($privateKey) > 0 ? 'OK' : 'MANQUANT'));
-        if ($publicKey === '' || $privateKey === '') {
-            app_log('[Notifier] ✗ Push navigateur ANNULÉ: clés VAPID absentes');
-            return false;
-        }
-
-        app_log('[Notifier] → Recherche abonnements pour maison #' . $houseId . '...');
-        $subscriptions = \App\Models\PushSubscription::forHouse($houseId);
-        app_log('[Notifier] → Trouvé ' . count($subscriptions) . ' abonnement(s)');
-        if (empty($subscriptions)) {
-            app_log('[Notifier] ✗ Push navigateur ANNULÉ: aucun abonnement pour maison #' . $houseId);
-            return false;
-        }
-
-        $webPush = new WebPush([
-            'VAPID' => [
-                'subject' => (string) ($webPushConfig['subject'] ?? 'mailto:admin@vicia-home.local'),
-                'publicKey' => $publicKey,
-                'privateKey' => $privateKey,
-            ],
-        ]);
-
-        $payload = json_encode([
-            'title' => $title,
-            'body' => $body,
-            'tag' => 'vicia-home',
-            'requireInteraction' => true,
-            'data' => $data ?? ['house_id' => $houseId],
-        ], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
-
-        $sent = false;
-        foreach ($subscriptions as $subscription) {
-            $endpoint = trim((string) ($subscription['endpoint'] ?? ''));
-            $p256dh = trim((string) ($subscription['p256dh'] ?? ''));
-            $auth = trim((string) ($subscription['auth'] ?? ''));
-            app_log('[Notifier] → Vérification abonnement endpoint: ' . substr($endpoint, 0, 50) . '...');
-            if ($endpoint === '' || $p256dh === '' || $auth === '') {
-                app_log('[Notifier] ⚠️  Champs manquants: endpoint=' . ($endpoint ? 'OK' : 'MANQUANT') . ', p256dh=' . ($p256dh ? 'OK' : 'MANQUANT') . ', auth=' . ($auth ? 'OK' : 'MANQUANT'));
-                continue;
-            }
-
-            try {
-                app_log('[Notifier] → Envoi notification push...');
-                $webPush->sendOneNotification(
-                    Subscription::create([
-                        'endpoint' => $endpoint,
-                        'keys' => ['p256dh' => $p256dh, 'auth' => $auth],
-                    ]),
-                    $payload
-                );
-                app_log('[Notifier] ✅ Push envoyé avec succès');
-                $sent = true;
-            } catch (\Throwable $e) {
-                app_log('[Notifier] ✗ Erreur lors de l\'envoi du push: ' . $e->getMessage() . ' [Code: ' . $e->getCode() . ']');
-            }
-        }
-
-        app_log('[Notifier] → Résumé: ' . ($sent ? '✅ Au moins un push envoyé' : '✗ Aucun push n\'a pu être envoyé'));
-        return $sent;
+        return \App\Services\PushNotificationService::sendToHouse($houseId, $title, $body, $data);
     }
 
     private static function settings(): array

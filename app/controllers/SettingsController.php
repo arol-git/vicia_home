@@ -19,7 +19,7 @@ class SettingsController extends Controller
 {
     public function index(): void
     {
-        Auth::requireRole(['admin']);
+        Auth::requireLogin();
         $settings = Setting::all();
 
         $this->render('settings/index', ['title' => 'Paramètres', 'settings' => $settings]);

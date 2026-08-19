@@ -93,10 +93,13 @@ class PWAManager {
       }
       console.log('[PWA] ✓ Clé VAPID reçue, abonnement push...');
 
-      const subscription = await registration.pushManager.subscribe({
-        userVisibleOnly: true,
-        applicationServerKey: this.urlBase64ToUint8Array(publicKey)
-      });
+      let subscription = await registration.pushManager.getSubscription();
+      if (!subscription) {
+        subscription = await registration.pushManager.subscribe({
+          userVisibleOnly: true,
+          applicationServerKey: this.urlBase64ToUint8Array(publicKey)
+        });
+      }
       console.log('[PWA] ✓ Abonnement créé, endpoint:', subscription.endpoint);
 
       const houseId = Number(document.body.dataset.houseId || 0) || null;
@@ -140,12 +143,28 @@ class PWAManager {
     return output;
   }
 
+  async disablePushNotifications() {
+    const registration = await navigator.serviceWorker.ready;
+    const subscription = await registration.pushManager.getSubscription();
+    if (!subscription) return true;
+
+    const response = await fetch(this.appUrl('/api/v1/push/unsubscribe'), {
+      method: 'POST',
+      credentials: 'same-origin',
+      headers: { 'Content-Type': 'application/json', 'X-Requested-With': 'XMLHttpRequest' },
+      body: JSON.stringify({ endpoint: subscription.endpoint })
+    });
+    if (!response.ok) throw new Error('Désabonnement impossible.');
+    await subscription.unsubscribe();
+    return true;
+  }
+
   /**
    * Enregistrer le Service Worker
    */
   async registerServiceWorker() {
     try {
-      const serviceWorkerUrl = this.appUrl('/assets/js/sw.js');
+      const serviceWorkerUrl = this.appUrl('/sw.js');
       const scope = this.appUrl('/');
       console.log('[PWA] → Enregistrement du Service Worker (' + serviceWorkerUrl + ')...');
       this.registration = await navigator.serviceWorker.register(serviceWorkerUrl, {
@@ -255,12 +274,9 @@ class PWAManager {
     window.addEventListener('beforeinstallprompt', (e) => {
       e.preventDefault();
       this.deferredPrompt = e;
-      this.showInstallPrompt();
       const installButton = document.getElementById('pwa-install-button');
       if (installButton) installButton.style.display = 'inline-flex';
     });
-
-    window.setTimeout(() => this.showInstallPrompt(), 1200);
 
     window.addEventListener('appinstalled', () => {
       console.log('[PWA] App installed');
