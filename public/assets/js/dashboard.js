@@ -25,7 +25,10 @@ document.addEventListener('DOMContentLoaded', () => {
                         state.classList.toggle('is-on', isOn);
                         state.classList.toggle('is-off', !isOn);
                     }
+                    button.dataset.state = Number(response.state) === 1 ? '1' : '0';
+                    button.setAttribute('aria-pressed', Number(response.state) === 1 ? 'true' : 'false');
                     ViciaApp.toast(response.message || 'État de l’équipement mis à jour.');
+                    window.ViciaRealtime?.refresh();
                 })
                 .catch((error) => ViciaApp.toast(error.message || 'Impossible de changer cet équipement.', 'error'))
                 .finally(() => { button.disabled = false; });

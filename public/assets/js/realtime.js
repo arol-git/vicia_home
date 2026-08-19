@@ -97,6 +97,7 @@ const ViciaRealtime = (() => {
 
         (snapshot.equipments || []).forEach((equipment) => {
             updateEquipmentControl(equipment);
+            updateDashboardControl(equipment);
             updateEquipmentRow(equipment);
         });
 
@@ -109,6 +110,20 @@ const ViciaRealtime = (() => {
             checkbox.dataset.realState = String(equipment.state);
             checkbox.classList.remove('is-pending');
             checkbox.disabled = !canSendCommands() || Number(equipment.is_active) !== 1;
+        });
+    }
+
+    function updateDashboardControl(equipment) {
+        document.querySelectorAll(`[data-dashboard-toggle-equipment][data-id="${equipment.id}"]`).forEach((button) => {
+            const isOn = Number(equipment.state) === 1;
+            button.dataset.state = isOn ? '1' : '0';
+            button.setAttribute('aria-pressed', isOn ? 'true' : 'false');
+        });
+        document.querySelectorAll(`[data-equipment-state="${equipment.id}"]`).forEach((state) => {
+            const isOn = Number(equipment.state) === 1;
+            state.textContent = isOn ? 'Allumé' : 'Éteint';
+            state.classList.toggle('is-on', isOn);
+            state.classList.toggle('is-off', !isOn);
         });
     }
 

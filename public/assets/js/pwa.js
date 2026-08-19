@@ -81,7 +81,7 @@ class PWAManager {
     try {
       console.log('[PWA] → Service Worker ready, récupération clé VAPID...');
       const registration = await navigator.serviceWorker.ready;
-      const keyResponse = await fetch('/api/v1/push/public-key', { credentials: 'same-origin' });
+      const keyResponse = await fetch(this.appUrl('/api/v1/push/public-key'), { credentials: 'same-origin' });
       console.log('[PWA] → Réponse clé VAPID:', keyResponse.status, keyResponse.statusText);
       const keyData = await keyResponse.json();
       console.log('[PWA] → Données clé:', keyData);
@@ -101,7 +101,7 @@ class PWAManager {
 
       const houseId = Number(document.body.dataset.houseId || 0) || null;
       console.log('[PWA] → Envoi abonnement au serveur (house_id:', houseId + ')');
-      const response = await fetch('/api/v1/push/subscribe', {
+      const response = await fetch(this.appUrl('/api/v1/push/subscribe'), {
         method: 'POST',
         credentials: 'same-origin',
         headers: { 'Content-Type': 'application/json', 'X-Requested-With': 'XMLHttpRequest' },
@@ -144,9 +144,11 @@ class PWAManager {
    */
   async registerServiceWorker() {
     try {
-      console.log('[PWA] → Enregistrement du Service Worker (/assets/js/sw.js)...');
-      this.registration = await navigator.serviceWorker.register('/assets/js/sw.js', {
-        scope: '/'
+      const serviceWorkerUrl = this.appUrl('/assets/js/sw.js');
+      const scope = this.appUrl('/');
+      console.log('[PWA] → Enregistrement du Service Worker (' + serviceWorkerUrl + ')...');
+      this.registration = await navigator.serviceWorker.register(serviceWorkerUrl, {
+        scope
       });
       console.log('[PWA] ✓ Service Worker enregistré:', this.registration);
 
@@ -159,6 +161,11 @@ class PWAManager {
     } catch (error) {
       console.error('[PWA] Service Worker registration failed:', error);
     }
+  }
+
+  appUrl(path) {
+    const base = document.querySelector('meta[name="app-base-url"]')?.getAttribute('content') || '/';
+    return `${base.replace(/\/+$/, '')}/${String(path).replace(/^\/+/, '')}`;
   }
 
   /**
@@ -248,12 +255,16 @@ class PWAManager {
       e.preventDefault();
       this.deferredPrompt = e;
       this.showInstallPrompt();
+      const installButton = document.getElementById('pwa-install-button');
+      if (installButton) installButton.style.display = 'inline-flex';
     });
 
     window.addEventListener('appinstalled', () => {
       console.log('[PWA] App installed');
       this.deferredPrompt = null;
       localStorage.setItem('pwa_installed', 'true');
+      document.getElementById('pwa-install-prompt')?.style.setProperty('display', 'none');
+      document.getElementById('pwa-install-button')?.style.setProperty('display', 'none');
     });
   }
 
@@ -277,15 +288,17 @@ class PWAManager {
     const installBtn = container.querySelector('[data-pwa-install]');
     const cancelBtn = container.querySelector('[data-pwa-cancel]');
 
+    container.style.display = 'flex';
+
     if (installBtn) {
-      installBtn.addEventListener('click', () => this.installApp());
+      installBtn.onclick = () => this.installApp();
     }
 
     if (cancelBtn) {
-      cancelBtn.addEventListener('click', () => {
+      cancelBtn.onclick = () => {
         container.style.display = 'none';
         localStorage.setItem('pwa_install_dismissed', 'true');
-      });
+      };
     }
   }
 

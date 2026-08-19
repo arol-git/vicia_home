@@ -66,12 +66,14 @@ class Sensor extends Model
      */
     public static function history(int $sensorId, int $hours = 24): array
     {
+        $hours = max(1, min($hours, 168));
+        $cutoff = date('Y-m-d H:i:s', time() - ($hours * 3600));
         $sql = "SELECT value, recorded_at FROM sensor_readings
-                WHERE sensor_id = :id AND recorded_at >= (NOW() - INTERVAL :hours HOUR)
+            WHERE sensor_id = :id AND recorded_at >= :cutoff
                 ORDER BY recorded_at ASC";
         $stmt = Database::getInstance()->prepare($sql);
         $stmt->bindValue(':id', $sensorId, \PDO::PARAM_INT);
-        $stmt->bindValue(':hours', $hours, \PDO::PARAM_INT);
+        $stmt->bindValue(':cutoff', $cutoff, \PDO::PARAM_STR);
         $stmt->execute();
         return $stmt->fetchAll();
     }

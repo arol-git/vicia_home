@@ -20,8 +20,8 @@ $roomIcons = [
     'terrasse' => 'fa-umbrella-beach', 'autre' => 'fa-door-open',
 ];
 $houseRole = Auth::roleOnHouse(Auth::currentHouseId() ?? 0);
-$canManage = in_array($houseRole, ['admin', 'owner', 'technician'], true);
-$canDelete = in_array($houseRole, ['admin', 'owner'], true);
+$canManage = $houseRole === 'admin';
+$canDelete = $houseRole === 'admin';
 ?>
 
 <div class="page-header">

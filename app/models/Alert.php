@@ -20,10 +20,11 @@ class Alert extends Model
 
     public static function forHouse(int $houseId, string $orderBy = 'created_at DESC'): array
     {
-        return Database::query(
+        $alerts = Database::query(
             "SELECT * FROM alerts WHERE house_id = :house_id ORDER BY $orderBy",
             ['house_id' => $houseId]
         )->fetchAll();
+        return array_map([self::class, 'sanitizeForDisplay'], $alerts);
     }
 
     public static function recent(int $houseId, int $limit = 10): array
@@ -34,7 +35,7 @@ class Alert extends Model
         $stmt->bindValue(':house_id', $houseId, \PDO::PARAM_INT);
         $stmt->bindValue(':limit', $limit, \PDO::PARAM_INT);
         $stmt->execute();
-        return $stmt->fetchAll();
+        return array_map([self::class, 'sanitizeForDisplay'], $stmt->fetchAll());
     }
 
     public static function countUnread(int $houseId): int
@@ -96,7 +97,7 @@ class Alert extends Model
         }
 
         $label = ucfirst(str_replace(['_', '-'], ' ', (string) ($data['type'] ?? 'systeme')));
-        $message = trim((string) ($data['message'] ?? ''));
+        $message = self::sanitizeText((string) ($data['message'] ?? ''));
         $text = "Alerte {$label} ({$data['severity']})\n" . ($message !== '' ? $message : 'Déclenchée sur la maison #' . $houseId);
 
         Notifier::sendTelegram($houseId, $text);
@@ -104,5 +105,25 @@ class Alert extends Model
         Notifier::sendBrowserPush($houseId, "Alerte {$label}", $message !== '' ? $message : 'Nouvelle alerte sur Vicia Home');
 
         return $alertId;
+    }
+
+    private static function sanitizeForDisplay(array $alert): array
+    {
+        if (isset($alert['message'])) {
+            $alert['message'] = self::sanitizeText((string) $alert['message']);
+        }
+        if (isset($alert['source'])) {
+            $alert['source'] = self::sanitizeText((string) $alert['source']);
+        }
+        return $alert;
+    }
+
+    private static function sanitizeText(string $text): string
+    {
+        return trim((string) preg_replace(
+            '~(?:mqtts?://|home/)[^\s,;()\[\]{}<>]+~i',
+            'source technique masquée',
+            $text
+        ));
     }
 }

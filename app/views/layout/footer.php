@@ -10,6 +10,20 @@
     </div><!-- /.content-wrapper -->
 </div><!-- /.app-shell -->
 
+<div id="pwa-install-prompt" class="pwa-install-prompt" role="dialog" aria-modal="true" aria-labelledby="pwa-install-title" style="display:none;">
+    <div class="pwa-install-modal">
+        <div class="pwa-install-icon"><i class="fa-solid fa-mobile-screen-button" aria-hidden="true"></i></div>
+        <div>
+            <h2 id="pwa-install-title" class="pwa-install-title">Installer Vicia Home</h2>
+            <p class="pwa-install-description">Accédez rapidement à votre maison depuis votre téléphone.</p>
+        </div>
+        <div class="pwa-install-buttons">
+            <button type="button" class="pwa-btn pwa-btn-primary" data-pwa-install><i class="fa-solid fa-download"></i> Installer</button>
+            <button type="button" class="pwa-btn pwa-btn-secondary" data-pwa-cancel>Plus tard</button>
+        </div>
+    </div>
+</div>
+
 <!-- Bibliothèques externes autorisées par le cahier des charges -->
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
 
