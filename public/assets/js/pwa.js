@@ -24,14 +24,14 @@ class PWAManager {
     console.log('[PWA] ✓ PWA supportée');
 
     try {
+      // L'événement peut être émis très tôt par le navigateur.
+      // Il faut l'écouter avant toute opération asynchrone.
+      this.setupInstallPrompt();
+      this.setupInstallButton();
       console.log('[PWA] → Enregistrement Service Worker...');
       await this.registerServiceWorker();
       console.log('[PWA] → Configuration notifications push...');
       this.setupPushNotifications(false);
-      console.log('[PWA] → Configuration prompt d\'installation...');
-      this.setupInstallPrompt();
-      console.log('[PWA] → Bouton d\'installation configuré');
-      this.setupInstallButton();
       console.log('[PWA] ✅ PWA entièrement initialisée');
     } catch (error) {
       console.error('[PWA] ✗ Erreur lors de l\'initialisation:', error);
@@ -280,6 +280,13 @@ class PWAManager {
       return;
     }
 
+    // Chrome/Edge fournissent le vrai prompt d'installation via cet événement.
+    // Sans lui, afficher un bouton qui ne peut installer aucune application
+    // serait trompeur.
+    if (!this.deferredPrompt && !this.isIosDevice()) {
+      return;
+    }
+
     // Vérifier s'il y a un conteneur pour le prompt
     const container = document.getElementById('pwa-install-prompt');
     if (!container) {
@@ -316,7 +323,9 @@ class PWAManager {
    */
   async installApp() {
     if (!this.deferredPrompt) {
-      window.alert('Dans le menu du navigateur, choisissez « Installer l’application » ou « Ajouter à l’écran d’accueil ».');
+      if (this.isIosDevice()) {
+        window.alert('Sur iPhone/iPad : ouvrez le menu Partager, puis choisissez « Sur l’écran d’accueil ». Vicia Home sera installée comme une application et s’ouvrira sans barre d’adresse.');
+      }
       return;
     }
 
@@ -347,8 +356,9 @@ class PWAManager {
       return;
     }
 
-    // Masquer le bouton si pas de deferred prompt
-    if (!this.deferredPrompt) {
+    // Le bouton est affiché lorsque beforeinstallprompt arrive. Sur iOS,
+    // il reste disponible pour expliquer l'installation native du site.
+    if (!this.deferredPrompt && !this.isIosDevice()) {
       installButton.style.display = 'none';
     }
 
@@ -356,6 +366,11 @@ class PWAManager {
       e.preventDefault();
       await this.installApp();
     });
+  }
+
+  isIosDevice() {
+    return /iphone|ipad|ipod/i.test(navigator.userAgent) ||
+      (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
   }
 
   /**
