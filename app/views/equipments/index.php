@@ -12,7 +12,7 @@ $house = $house ?? [];
 
 $equipmentTypes = [
     'led' => 'LED', 'relais' => 'Relais', 'ventilateur' => 'Ventilateur', 'pompe' => 'Pompe',
-    'servo' => 'Servo-moteur', 'porte' => 'Porte', 'fenetre' => 'Fenêtre', 'sirene' => 'Sirène', 'camera' => 'Caméra',
+    'servo' => 'Servo-moteur', 'porte' => 'Porte', 'fenetre' => 'Fenêtre', 'sirene' => 'Sirène',
 ];
 $houseRole = Auth::roleOnHouse(Auth::currentHouseId() ?? 0);
 // Les opérations d'inventaire matériel sont réservées aux admins.

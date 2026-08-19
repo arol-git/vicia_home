@@ -80,8 +80,6 @@ class IntentClassifier
         'siren'     => 'sirene', 'sirens'  => 'sirene',
         
         // Caméra
-        'caméra'    => 'camera', 'caméras' => 'camera', 'camera'   => 'camera', 'cameras'  => 'camera',
-        'video'     => 'camera', 'cam'     => 'camera', 'cams'     => 'camera',
         
         // Relais/Prise
         'relais'    => 'relais', 'prise'   => 'relais', 'prises'   => 'relais',
@@ -237,8 +235,6 @@ class IntentClassifier
             str_contains($normalized, 'porte')                                                     => 'doors',
             str_contains($normalized, 'lampe') || str_contains($normalized, 'lumiere') || str_contains($normalized, 'lumière') => 'lights',
             str_contains($normalized, 'intrusion')                                                 => 'security',
-            str_contains($normalized, 'wifi') || str_contains($normalized, 'wi-fi') || str_contains($normalized, 'connecté') || str_contains($normalized, 'reseau') || str_contains($normalized, 'réseau') => 'network',
-            str_contains($normalized, 'hors ligne') || str_contains($normalized, 'appareils')       => 'devices',
             default                                                                                  => 'house_state',
         };
     }
@@ -249,7 +245,6 @@ class IntentClassifier
             str_contains($normalized, 'semaine') || str_contains($normalized, 'hebdo') => 'weekly',
             str_contains($normalized, 'énergie') || str_contains($normalized, 'energie') || str_contains($normalized, 'consomm') => 'energy',
             str_contains($normalized, 'sécurité') || str_contains($normalized, 'securite') => 'security',
-            str_contains($normalized, 'réseau') || str_contains($normalized, 'reseau') => 'network',
             str_contains($normalized, 'alerte') => 'alerts',
             default => 'daily',
         };

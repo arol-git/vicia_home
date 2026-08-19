@@ -38,7 +38,6 @@ $baseTopic = $config['base_topic'];
 $client->subscribe([
     "$baseTopic/+/+/+/+",        // télémétrie des capteurs
     "$baseTopic/+/security/#",   // événements de sécurité
-    "$baseTopic/+/network/#",    // événements réseau (module cybersécurité)
 ]);
 
 echo "Abonnement actif. En attente de messages...\n";

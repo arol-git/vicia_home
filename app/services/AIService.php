@@ -6,7 +6,6 @@ use App\Models\Alert;
 use App\Models\Conversation;
 use App\Models\Equipment;
 use App\Models\House;
-use App\Models\NetworkDevice;
 use App\Models\Sensor;
 
 /**
@@ -131,7 +130,7 @@ class AIService
     {
         $context = match ($intent['topic']) {
             'energy'   => RecommendationEngine::energyAnalysis($houseId),
-            'security', 'network' => ['suggestions' => RecommendationEngine::suggestions($houseId)],
+            'security' => ['suggestions' => RecommendationEngine::suggestions($houseId)],
             'alerts'   => ['recent_alerts' => array_slice(Alert::forHouse($houseId), 0, 5)],
             default    => array_merge(RecommendationEngine::dailySummary($houseId), ['suggestions' => RecommendationEngine::suggestions($houseId)]),
         };
@@ -164,8 +163,6 @@ class AIService
             'doors'       => self::equipmentStateSummary($houseId, ['porte', 'fenetre']),
             'lights'      => self::equipmentStateSummary($houseId, ['led', 'relais']),
             'security'    => ['unread_critical_alerts' => count(array_filter(Alert::forHouse($houseId), fn($a) => $a['severity'] === 'critical' && !$a['is_read']))],
-            'network'     => ['unknown_devices' => NetworkDevice::countUnknown($houseId), 'devices' => NetworkDevice::forHouse($houseId)],
-            'devices'     => ['offline_or_unknown' => array_values(array_filter(NetworkDevice::forHouse($houseId), fn($d) => $d['list_status'] === 'unknown'))],
             default       => self::houseStateSummary($houseId),
         };
     }

@@ -107,10 +107,10 @@ function api_house_bot_mode(string $internalMode): string
 function api_house_apply_mode(int $houseId, string $mode): int
 {
     $targets = [
-        'comfort' => ['led' => 1, 'relais' => 1, 'ventilateur' => 1, 'pompe' => 0, 'porte' => 0, 'fenetre' => 0, 'sirene' => 0, 'camera' => 1],
-        'night' => ['led' => 0, 'relais' => 0, 'ventilateur' => 0, 'pompe' => 0, 'porte' => 1, 'fenetre' => 1, 'sirene' => 0, 'camera' => 1],
-        'away' => ['led' => 0, 'relais' => 0, 'ventilateur' => 0, 'pompe' => 0, 'porte' => 1, 'fenetre' => 1, 'sirene' => 0, 'camera' => 1],
-        'emergency' => ['led' => 1, 'relais' => 1, 'ventilateur' => 1, 'pompe' => 0, 'porte' => 1, 'fenetre' => 1, 'sirene' => 1, 'camera' => 1],
+        'comfort' => ['led' => 1, 'relais' => 1, 'ventilateur' => 1, 'pompe' => 0, 'porte' => 0, 'fenetre' => 0, 'sirene' => 0],
+        'night' => ['led' => 0, 'relais' => 0, 'ventilateur' => 0, 'pompe' => 0, 'porte' => 1, 'fenetre' => 1, 'sirene' => 0],
+        'away' => ['led' => 0, 'relais' => 0, 'ventilateur' => 0, 'pompe' => 0, 'porte' => 1, 'fenetre' => 1, 'sirene' => 0],
+        'emergency' => ['led' => 1, 'relais' => 1, 'ventilateur' => 1, 'pompe' => 0, 'porte' => 1, 'fenetre' => 1, 'sirene' => 1],
     ];
 
     $sensorTargets = [

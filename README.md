@@ -243,7 +243,7 @@ Le script `schema.sql` crée trois comptes de démonstration, tous avec le mot d
 
 Ce démon CLI assure la liaison entre les modules ESP32 et la plateforme :
 
-1. Il s'abonne aux topics `home/+/+/+` (télémétrie des capteurs), `home/security/#` et `home/network/#`.
+1. Il s'abonne aux topics de télémétrie des capteurs et aux événements de sécurité domestique (`home/+/+/+/+` et `home/+/security/#`).
 2. Pour chaque message reçu correspondant à un capteur enregistré, il insère une mesure dans `sensor_readings` (déclenchant au passage le trigger SQL d'alerte de seuil).
 3. Il évalue les règles actives du moteur d'automatisation concernées par ce capteur ou cet événement, et exécute les actions associées (commande d'équipement, notification Telegram/e-mail).
 

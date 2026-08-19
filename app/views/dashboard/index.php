@@ -1,186 +1,136 @@
 <?php
 /**
- * app/views/dashboard/index.php
- *
- * Tableau de bord principal. Variables attendues : $stats,
- * $recentAlerts, $recentActivity, $rooms, $allSensors, $activityTrend.
+ * Dashboard centré sur l'état compréhensible de la maison.
  */
 $pageScripts = ['dashboard.js'];
 $stats = $stats ?? [];
 $recentAlerts = $recentAlerts ?? [];
-$recentActivity = $recentActivity ?? [];
 $rooms = $rooms ?? [];
+$allEquipments = $allEquipments ?? [];
 $allSensors = $allSensors ?? [];
-$activityTrend = $activityTrend ?? [];
-$currentMode = $currentMode ?? 'comfort';
+$currentHouse = $currentHouse ?? null;
+
+$equipmentsByRoom = [];
+foreach ($allEquipments as $equipment) {
+    $equipmentsByRoom[(int) $equipment['room_id']][] = $equipment;
+}
+
+$sensorsByRoom = [];
+foreach ($allSensors as $sensor) {
+    $sensorsByRoom[(int) $sensor['room_id']][] = $sensor;
+}
+
+$attentionCount = (int) ($stats['alerts_unread'] ?? 0);
 ?>
 
-<div class="page-header">
+<section class="home-status" aria-labelledby="home-status-title">
+    <div class="home-status__icon <?= $attentionCount ? 'is-warning' : 'is-ok' ?>">
+        <i class="fa-solid <?= $attentionCount ? 'fa-triangle-exclamation' : 'fa-circle-check' ?>"></i>
+    </div>
     <div>
-        <div class="page-header__title">Bonjour, <?= e(explode(' ', $currentUser['name'] ?? 'Utilisateur')[0]) ?> 👋</div>
-        <div class="page-header__subtitle">Voici un aperçu de l'état actuel de votre maison intelligente.</div>
+        <p class="home-status__eyebrow"><?= e($currentHouse['name'] ?? 'Ma maison') ?></p>
+        <h1 id="home-status-title"><?= $attentionCount ? 'Une attention est nécessaire' : 'Tout va bien' ?></h1>
+        <p><?= $attentionCount ? $attentionCount . ' alerte(s) à consulter.' : 'Aucun problème important détecté pour le moment.' ?></p>
     </div>
-    <div class="mode-selector" data-current-mode="<?= e($currentMode) ?>">
-        <button type="button" class="<?= $currentMode === 'comfort' ? 'is-active' : '' ?>" data-dashboard-mode="comfort">Confort</button>
-        <button type="button" class="<?= $currentMode === 'away' ? 'is-active' : '' ?>" data-dashboard-mode="away">Absence</button>
-        <button type="button" class="<?= $currentMode === 'night' ? 'is-active' : '' ?>" data-dashboard-mode="night">Nuit</button>
-    </div>
-</div>
+    <a class="btn btn-primary home-status__action" href="<?= url('/alerts') ?>">
+        <i class="fa-solid fa-bell"></i> Voir les alertes
+    </a>
+</section>
 
-<div class="grid grid-cols-4 mb-4">
-    <div class="stat-card">
-        <div class="stat-card__icon is-blue"><i class="fa-solid fa-door-open"></i></div>
+<section class="home-section" aria-labelledby="rooms-title">
+    <div class="home-section__header">
         <div>
-            <div class="stat-card__value"><?= (int) ($stats['rooms_count'] ?? 0) ?></div>
-            <div class="stat-card__label">Pièces</div>
+            <h2 id="rooms-title">Mes pièces</h2>
+            <p>Consultez rapidement ce qui se passe dans chaque espace.</p>
         </div>
-    </div>
-    <div class="stat-card">
-        <div class="stat-card__icon is-green"><i class="fa-solid fa-plug-circle-bolt"></i></div>
-        <div>
-            <div class="stat-card__value" data-equipment-counter><?= (int) ($stats['equipments_active'] ?? 0) ?> / <?= (int) ($stats['equipments_count'] ?? 0) ?></div>
-            <div class="stat-card__label">Équipements actifs</div>
-        </div>
-    </div>
-    <div class="stat-card">
-        <div class="stat-card__icon is-orange"><i class="fa-solid fa-temperature-half"></i></div>
-        <div>
-            <div class="stat-card__value"><?= ($stats['temperature'] ?? null) !== null ? e($stats['temperature']) . ' °C' : '—' ?></div>
-            <div class="stat-card__label">Température ambiante</div>
-        </div>
-    </div>
-    <div class="stat-card">
-        <div class="stat-card__icon is-red"><i class="fa-solid fa-triangle-exclamation"></i></div>
-        <div>
-            <div class="stat-card__value"><?= (int) ($stats['alerts_unread'] ?? 0) ?></div>
-            <div class="stat-card__label">Alertes non lues</div>
-        </div>
-    </div>
-</div>
-
-<div class="grid grid-cols-4 mb-4">
-    <div class="stat-card">
-        <div class="stat-card__icon is-navy"><i class="fa-solid fa-tint"></i></div>
-        <div>
-            <div class="stat-card__value"><?= ($stats['humidity'] ?? null) !== null ? e($stats['humidity']) . ' %' : '—' ?></div>
-            <div class="stat-card__label">Humidité ambiante</div>
-        </div>
-    </div>
-    <div class="stat-card">
-        <div class="stat-card__icon is-blue"><i class="fa-solid fa-wifi"></i></div>
-        <div>
-            <div class="stat-card__value">Connecté</div>
-            <div class="stat-card__label">État du Wi-Fi</div>
-        </div>
-    </div>
-    <div class="stat-card">
-        <div class="stat-card__icon is-orange"><i class="fa-solid fa-network-wired"></i></div>
-        <div>
-            <div class="stat-card__value"><?= (int) ($stats['devices_unknown'] ?? 0) ?></div>
-            <div class="stat-card__label">Appareils inconnus</div>
-        </div>
-    </div>
-    <div class="stat-card">
-        <div class="stat-card__icon is-green"><i class="fa-solid fa-shield-halved"></i></div>
-        <div>
-            <div class="stat-card__value">Armée</div>
-            <div class="stat-card__label">État de l'alarme</div>
-        </div>
-    </div>
-</div>
-
-<div class="grid grid-cols-2 mb-4">
-    <div class="chart-card">
-        <div class="card__header">
-            <div>
-                <div class="card__title">Activité des capteurs (24 h)</div>
-                <div class="card__subtitle">Nombre de mesures reçues par heure</div>
-            </div>
-        </div>
-        <div class="chart-card__canvas-wrap"><canvas id="activity-trend-chart"></canvas></div>
+        <a href="<?= url('/rooms') ?>" class="btn btn-secondary"><i class="fa-solid fa-door-open"></i> Gérer les pièces</a>
     </div>
 
-    <div class="chart-card">
-        <div class="card__header">
-            <div>
-                <div class="card__title">Tendance capteur</div>
-                <div class="card__subtitle">Évolution sur les dernières 24 heures</div>
-            </div>
-            <select id="dashboard-sensor-select" class="form-control dashboard-sensor-select">
-                <?php foreach ($allSensors as $s): ?>
-                    <?php if (in_array($s['type'], ['dht22_temp', 'dht22_hum', 'mq2', 'mq135', 'ldr'], true)): ?>
-                        <option value="<?= (int) $s['id'] ?>"><?= e($s['name']) ?></option>
-                    <?php endif; ?>
-                <?php endforeach; ?>
-            </select>
-        </div>
-        <div class="chart-card__canvas-wrap"><canvas id="sensor-trend-chart"></canvas></div>
-    </div>
-</div>
-
-<div class="grid grid-cols-3 mb-4">
-    <div class="card" style="grid-column: span 2;">
-        <div class="card__header">
-            <div class="card__title">Aperçu des pièces</div>
-            <a href="<?= url('/rooms') ?>" class="btn btn-sm btn-secondary">Voir tout</a>
-        </div>
-        <div class="grid grid-auto">
-            <?php foreach (array_slice($rooms, 0, 6) as $room): ?>
-                <div class="room-mini-card">
-                    <div class="room-mini-card__icon"><i class="fa-solid <?= e($room['icon']) ?>"></i></div>
-                    <div>
-                        <div class="room-mini-card__name"><?= e($room['name']) ?></div>
-                        <div class="room-mini-card__meta"><?= (int) $room['equipments_count'] ?> équip. · <?= (int) $room['sensors_count'] ?> capteurs</div>
+    <?php if (empty($rooms)): ?>
+        <div class="empty-state"><i class="fa-solid fa-house"></i><p>Ajoutez une pièce pour commencer.</p></div>
+    <?php else: ?>
+        <div class="home-room-grid">
+            <?php foreach ($rooms as $room): ?>
+                <article class="home-room-card">
+                    <div class="home-room-card__header">
+                        <div class="home-room-card__icon"><i class="fa-solid <?= e($room['icon']) ?>"></i></div>
+                        <div>
+                            <h3><?= e($room['name']) ?></h3>
+                            <p><?= (int) $room['equipments_count'] ?> équipement(s), <?= (int) $room['sensors_count'] ?> information(s)</p>
+                        </div>
                     </div>
-                </div>
+                    <div class="home-room-card__details">
+                        <?php foreach (array_slice($sensorsByRoom[(int) $room['id']] ?? [], 0, 3) as $sensor): ?>
+                            <div class="home-reading">
+                                <i class="fa-solid <?= e(sensor_icon($sensor['type'])) ?>" aria-hidden="true"></i>
+                                <span><?= e($sensor['name']) ?></span>
+                                <strong><?= e(sensor_reading_label($sensor['type'], $sensor['latest_value'])) ?></strong>
+                            </div>
+                        <?php endforeach; ?>
+                        <?php foreach (array_slice($equipmentsByRoom[(int) $room['id']] ?? [], 0, 3) as $equipment): ?>
+                            <div class="home-reading">
+                                <i class="fa-solid <?= e(equipment_icon($equipment['type'])) ?>" aria-hidden="true"></i>
+                                <span><?= e($equipment['name']) ?></span>
+                                <strong class="home-reading__state <?= (int) $equipment['state'] ? 'is-on' : 'is-off' ?>">
+                                    <?= e(equipment_state_label($equipment['type'], $equipment['state'])) ?>
+                                </strong>
+                            </div>
+                        <?php endforeach; ?>
+                        <?php if (empty($sensorsByRoom[(int) $room['id']]) && empty($equipmentsByRoom[(int) $room['id']])): ?>
+                            <p class="home-room-card__empty">Aucun élément à afficher.</p>
+                        <?php endif; ?>
+                    </div>
+                </article>
             <?php endforeach; ?>
         </div>
-    </div>
+    <?php endif; ?>
+</section>
 
-    <div class="card">
-        <div class="card__header">
-            <div class="card__title">Alertes récentes</div>
-            <a href="<?= url('/alerts') ?>" class="btn btn-sm btn-secondary">Voir tout</a>
+<section class="home-section" aria-labelledby="equipment-title">
+    <div class="home-section__header">
+        <div>
+            <h2 id="equipment-title">Commandes rapides</h2>
+            <p>Allumez, éteignez ou vérifiez vos équipements importants.</p>
         </div>
-        <?php if (empty($recentAlerts)): ?>
-            <div class="empty-state"><i class="fa-solid fa-circle-check"></i><p>Aucune alerte pour le moment.</p></div>
-        <?php else: ?>
-            <?php foreach ($recentAlerts as $alert): $badge = severity_badge($alert['severity']); ?>
-                <div class="alert-item">
-                    <div class="alert-item__icon <?= $badge['class'] ?>"><i class="fa-solid fa-triangle-exclamation"></i></div>
-                    <div>
-                        <div class="alert-item__title"><?= e($alert['message']) ?></div>
-                        <div class="alert-item__meta"><?= e(time_ago($alert['created_at'])) ?></div>
-                    </div>
-                </div>
-            <?php endforeach; ?>
-        <?php endif; ?>
+        <a href="<?= url('/equipments') ?>" class="btn btn-secondary"><i class="fa-solid fa-plug"></i> Voir tous les équipements</a>
     </div>
-</div>
-
-<div class="card">
-    <div class="card__header">
-        <div class="card__title">Dernières activités</div>
-        <a href="<?= url('/history') ?>" class="btn btn-sm btn-secondary">Historique complet</a>
-    </div>
-    <div class="activity-feed">
-        <?php foreach ($recentActivity as $activity): ?>
-            <div class="activity-item">
-                <div class="activity-item__icon"><i class="fa-solid fa-clock"></i></div>
-                <div class="activity-item__body">
-                    <div class="activity-item__title"><?= e($activity['description']) ?></div>
-                    <div class="activity-item__meta"><?= e($activity['user_name'] ?? 'Système') ?> · <?= e(time_ago($activity['created_at'])) ?></div>
+    <div class="home-equipment-grid">
+        <?php foreach (array_slice($allEquipments, 0, 8) as $equipment): ?>
+            <article class="home-equipment-card">
+                <div class="home-equipment-card__icon"><i class="fa-solid <?= e(equipment_icon($equipment['type'])) ?>"></i></div>
+                <div class="home-equipment-card__body">
+                    <h3><?= e($equipment['name']) ?></h3>
+                    <p><?= e($equipment['room_name']) ?></p>
+                    <span class="home-equipment-card__state <?= (int) $equipment['state'] ? 'is-on' : 'is-off' ?>" data-equipment-state="<?= (int) $equipment['id'] ?>">
+                        <?= e(equipment_state_label($equipment['type'], $equipment['state'])) ?>
+                    </span>
                 </div>
-            </div>
+                <button type="button" class="btn btn-primary home-equipment-card__button" data-dashboard-toggle-equipment data-id="<?= (int) $equipment['id'] ?>" aria-label="Changer l'état de <?= e($equipment['name']) ?>">
+                    <i class="fa-solid fa-power-off"></i><span>Changer</span>
+                </button>
+            </article>
         <?php endforeach; ?>
     </div>
-</div>
+</section>
 
-<script type="application/json" id="dashboard-data">
-<?= json_encode([
-    'activityTrend' => [
-        'labels' => array_map(fn($r) => $r['hour_label'], $activityTrend),
-        'values' => array_map(fn($r) => (int) $r['readings'], $activityTrend),
-    ],
-]) ?>
-</script>
+<section class="home-section home-section--alerts" aria-labelledby="alerts-title">
+    <div class="home-section__header">
+        <div>
+            <h2 id="alerts-title">À surveiller</h2>
+            <p>Les alertes qui peuvent nécessiter votre attention.</p>
+        </div>
+        <a href="<?= url('/alerts') ?>" class="btn btn-secondary"><i class="fa-solid fa-bell"></i> Ouvrir les alertes</a>
+    </div>
+    <?php if (empty($recentAlerts)): ?>
+        <div class="home-empty-alert"><i class="fa-solid fa-circle-check"></i><span>Aucune alerte importante.</span></div>
+    <?php else: ?>
+        <div class="home-alert-list">
+            <?php foreach (array_slice($recentAlerts, 0, 4) as $alert): $badge = severity_badge($alert['severity']); ?>
+                <div class="home-alert-item">
+                    <i class="fa-solid fa-triangle-exclamation <?= e($badge['class']) ?>"></i>
+                    <div><strong><?= e($alert['message']) ?></strong><span><?= e(time_ago($alert['created_at'])) ?></span></div>
+                </div>
+            <?php endforeach; ?>
+        </div>
+    <?php endif; ?>
+</section>

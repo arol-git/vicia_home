@@ -16,7 +16,7 @@ class ConsumptionController extends Controller
 {
     private const POWER_WATTS = [
         'led' => 9, 'relais' => 5, 'ventilateur' => 45, 'pompe' => 60,
-        'servo' => 3, 'porte' => 3, 'fenetre' => 3, 'sirene' => 4, 'camera' => 6,
+        'servo' => 3, 'porte' => 3, 'fenetre' => 3, 'sirene' => 4,
     ];
 
     public function index(): void

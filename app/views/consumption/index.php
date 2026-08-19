@@ -9,7 +9,7 @@ $pageScripts = [];
 
 $typeLabels = [
     'led' => 'LED', 'relais' => 'Relais', 'ventilateur' => 'Ventilateur', 'pompe' => 'Pompe',
-    'servo' => 'Servo-moteur', 'porte' => 'Porte', 'fenetre' => 'Fenêtre', 'sirene' => 'Sirène', 'camera' => 'Caméra',
+    'servo' => 'Servo-moteur', 'porte' => 'Porte', 'fenetre' => 'Fenêtre', 'sirene' => 'Sirène',
 ];
 $colors = ['#2f5fa8', '#2e7d5b', '#c98a1c', '#c1442f', '#2f80a8', '#8a6d3b', '#5c85c4', '#7c5cc4', '#c45c9e'];
 ?>

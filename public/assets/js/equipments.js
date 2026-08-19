@@ -65,7 +65,6 @@ document.addEventListener('DOMContentLoaded', () => {
                 porte: 'security',
                 fenetre: 'security',
                 sirene: 'security',
-                camera: 'camera',
             }[typeSelect.value] || 'equipment';
             topicInput.value = `home/${houseSlug}/${domain}/${roomSlug}/${typeSelect.value}`;
         };

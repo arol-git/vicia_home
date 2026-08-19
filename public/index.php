@@ -51,7 +51,6 @@ $router->post('/reset-password', 'AuthController@resetPassword');
 
 // ------------------------- Tableau de bord --------------------------------
 $router->get('/dashboard', 'DashboardController@index');
-$router->post('/dashboard/mode', 'DashboardController@setMode');
 
 $router->get('/api/v1/push/public-key', 'PushController@getPublicKey');
 $router->post('/api/v1/push/subscribe', 'PushController@subscribe');
@@ -88,15 +87,6 @@ $router->post('/sensors', 'SensorController@store');
 $router->put('/sensors/{id}', 'SensorController@update');
 $router->delete('/sensors/{id}', 'SensorController@destroy');
 $router->get('/sensors/{id}/history', 'SensorController@history');
-
-// ------------------------- Caméras -------------------------------------------
-$router->get('/cameras', 'CameraController@index');
-
-// ------------------------- Réseau / cybersécurité ----------------------------
-$router->get('/security', 'SecurityController@index');
-$router->post('/security/devices/{id}/whitelist', 'SecurityController@whitelist');
-$router->post('/security/devices/{id}/blacklist', 'SecurityController@blacklist');
-$router->post('/security/simulate-scan', 'SecurityController@simulateScan');
 
 // ------------------------- Consommation ---------------------------------------
 $router->get('/consumption', 'ConsumptionController@index');

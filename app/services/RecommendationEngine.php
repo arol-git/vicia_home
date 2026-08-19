@@ -5,7 +5,6 @@ namespace App\Services;
 use App\Core\Database;
 use App\Models\Alert;
 use App\Models\Equipment;
-use App\Models\NetworkDevice;
 
 /**
  * Class RecommendationEngine
@@ -74,11 +73,6 @@ class RecommendationEngine
             }
         }
 
-        $unknownCount = NetworkDevice::countUnknown($houseId);
-        if ($unknownCount > 0) {
-            $suggestions[] = "$unknownCount appareil(s) non identifié(s) sur votre réseau — vérifiez la liste dans le module Réseau.";
-        }
-
         $unreadCritical = count(array_filter(Alert::forHouse($houseId), fn($a) => $a['severity'] === 'critical' && !$a['is_read']));
         if ($unreadCritical > 0) {
             $suggestions[] = "$unreadCritical alerte(s) critique(s) non lue(s).";
@@ -90,7 +84,7 @@ class RecommendationEngine
     public static function energyAnalysis(int $houseId): array
     {
         $equipments = Equipment::allWithRoom($houseId);
-        $powerWatts = ['led' => 9, 'relais' => 5, 'ventilateur' => 45, 'pompe' => 60, 'servo' => 3, 'porte' => 3, 'fenetre' => 3, 'sirene' => 4, 'camera' => 6];
+        $powerWatts = ['led' => 9, 'relais' => 5, 'ventilateur' => 45, 'pompe' => 60, 'servo' => 3, 'porte' => 3, 'fenetre' => 3, 'sirene' => 4];
 
         $byType = [];
         $totalWatts = 0;

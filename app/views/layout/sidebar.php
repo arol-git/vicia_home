@@ -72,23 +72,12 @@ $unreadAlerts = $currentHouseId ? Alert::countUnread($currentHouseId) : 0;
         <a href="<?= url('/sensors') ?>" class="sidebar__link">
             <i class="fa-solid fa-microchip"></i><span>Capteurs</span>
         </a>
-        <a href="<?= url('/cameras') ?>" class="sidebar__link">
-            <i class="fa-solid fa-video"></i><span>Caméras</span>
-        </a>
-
-        <div class="sidebar__section-label">Sécurité</div>
-        <a href="<?= url('/security') ?>" class="sidebar__link">
-            <i class="fa-solid fa-shield-halved"></i><span>Réseau &amp; cybersécurité</span>
-        </a>
         <a href="<?= url('/alerts') ?>" class="sidebar__link">
             <i class="fa-solid fa-bell"></i><span>Alertes</span>
             <span class="badge-count" data-alert-badge style="<?= $unreadAlerts ? '' : 'display:none;' ?>"><?= $unreadAlerts > 9 ? '9+' : $unreadAlerts ?></span>
         </a>
 
-        <div class="sidebar__section-label">Énergie &amp; automatisation</div>
-        <a href="<?= url('/consumption') ?>" class="sidebar__link">
-            <i class="fa-solid fa-bolt"></i><span>Consommation</span>
-        </a>
+        <div class="sidebar__section-label">Automatisation</div>
         <a href="<?= url('/automation') ?>" class="sidebar__link">
             <i class="fa-solid fa-diagram-project"></i><span>Automatisation</span>
         </a>

@@ -22,7 +22,7 @@ use Mqtt\Publisher;
  */
 class EquipmentController extends Controller
 {
-    private array $allowedTypes = ['led', 'relais', 'ventilateur', 'pompe', 'servo', 'porte', 'fenetre', 'sirene', 'camera'];
+    private array $allowedTypes = ['led', 'relais', 'ventilateur', 'pompe', 'servo', 'porte', 'fenetre', 'sirene'];
 
     public function index(): void
     {

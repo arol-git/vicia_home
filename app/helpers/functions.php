@@ -225,7 +225,6 @@ function equipment_icon(string $type): string
         'porte'       => 'fa-warehouse',
         'fenetre'     => 'fa-window-maximize',
         'sirene'      => 'fa-bell',
-        'camera'      => 'fa-video',
         default       => 'fa-microchip',
     };
 }
@@ -248,6 +247,33 @@ function sensor_icon(string $type): string
         'energy_kwh'      => 'fa-gauge-high',
         'energy_consumption' => 'fa-bolt',
         default           => 'fa-microchip',
+    };
+}
+
+function sensor_reading_label(string $type, $value): string
+{
+    if ($value === null || $value === '') {
+        return 'Aucune mesure';
+    }
+
+    return match ($type) {
+        'dht22_temp' => number_format((float) $value, 1, ',', ' ') . ' °C',
+        'dht22_hum', 'humidite_sol' => number_format((float) $value, 0, ',', ' ') . ' %',
+        'pir' => ((float) $value > 0) ? 'Présence détectée' : 'Aucune présence',
+        'rfid' => ((float) $value > 0) ? 'Accès autorisé' : 'Aucun accès récent',
+        'mq2', 'mq135' => ((float) $value > 0) ? 'Détection active' : 'Rien à signaler',
+        'ldr' => ((float) $value > 0) ? 'Lumière suffisante' : 'Faible luminosité',
+        default => (string) $value,
+    };
+}
+
+function equipment_state_label(string $type, $state): string
+{
+    $active = (int) $state === 1;
+    return match ($type) {
+        'porte' => $active ? 'Ouverte' : 'Fermée',
+        'fenetre' => $active ? 'Ouverte' : 'Fermée',
+        default => $active ? 'Allumé' : 'Éteint',
     };
 }
 

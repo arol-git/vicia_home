@@ -31,7 +31,6 @@ function handle_consumption(string $method, ?string $id, ?string $subaction): vo
         'porte' => 5,
         'fenetre' => 5,
         'sirene' => 15,
-        'camera' => 8,
     ];
 
     $totalWatts = 0;

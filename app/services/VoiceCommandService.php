@@ -31,7 +31,6 @@ class VoiceCommandService
         'ventilateur' => ['ventilateur', 'ventilateurs', 'climatisation', 'clim', 'climate', 'fan', 'fans'],
         'pompe'      => ['pompe', 'arrosage', 'irrigation', 'pump', 'sprinkler'],
         'sirene'     => ['alarme', 'sirène', 'sirene', 'alerte', 'alarm', 'siren'],
-        'camera'     => ['caméra', 'camera', 'caméras', 'cameras', 'video', 'cam'],
         'relais'     => ['relais', 'prise', 'prises', 'relay', 'plug', 'outlet'],
         'servo'      => ['servo', 'moteur', 'motor'],
     ];
