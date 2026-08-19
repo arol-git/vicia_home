@@ -249,11 +249,13 @@ const ViciaApp = (() => {
         }));
 
         document.querySelectorAll('.sidebar__link').forEach((link) => {
-            link.addEventListener('click', () => {
+            link.addEventListener('click', (e) => {
                 console.log('[App] 🔗 Clic sur lien sidebar:', link.textContent);
                 if (window.innerWidth <= 640) {
                     console.log('[App] → Mobile, fermeture sidebar après clic');
                     closeSidebar();
+                    e.preventDefault();
+                    window.location.assign(link.href);
                 }
             });
         });
