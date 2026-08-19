@@ -249,13 +249,11 @@ const ViciaApp = (() => {
         }));
 
         document.querySelectorAll('.sidebar__link').forEach((link) => {
-            link.addEventListener('click', (e) => {
+            link.addEventListener('click', () => {
                 console.log('[App] 🔗 Clic sur lien sidebar:', link.textContent);
                 if (window.innerWidth <= 640) {
                     console.log('[App] → Mobile, fermeture sidebar après clic');
                     closeSidebar();
-                    e.preventDefault();
-                    window.location.assign(link.href);
                 }
             });
         });
@@ -289,6 +287,7 @@ const ViciaApp = (() => {
         sidebar.addEventListener('touchstart', (e) => {
             if (!sidebar.classList.contains('is-open')) return;
             startX = e.touches[0].clientX;
+            currentX = startX;
             touchingSidebar = true;
             sidebar.style.transition = 'none';
         }, { passive: true });
@@ -310,8 +309,6 @@ const ViciaApp = (() => {
             backdrop.style.opacity = '';
             if (diff < -60) {
                 closeSidebar();
-            } else {
-                openSidebar();
             }
             startX = currentX = 0;
         });
