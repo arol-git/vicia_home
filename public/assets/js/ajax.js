@@ -84,7 +84,7 @@ const ViciaAjax = (() => {
         const normalized = raw ? raw.trim().replace(/^\uFEFF/, '') : '';
         let json;
         try {
-            json = await response.json();
+            json = normalized ? JSON.parse(normalized) : { success: response.ok, message: '' };
         } catch (e) {
             json = { success: response.ok, message: response.ok ? '' : 'Réponse invalide du serveur.' };
         }
