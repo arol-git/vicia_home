@@ -2,7 +2,7 @@
 builder = "DOCKERFILE"
 
 [deploy]
-startCommand = "sh -c 'mkdir -p storage/logs && php mqtt/subscriber.php >> storage/logs/mqtt.log 2>&1 & exec php -S 0.0.0.0:$PORT -t public public/router.php'"
+startCommand = "sh -c 'mkdir -p storage/logs && php mqtt/subscriber.php >> storage/logs/mqtt.log 2>&1 & PHP_CLI_SERVER_WORKERS=4 exec php -S 0.0.0.0:$PORT -t public public/router.php'"
 restartPolicyType = "ON_FAILURE"
 restartPolicyMaxRetries = 10
 

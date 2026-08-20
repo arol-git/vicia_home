@@ -19,4 +19,4 @@ COPY --from=dependencies /app/vicia-bot/vendor ./vicia-bot/vendor
 
 RUN mkdir -p storage/logs
 
-CMD ["sh", "-c", "php mqtt/subscriber.php >> storage/logs/mqtt.log 2>&1 & exec php -S 0.0.0.0:${PORT} -t public public/router.php"]
+CMD ["sh", "-c", "php mqtt/subscriber.php >> storage/logs/mqtt.log 2>&1 & PHP_CLI_SERVER_WORKERS=4 exec php -S 0.0.0.0:${PORT} -t public public/router.php"]
