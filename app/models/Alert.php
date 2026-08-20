@@ -100,9 +100,23 @@ class Alert extends Model
         $message = self::sanitizeText((string) ($data['message'] ?? ''));
         $text = "Alerte {$label} ({$data['severity']})\n" . ($message !== '' ? $message : 'Déclenchée sur la maison #' . $houseId);
 
-        Notifier::sendTelegram($houseId, $text);
-        Notifier::sendAlertEmail($houseId, "Alerte Vicia Home : {$label}", $text);
-        Notifier::sendBrowserPush($houseId, "Alerte {$label}", $message !== '' ? $message : 'Nouvelle alerte sur Vicia Home');
+        try {
+            Notifier::sendTelegram($houseId, $text);
+        } catch (\Throwable $exception) {
+            app_log('[Alert] Notification Telegram ignorée : ' . $exception->getMessage());
+        }
+
+        try {
+            Notifier::sendAlertEmail($houseId, "Alerte Vicia Home : {$label}", $text);
+        } catch (\Throwable $exception) {
+            app_log('[Alert] Notification e-mail ignorée : ' . $exception->getMessage());
+        }
+
+        try {
+            Notifier::sendBrowserPush($houseId, "Alerte {$label}", $message !== '' ? $message : 'Nouvelle alerte sur Vicia Home');
+        } catch (\Throwable $exception) {
+            app_log('[Alert] Notification push ignorée : ' . $exception->getMessage());
+        }
 
         return $alertId;
     }

@@ -32,7 +32,8 @@ class ViciaApiClient
     {
         $this->http = new Client([
             'base_uri'    => rtrim(App::env('VICIA_API_BASE_URL'), '/') . '/',
-            'timeout'     => 10,
+            'timeout'     => 8,
+            'connect_timeout' => 3,
             'http_errors' => false, // gestion manuelle des codes d'erreur, voir send()
         ]);
     }
@@ -178,11 +179,19 @@ class ViciaApiClient
 
                 $fallback = new Client([
                     'base_uri' => $publicBase . '/api/v1/',
-                    'timeout' => 15,
-                    'connect_timeout' => 8,
+                    'timeout' => 8,
+                    'connect_timeout' => 3,
                     'http_errors' => false,
                 ]);
-                return $fallback->request($method, ltrim($path, '/'), $options);
+                try {
+                    return $fallback->request($method, ltrim($path, '/'), $options);
+                } catch (ConnectException $fallbackError) {
+                    throw new ConnectException(
+                        'API interne et API publique Railway injoignables.',
+                        $fallbackError->getRequest(),
+                        $fallbackError
+                    );
+                }
             }
         }
     }
