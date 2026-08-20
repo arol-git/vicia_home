@@ -169,6 +169,9 @@ class ViciaApiClient
                 return $this->http->request($method, ltrim($path, '/'), $options);
             } catch (ConnectException $secondError) {
                 $publicBase = rtrim((string) App::env('RAILWAY_SERVICE_VICIA_HOME_URL', ''), '/');
+                if ($publicBase !== '' && !preg_match('#^https?://#i', $publicBase)) {
+                    $publicBase = 'https://' . $publicBase;
+                }
                 if ($publicBase === '' || !str_contains((string) App::env('VICIA_API_BASE_URL', ''), '.railway.internal')) {
                     throw $secondError;
                 }
