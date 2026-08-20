@@ -37,7 +37,15 @@ class App
         $dotenv = Dotenv::createImmutable(self::ROOT_PATH);
         $dotenv->safeLoad();
 
-        $dotenv->required(['TELEGRAM_BOT_TOKEN', 'VICIA_API_BASE_URL', 'MYSQL_DATABASE', 'MYSQL_USER', 'APP_KEY'])
+        if (!self::env('VICIA_API_BASE_URL')) {
+            $platformUrl = rtrim((string) self::env('RAILWAY_SERVICE_VICIA_HOME_URL', ''), '/');
+            if ($platformUrl !== '') {
+                $_ENV['VICIA_API_BASE_URL'] = $platformUrl . '/api/v1';
+                $_SERVER['VICIA_API_BASE_URL'] = $platformUrl . '/api/v1';
+            }
+        }
+
+        $dotenv->required(['TELEGRAM_BOT_TOKEN', 'VICIA_API_BASE_URL', 'MYSQL_DATABASE', 'MYSQL_USER', 'BOT_APP_KEY'])
             ->notEmpty();
 
         date_default_timezone_set(self::env('APP_TIMEZONE', 'UTC'));

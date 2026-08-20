@@ -15,7 +15,7 @@
  * TELEGRAM_WEBHOOK_SECRET.
  */
 
-require __DIR__ . '/vendor/autoload.php';
+require __DIR__ . '/../vendor/autoload.php';
 
 use Bot\Config\App;
 use Bot\Core\ErrorHandler;

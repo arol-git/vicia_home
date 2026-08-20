@@ -74,6 +74,6 @@ class TokenVault
 
     private static function key(): string
     {
-        return hash('sha256', App::env('APP_KEY'), true);
+        return hash('sha256', App::env('BOT_APP_KEY'), true);
     }
 }

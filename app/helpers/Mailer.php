@@ -15,6 +15,7 @@ class Mailer
     public static function send(string $to, string $subject, string $body): bool
     {
         $settings = Setting::all();
+        $settings = self::withEnvironmentSettings($settings);
         $host = trim((string) ($settings['smtp_host'] ?? ''));
 
         if ($host === '') {
@@ -74,5 +75,26 @@ class Mailer
             app_log('[Mailer] Échec SMTP : ' . $e->getMessage());
             return false;
         }
+    }
+
+    private static function withEnvironmentSettings(array $settings): array
+    {
+        $environment = [
+            'smtp_host' => getenv('SMTP_HOST') ?: '',
+            'smtp_port' => getenv('SMTP_PORT') ?: '',
+            'smtp_encryption' => getenv('SMTP_ENCRYPTION') ?: '',
+            'smtp_username' => getenv('SMTP_USERNAME') ?: '',
+            'smtp_password' => getenv('SMTP_PASSWORD') ?: '',
+            'smtp_from' => getenv('SMTP_FROM') ?: '',
+            'smtp_from_name' => getenv('SMTP_FROM_NAME') ?: '',
+        ];
+
+        foreach ($environment as $key => $value) {
+            if ($value !== '') {
+                $settings[$key] = $value;
+            }
+        }
+
+        return $settings;
     }
 }
