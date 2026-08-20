@@ -121,7 +121,7 @@ class ViciaApiClient
         }
 
         try {
-            $response = $this->http->request($method, ltrim($path, '/'), $options);
+            $response = $this->requestWithNetworkRetry($method, $path, $options);
         } catch (ConnectException $e) {
             Logger::channel('bot')->error("Connexion à l'API Vicia Home impossible : " . $e->getMessage());
             throw new ApiException(
@@ -156,6 +156,32 @@ class ViciaApiClient
         }
 
         return $body;
+    }
+
+    private function requestWithNetworkRetry(string $method, string $path, array $options): \Psr\Http\Message\ResponseInterface
+    {
+        try {
+            return $this->http->request($method, ltrim($path, '/'), $options);
+        } catch (ConnectException $firstError) {
+            usleep(250000);
+
+            try {
+                return $this->http->request($method, ltrim($path, '/'), $options);
+            } catch (ConnectException $secondError) {
+                $publicBase = rtrim((string) App::env('RAILWAY_SERVICE_VICIA_HOME_URL', ''), '/');
+                if ($publicBase === '' || !str_contains((string) App::env('VICIA_API_BASE_URL', ''), '.railway.internal')) {
+                    throw $secondError;
+                }
+
+                $fallback = new Client([
+                    'base_uri' => $publicBase . '/api/v1/',
+                    'timeout' => 15,
+                    'connect_timeout' => 8,
+                    'http_errors' => false,
+                ]);
+                return $fallback->request($method, ltrim($path, '/'), $options);
+            }
+        }
     }
 
     private function userMessageFor(int $status, array $body): string
