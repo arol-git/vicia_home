@@ -32,7 +32,7 @@ class TelemetryService
             app_log('[TelemetryService] -> Recherche capteur pour topic: ' . $reading['topic']);
             $sensor = Sensor::findByTopicWithRoom($reading['topic']);
             if (!$sensor) {
-                $msg = 'Aucun capteur ne correspond a ce topic.';
+                $msg = 'Aucune mesure ne correspond à cette adresse MQTT.';
                 app_log('[TelemetryService] ERREUR: ' . $msg);
                 $errors[] = [
                     'topic' => $reading['topic'],
@@ -101,7 +101,7 @@ class TelemetryService
             return [
                 'success' => false,
                 'saved' => [],
-                'errors' => [['message' => 'Les champs topic et value sont obligatoires.']],
+                'errors' => [['message' => 'Les champs adresse et valeur sont obligatoires.']],
             ];
         }
 

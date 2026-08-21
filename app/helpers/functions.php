@@ -229,6 +229,21 @@ function equipment_icon(string $type): string
     };
 }
 
+function room_icon(string $type): string
+{
+    return match ($type) {
+        'salon' => 'fa-couch',
+        'cuisine' => 'fa-utensils',
+        'chambre' => 'fa-bed',
+        'garage' => 'fa-warehouse',
+        'bureau' => 'fa-briefcase',
+        'salle_de_bain' => 'fa-bath',
+        'jardin' => 'fa-leaf',
+        'terrasse' => 'fa-umbrella-beach',
+        default => 'fa-door-open',
+    };
+}
+
 /**
  * Retourne la classe d'icône Font Awesome associée à un type de capteur.
  */

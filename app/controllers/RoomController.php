@@ -42,7 +42,7 @@ class RoomController extends Controller
             'name'        => trim((string) $this->request->input('name')),
             'type'        => (string) $this->request->input('type', 'autre'),
             'floor'       => trim((string) $this->request->input('floor', '')),
-            'icon'        => (string) $this->request->input('icon', 'fa-door-open'),
+            'icon'        => room_icon((string) $this->request->input('type', 'autre')),
             'description' => trim((string) $this->request->input('description', '')),
         ];
 
@@ -78,7 +78,7 @@ class RoomController extends Controller
             'name'        => trim((string) $this->request->input('name')),
             'type'        => (string) $this->request->input('type', $room['type']),
             'floor'       => trim((string) $this->request->input('floor', '')),
-            'icon'        => (string) $this->request->input('icon', $room['icon']),
+            'icon'        => room_icon((string) $this->request->input('type', $room['type'])),
             'description' => trim((string) $this->request->input('description', '')),
         ];
 

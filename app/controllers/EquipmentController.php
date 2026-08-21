@@ -81,7 +81,7 @@ class EquipmentController extends Controller
             return;
         }
         if (!str_starts_with($data['mqtt_topic'], 'home/' . $house['slug'] . '/')) {
-            Response::error('Le topic MQTT doit commencer par home/' . $house['slug'] . '/.', 422);
+            Response::error('L’adresse MQTT doit commencer par home/' . $house['slug'] . '/.', 422);
             return;
         }
 
@@ -130,7 +130,7 @@ class EquipmentController extends Controller
             return;
         }
         if (!str_starts_with($data['mqtt_topic'], 'home/' . $house['slug'] . '/')) {
-            Response::error('Le topic MQTT doit commencer par home/' . $house['slug'] . '/.', 422);
+            Response::error('L’adresse MQTT doit commencer par home/' . $house['slug'] . '/.', 422);
             return;
         }
 

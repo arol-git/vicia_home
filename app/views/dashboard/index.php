@@ -66,7 +66,7 @@ $attentionCount = (int) ($stats['alerts_unread'] ?? 0);
             <?php foreach ($rooms as $room): ?>
                 <article class="home-room-card">
                     <div class="home-room-card__header">
-                        <div class="home-room-card__icon"><i class="fa-solid <?= e($room['icon']) ?>"></i></div>
+                        <div class="home-room-card__icon"><i class="fa-solid <?= e(room_icon($room['type'])) ?>"></i></div>
                         <div>
                             <h3><?= e($room['name']) ?></h3>
                             <p><?= (int) $room['equipments_count'] ?> équipement(s), <?= (int) $room['sensors_count'] ?> information(s)</p>

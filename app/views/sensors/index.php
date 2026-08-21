@@ -51,7 +51,7 @@ $columnsCount = $canSeeMqttTopics ? 8 : 7;
                 <th>Relevé</th>
                 <th>Seuil d'alerte</th>
                 <?php if ($canSeeMqttTopics): ?>
-                <th>Topic MQTT</th>
+                <th>Adresse de connexion</th>
                 <?php endif; ?>
                 <th></th>
             </tr>
@@ -140,7 +140,7 @@ $columnsCount = $canSeeMqttTopics ? 8 : 7;
                     </div>
                 </div>
                 <div class="form-group">
-                    <label class="form-label">Topic MQTT</label>
+                    <label class="form-label">Adresse de connexion</label>
                     <input type="text" name="mqtt_topic" class="form-control" placeholder="home/<?= e($house['slug'] ?? 'maison') ?>/climate/bureau/temp" required>
                 </div>
             </div>

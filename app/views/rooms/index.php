@@ -40,7 +40,7 @@ $canDelete = $houseRole === 'admin';
     <?php foreach ($rooms as $room): ?>
         <div class="card room-card">
             <div class="flex-between mb-4">
-                <div class="room-mini-card__icon"><i class="fa-solid <?= e($room['icon']) ?>"></i></div>
+                <div class="room-mini-card__icon"><i class="fa-solid <?= e(room_icon($room['type'])) ?>"></i></div>
                 <?php if ($canManage): ?>
                 <div class="table-actions">
                     <button type="button" class="btn btn-icon btn-secondary" title="Modifier"

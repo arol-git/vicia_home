@@ -44,7 +44,7 @@ $columnsCount = $canSeeMqttTopics ? 7 : 6;
                 <th>Type</th>
                 <th>Pièce</th>
                 <?php if ($canSeeMqttTopics): ?>
-                <th>Topic MQTT</th>
+                <th>Adresse de connexion</th>
                 <?php endif; ?>
                 <th>Dernier changement</th>
                 <th>État</th>
@@ -125,9 +125,9 @@ $columnsCount = $canSeeMqttTopics ? 7 : 6;
                     </div>
                 </div>
                 <div class="form-group">
-                    <label class="form-label">Topic MQTT</label>
+                    <label class="form-label">Adresse de connexion</label>
                     <input type="text" name="mqtt_topic" class="form-control" placeholder="home/<?= e($house['slug'] ?? 'maison') ?>/lighting/salon/led1" required>
-                    <div class="form-hint">Suggéré automatiquement à partir du type et de la pièce ; modifiable.</div>
+                    <div class="form-hint">Cette adresse est proposée automatiquement selon le type et la pièce.</div>
                 </div>
             </div>
             <div class="modal__footer">
