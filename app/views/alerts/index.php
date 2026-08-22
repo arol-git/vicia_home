@@ -64,13 +64,15 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     });
 
-    document.getElementById('test-email-alert-btn')?.addEventListener('click', () => {
+    document.getElementById('test-email-alert-btn')?.addEventListener('click', (event) => {
+        const button = event.currentTarget;
+        button.disabled = true;
         ViciaAjax.post('/alerts/test-email')
             .then((res) => {
                 ViciaApp.toast(res.message, res.sent === false ? 'error' : 'success');
-                setTimeout(() => window.location.reload(), 700);
             })
-            .catch((err) => ViciaApp.toast(err.message || 'Impossible de créer l’alerte de test.', 'error'));
+            .catch((err) => ViciaApp.toast(err.message || 'Impossible d’envoyer l’e-mail de test.', 'error'))
+            .finally(() => { button.disabled = false; });
     });
 });
 </script>

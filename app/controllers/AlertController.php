@@ -6,7 +6,9 @@ use App\Core\Auth;
 use App\Core\Controller;
 use App\Core\Response;
 use App\Helpers\Notifier;
+use App\Helpers\Mailer;
 use App\Models\Alert;
+use App\Models\User;
 
 /**
  * Class AlertController
@@ -76,7 +78,10 @@ class AlertController extends Controller
             'message' => $message,
         ]);
 
-        $sent = Notifier::sendAlertEmail($houseId, 'Alerte de test', $message);
+        $user = Auth::user() ?? [];
+        $notificationSettings = User::notificationSettings((int) Auth::id());
+        $recipient = trim((string) ($notificationSettings['notification_email'] ?? $user['email'] ?? ''));
+        $sent = $recipient !== '' && Mailer::send($recipient, '[Vicia Home] Alerte de test', $message);
         app_log('[AlertController] Résultat test e-mail : ' . ($sent ? 'envoyé' : 'non envoyé') . '.');
 
         if (!$sent) {

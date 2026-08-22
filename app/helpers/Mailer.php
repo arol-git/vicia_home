@@ -45,6 +45,8 @@ class Mailer
             $mail->SMTPAuth = trim((string) ($settings['smtp_username'] ?? '')) !== '';
             $mail->Username = trim((string) ($settings['smtp_username'] ?? ''));
             $mail->Password = (string) ($settings['smtp_password'] ?? '');
+            $mail->Timeout = 10;
+            $mail->Timelimit = 10;
 
             $encryption = trim((string) ($settings['smtp_encryption'] ?? 'tls'));
             if (in_array($encryption, ['tls', 'ssl'], true)) {
