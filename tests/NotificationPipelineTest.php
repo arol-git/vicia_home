@@ -42,12 +42,12 @@ $allFailed = ['EMAIL' => false, 'TELEGRAM' => false, 'PUSH' => false];
 
 $scenarios = [
     'A. Email fonctionnel' => ['EMAIL' => true, 'TELEGRAM' => false, 'PUSH' => false],
-    'B. Email en échec, Telegram tenté' => ['EMAIL' => false, 'TELEGRAM' => true, 'PUSH' => false],
+    'B. Email en échec, Telegram tenté' => ['EMAIL' => 'throw', 'TELEGRAM' => true, 'PUSH' => false],
     'C. Telegram fonctionnel' => ['EMAIL' => false, 'TELEGRAM' => true, 'PUSH' => false],
-    'D. Telegram en échec, Push tenté' => ['EMAIL' => false, 'TELEGRAM' => false, 'PUSH' => true],
+    'D. Telegram en échec, Push tenté' => ['EMAIL' => false, 'TELEGRAM' => 'throw', 'PUSH' => true],
     'E. Push fonctionnel' => ['EMAIL' => false, 'TELEGRAM' => false, 'PUSH' => true],
     'F. Trois canaux fonctionnels' => $allChannels,
-    'G. Trois canaux en échec' => $allFailed,
+    'G. Trois canaux en échec' => ['EMAIL' => 'throw', 'TELEGRAM' => 'throw', 'PUSH' => 'throw'],
 ];
 
 foreach ($scenarios as $name => $results) {
