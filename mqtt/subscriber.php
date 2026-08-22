@@ -185,26 +185,28 @@ function executeRule(array $rule, string $reason): void
     $resultParts = [$reason];
 
     if ($rule['action_equipment_id'] && $rule['action_state'] !== null) {
-        $equipment = \App\Models\Equipment::find((int) $rule['action_equipment_id']);
-        if ($equipment) {
-            \App\Models\Equipment::update($equipment['id'], ['state' => (int) $rule['action_state']]);
-            Publisher::publish($equipment['mqtt_topic'] . '/set', (string) (int) $rule['action_state']);
-            $resultParts[] = "Équipement « {$equipment['name']} » mis à l'état {$rule['action_state']}";
+        try {
+            $equipment = \App\Models\Equipment::find((int) $rule['action_equipment_id']);
+            if ($equipment) {
+                \App\Models\Equipment::update($equipment['id'], ['state' => (int) $rule['action_state']]);
+                Publisher::publish($equipment['mqtt_topic'] . '/set', (string) (int) $rule['action_state']);
+                $resultParts[] = "Équipement « {$equipment['name']} » mis à l'état {$rule['action_state']}";
+            }
+        } catch (\Throwable $exception) {
+            $resultParts[] = 'Commande équipement échouée';
+            app_log('[Automation] Commande équipement échouée : ' . $exception->getMessage());
         }
     }
 
-    if ($rule['notify_telegram']) {
-        \App\Helpers\Notifier::sendTelegram((int) $rule['house_id'], "Règle « {$rule['name']} » déclenchée : $reason");
-        $resultParts[] = 'Notification Telegram envoyée';
-    }
-
-    if ($rule['notify_email']) {
-        \App\Helpers\Notifier::sendAlertEmail((int) $rule['house_id'], "Règle « {$rule['name']} » déclenchée", $reason);
-        $resultParts[] = 'Notification e-mail envoyée';
-    }
-
-    \App\Helpers\Notifier::sendBrowserPush((int) $rule['house_id'], 'Règle activée', "La règle « {$rule['name']} » a été déclenchée.");
-    $resultParts[] = 'Notification navigateur envoyée';
+    $notificationMessage = "Règle « {$rule['name']} » déclenchée : $reason";
+    \App\Services\NotificationPipeline::dispatch((int) $rule['id'], (int) $rule['house_id'], [
+        'EMAIL' => static fn (): bool => !empty($rule['notify_email'])
+            && \App\Helpers\Notifier::sendAlertEmail((int) $rule['house_id'], "Règle « {$rule['name']} » déclenchée", $reason),
+        'TELEGRAM' => static fn (): bool => !empty($rule['notify_telegram'])
+            && \App\Helpers\Notifier::sendTelegram((int) $rule['house_id'], $notificationMessage),
+        'PUSH' => static fn (): bool => \App\Helpers\Notifier::sendBrowserPush((int) $rule['house_id'], 'Règle activée', $notificationMessage),
+    ]);
+    $resultParts[] = 'Notifications traitées dans l’ordre prévu';
 
     AutomationRule::logExecution((int) $rule['id'], implode(' — ', $resultParts));
     app_log("[Automation] Règle « {$rule['name']} » exécutée : " . implode(' — ', $resultParts));
