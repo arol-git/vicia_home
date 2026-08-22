@@ -217,6 +217,12 @@ function executeRule(array $rule, string $reason): void
     ]);
     $resultParts[] = 'Notifications traitées dans l’ordre prévu';
 
-    AutomationRule::logExecution((int) $rule['id'], implode(' — ', $resultParts));
-    app_log("[Automation] Règle « {$rule['name']} » exécutée : " . implode(' — ', $resultParts));
+    try {
+        AutomationRule::logExecution((int) $rule['id'], implode(' — ', $resultParts));
+        app_log("[Automation] Règle « {$rule['name']} » exécutée : " . implode(' — ', $resultParts));
+        echo "[" . date('Y-m-d H:i:s') . "] ✓ Fin d'exécution règle #{$rule['id']}\n";
+    } catch (\Throwable $exception) {
+        app_log('[Automation] Journalisation de règle échouée : ' . $exception->getMessage());
+        echo "[" . date('Y-m-d H:i:s') . "] ⚠ Journalisation de règle échouée\n";
+    }
 }
