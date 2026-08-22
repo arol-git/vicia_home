@@ -5,6 +5,7 @@ namespace App\Models;
 use App\Core\Database;
 use App\Core\Model;
 use App\Helpers\Notifier;
+use App\Services\NotificationPipeline;
 
 /**
  * Class Alert
@@ -100,39 +101,25 @@ class Alert extends Model
         $message = self::sanitizeText((string) ($data['message'] ?? ''));
         $text = "Alerte {$label} ({$data['severity']})\n" . ($message !== '' ? $message : 'Déclenchée sur la maison #' . $houseId);
 
-        try {
-            Notifier::sendTelegram($houseId, $text);
-        } catch (\Throwable $exception) {
-            app_log('[Alert] Notification Telegram ignorée : ' . $exception->getMessage());
-        }
-
-        self::notifyBot($houseId, [
-            'id'       => $alertId,
-            'severity' => (string) ($data['severity'] ?? 'info'),
-            'message'  => $message,
+        NotificationPipeline::dispatch($alertId, $houseId, [
+            'EMAIL' => static fn (): bool => Notifier::sendAlertEmail($houseId, "Alerte Vicia Home : {$label}", $text),
+            'TELEGRAM' => static fn (): bool => self::notifyBot($houseId, [
+                'id'       => $alertId,
+                'severity' => (string) ($data['severity'] ?? 'info'),
+                'message'  => $message,
+            ]),
+            'PUSH' => static fn (): bool => Notifier::sendBrowserPush($houseId, "Alerte {$label}", $message !== '' ? $message : 'Nouvelle alerte sur Vicia Home'),
         ]);
-
-        try {
-            Notifier::sendAlertEmail($houseId, "Alerte Vicia Home : {$label}", $text);
-        } catch (\Throwable $exception) {
-            app_log('[Alert] Notification e-mail ignorée : ' . $exception->getMessage());
-        }
-
-        try {
-            Notifier::sendBrowserPush($houseId, "Alerte {$label}", $message !== '' ? $message : 'Nouvelle alerte sur Vicia Home');
-        } catch (\Throwable $exception) {
-            app_log('[Alert] Notification push ignorée : ' . $exception->getMessage());
-        }
 
         return $alertId;
     }
 
-    private static function notifyBot(int $houseId, array $alert): void
+    private static function notifyBot(int $houseId, array $alert): bool
     {
         $secret = trim((string) getenv('VICIA_ALERT_WEBHOOK_SECRET'));
         if ($secret === '' || !function_exists('curl_init')) {
             app_log('[Alert] Notification Telegram du bot indisponible : webhook ou extension cURL non configuré.');
-            return;
+            return false;
         }
 
         $payload = json_encode([
@@ -141,7 +128,7 @@ class Alert extends Model
         ], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
         if ($payload === false) {
             app_log('[Alert] Impossible de préparer la notification Telegram du bot.');
-            return;
+            return false;
         }
 
         $url = rtrim((string) config('base_url'), '/') . '/vicia-bot/public/webhook-alert.php';
@@ -166,7 +153,10 @@ class Alert extends Model
 
         if ($response === false || $status < 200 || $status >= 300) {
             app_log('[Alert] Échec de transmission au bot Telegram' . ($error !== '' ? ' : ' . $error : " (HTTP $status)"));
+            return false;
         }
+
+        return true;
     }
 
     private static function sanitizeForDisplay(array $alert): array

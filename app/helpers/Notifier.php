@@ -43,11 +43,26 @@ class Notifier
                     'header'  => "Content-Type: application/x-www-form-urlencoded\r\n",
                     'content' => $payload,
                     'timeout' => 5,
+                    'ignore_errors' => true,
                 ],
             ]);
 
             $result = @file_get_contents($url, false, $context);
-            $sent = $sent || $result !== false;
+            $status = 0;
+            foreach (($http_response_header ?? []) as $header) {
+                if (preg_match('/^HTTP\/\S+\s+(\d+)/', $header, $matches)) {
+                    $status = (int) $matches[1];
+                    break;
+                }
+            }
+
+            if ($result !== false && $status >= 200 && $status < 300) {
+                $sent = true;
+                app_log('[NOTIFICATION] TELEGRAM utilisateur=' . $recipient['chat_id'] . ' SUCCÈS | date=' . date('c'));
+            } else {
+                $error = error_get_last()['message'] ?? 'Réponse Telegram invalide.';
+                app_log('[NOTIFICATION] TELEGRAM utilisateur=' . $recipient['chat_id'] . ' ÉCHEC | erreur=' . $error . " | http={$status} | date=" . date('c'));
+            }
         }
 
         if (!$sent) {

@@ -46,7 +46,6 @@ class Mailer
             $mail->Username = trim((string) ($settings['smtp_username'] ?? ''));
             $mail->Password = (string) ($settings['smtp_password'] ?? '');
             $mail->Timeout = 10;
-            $mail->Timelimit = 10;
 
             $encryption = trim((string) ($settings['smtp_encryption'] ?? 'tls'));
             if (in_array($encryption, ['tls', 'ssl'], true)) {
@@ -70,11 +69,11 @@ class Mailer
 
             app_log("[Mailer] Tentative SMTP vers $to via {$mail->Host}:{$mail->Port}.");
             $sent = $mail->send();
-            app_log("[Mailer] E-mail envoyé à $to.");
+            app_log("[NOTIFICATION] EMAIL utilisateur={$to} SUCCÈS | date=" . date('c'));
 
             return $sent;
         } catch (MailException $e) {
-            app_log('[Mailer] Échec SMTP : ' . $e->getMessage());
+            app_log('[Mailer] Échec SMTP utilisateur=' . $to . ' : ' . $e->getMessage() . ' | date=' . date('c'));
             return false;
         }
     }

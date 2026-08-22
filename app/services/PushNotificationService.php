@@ -19,7 +19,10 @@ class PushNotificationService
         }
 
         $subscriptions = PushSubscription::forHouse($houseId);
-        if (!$subscriptions) return false;
+        if (!$subscriptions) {
+            app_log('[NOTIFICATION] PUSH ÉCHEC | utilisateur=aucun abonnement pour maison ' . $houseId . ' | date=' . date('c'));
+            return false;
+        }
 
         $webPush = new WebPush([
             'VAPID' => [
@@ -51,11 +54,15 @@ class PushNotificationService
                 );
                 if ($report->isSuccess()) {
                     $sent = true;
+                    app_log('[NOTIFICATION] PUSH utilisateur=' . $subscription['user_id'] . ' SUCCÈS | date=' . date('c'));
                 } elseif (in_array($report->getResponse()?->getStatusCode(), [404, 410], true)) {
                     PushSubscription::deactivate((int) $subscription['id']);
+                    app_log('[NOTIFICATION] PUSH utilisateur=' . $subscription['user_id'] . ' ÉCHEC | erreur=abonnement expiré | date=' . date('c'));
+                } else {
+                    app_log('[NOTIFICATION] PUSH utilisateur=' . $subscription['user_id'] . ' ÉCHEC | erreur=réponse du service push invalide | date=' . date('c'));
                 }
             } catch (\Throwable $exception) {
-                app_log('[Push] Envoi échoué: ' . $exception->getMessage());
+                app_log('[NOTIFICATION] PUSH utilisateur=' . $subscription['user_id'] . ' ÉCHEC | erreur=' . $exception->getMessage() . ' | date=' . date('c'));
             }
         }
 

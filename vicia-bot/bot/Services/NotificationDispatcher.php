@@ -51,8 +51,9 @@ class NotificationDispatcher
                 ]);
                 $status = 'sent';
                 $sent++;
+                Logger::channel('bot')->info("[NOTIFICATION] TELEGRAM utilisateur={$user['telegram_id']} SUCCÈS | date=" . date('c'));
             } catch (TelegramSDKException $e) {
-                Logger::channel('bot')->warning("Échec d'envoi de notification à telegram_id={$user['telegram_id']} : " . $e->getMessage());
+                Logger::channel('bot')->warning("[NOTIFICATION] TELEGRAM utilisateur={$user['telegram_id']} ÉCHEC | erreur=" . $e->getMessage() . ' | date=' . date('c'));
             }
 
             NotificationLog::record($houseId, $alert['id'] ?? null, $user['telegram_id'], $status);

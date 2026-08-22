@@ -47,6 +47,11 @@ if (!is_array($payload) || empty($payload['house_id']) || empty($payload['alert'
 try {
     $sent = NotificationDispatcher::dispatchAlert((int) $payload['house_id'], $payload['alert']);
     Logger::channel('bot')->info("Alerte diffusée à {$sent} destinataire(s) pour la maison #{$payload['house_id']}");
+    if ($sent === 0) {
+        http_response_code(503);
+        echo json_encode(['success' => false, 'notified' => 0]);
+        exit;
+    }
 } catch (\Throwable $e) {
     Logger::channel('bot')->error('Échec de diffusion de notification : ' . $e->getMessage());
     http_response_code(500);
