@@ -24,6 +24,13 @@ use Mqtt\Publisher;
 $config = require __DIR__ . '/config.php';
 $client = new MqttClient($config);
 
+set_exception_handler(static function (\Throwable $exception): void {
+    $message = '[MQTT Subscriber] Arrêt inattendu : ' . $exception->getMessage();
+    fwrite(STDERR, $message . PHP_EOL);
+    app_log($message . ' | fichier=' . $exception->getFile() . ' | ligne=' . $exception->getLine());
+    exit(1);
+});
+
 echo "[Vicia Home] Connexion au broker MQTT {$config['host']}:{$config['port']}...\n";
 
 if (!$client->connect()) {
