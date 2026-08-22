@@ -19,4 +19,4 @@ COPY --from=dependencies /app/vicia-bot/vendor ./vicia-bot/vendor
 
 RUN mkdir -p storage/logs
 
-CMD ["sh", "-c", "(while true; do php mqtt/subscriber.php >> storage/logs/mqtt.log 2>&1; echo '[MQTT supervisor] subscriber arrêté, redémarrage dans 2 secondes' >> storage/logs/mqtt.log; sleep 2; done) & PHP_CLI_SERVER_WORKERS=4 exec php -S 0.0.0.0:${PORT} -t public public/router.php"]
+CMD ["sh", "-c", "(while true; do php mqtt/subscriber.php; code=$?; echo \"[MQTT supervisor] subscriber arrêté (code=$code), redémarrage dans 2 secondes\"; sleep 2; done) & PHP_CLI_SERVER_WORKERS=4 exec php -S 0.0.0.0:${PORT} -t public public/router.php"]
