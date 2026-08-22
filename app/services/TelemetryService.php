@@ -63,6 +63,7 @@ class TelemetryService
                 'topic' => $reading['topic'],
                 'value' => (float) $reading['value'],
                 'unit' => $sensor['unit'],
+                'alert_threshold' => $sensor['alert_threshold'] !== null ? (float) $sensor['alert_threshold'] : null,
             ];
         }
 

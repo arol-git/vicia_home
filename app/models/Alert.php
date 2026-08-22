@@ -48,6 +48,24 @@ class Alert extends Model
         return (int) ($row['c'] ?? 0);
     }
 
+    public static function hasRecentSensorAlert(int $houseId, int $sensorId, int $minutes = 15): bool
+    {
+        $minutes = max(1, min($minutes, 1440));
+        $row = Database::query(
+            'SELECT id FROM alerts
+             WHERE house_id = :house_id AND type = :type AND source = :source
+               AND created_at >= DATE_SUB(NOW(), INTERVAL ' . $minutes . ' MINUTE)
+             LIMIT 1',
+            [
+                'house_id' => $houseId,
+                'type' => 'capteur',
+                'source' => 'sensor:' . $sensorId,
+            ]
+        )->fetch();
+
+        return (bool) $row;
+    }
+
     public static function belongsToHouse(int $alertId, int $houseId): bool
     {
         $row = Database::query(

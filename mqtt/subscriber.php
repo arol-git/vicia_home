@@ -81,12 +81,13 @@ $client->loop(function (string $topic, string $payload) {
         foreach ($telemetry['saved'] as $reading) {
             echo "[" . date('Y-m-d H:i:s') . "] → Évaluation règles pour capteur #" . $reading['sensor_id'] . " (valeur={$reading['value']})\n";
             evaluateSensorRules((int) $reading['sensor_id'], (float) $reading['value']);
+            evaluateSensorThreshold($reading);
         }
         return;
     }
 
     // --- Cas 2 : événement de sécurité (intrusion, PIR déclenché...) ---
-    if (str_contains($topic, '/security/') && $payload === '1') {
+    if (str_contains(strtolower($topic), '/security/') && trim($payload) === '1') {
         echo "[" . date('Y-m-d H:i:s') . "] ⚠️  ÉVÉNEMENT SÉCURITÉ détecté sur: $topic\n";
         $houseId = resolveHouseIdFromTopic($topic);
         if ($houseId === null) {
@@ -138,6 +139,28 @@ function evaluateSensorRules(int $sensorId, float $value): void
             echo "[" . date('Y-m-d H:i:s') . "] ✗ Condition non satisfaite\n";
         }
     }
+}
+
+function evaluateSensorThreshold(array $reading): void
+{
+    $threshold = $reading['alert_threshold'] ?? null;
+    if ($threshold === null || (float) $reading['value'] <= (float) $threshold) {
+        return;
+    }
+
+    $houseId = (int) ($reading['house_id'] ?? 0);
+    $sensorId = (int) ($reading['sensor_id'] ?? 0);
+    if ($houseId <= 0 || $sensorId <= 0 || \App\Models\Alert::hasRecentSensorAlert($houseId, $sensorId)) {
+        return;
+    }
+
+    \App\Models\Alert::create([
+        'house_id' => $houseId,
+        'type' => 'capteur',
+        'severity' => 'warning',
+        'source' => 'sensor:' . $sensorId,
+        'message' => "Le capteur « {$reading['sensor_name']} » a dépassé le seuil de {$threshold} {$reading['unit']} (valeur : {$reading['value']} {$reading['unit']}).",
+    ]);
 }
 
 /**
