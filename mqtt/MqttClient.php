@@ -151,17 +151,34 @@ class MqttClient  // il s'agit de la classe principale du client MQTT, qui gère
         while (!feof($this->socket)) {
             $header = fread($this->socket, 1);
             if ($header === '' || $header === false) {
-                // Pas de donnée immédiate : envoie un PINGREQ pour
-                // maintenir la connexion active puis continue la boucle.
-                $this->writePacket(0xC0, '');
+                $metadata = stream_get_meta_data($this->socket);
+                if (feof($this->socket) || ($metadata['timed_out'] ?? false)) {
+                    $this->writePacket(0xC0, '');
+                } else {
+                    throw new \RuntimeException('La connexion au broker a été interrompue.');
+                }
+
+                // Laisser le broker répondre au maintien de connexion.
                 usleep(200000);
             } else {
                 $type = ord($header) & 0xF0;
                 $length = $this->readRemainingLength();
                 $payload = $length > 0 ? fread($this->socket, $length) : '';
 
+                if ($payload === false || ($length > 0 && strlen($payload) !== $length)) {
+                    throw new \RuntimeException('Lecture incomplète depuis le broker.');
+                }
+
                 if ($type === 0x30) { // PUBLISH
+                    if ($length < 2) {
+                        throw new \RuntimeException('Message reçu invalide.');
+                    }
+
                     $topicLength = (ord($payload[0]) << 8) | ord($payload[1]);
+                    if ($topicLength + 2 > $length) {
+                        throw new \RuntimeException('Adresse de message invalide.');
+                    }
+
                     $topic = substr($payload, 2, $topicLength);
                     $message = substr($payload, 2 + $topicLength);
                     $onMessage($topic, $message);
@@ -179,6 +196,7 @@ class MqttClient  // il s'agit de la classe principale du client MQTT, qui gère
         if ($this->socket) {
             $this->writePacket(0xE0, '');
             fclose($this->socket);
+            $this->socket = null;
         }
     }
 
@@ -186,7 +204,15 @@ class MqttClient  // il s'agit de la classe principale du client MQTT, qui gère
 
     private function writePacket(int $header, string $body): void
     {
-        fwrite($this->socket, chr($header) . $this->encodeRemainingLength(strlen($body)) . $body);
+        if (!is_resource($this->socket)) {
+            throw new \RuntimeException('Connexion au broker indisponible.');
+        }
+
+        $packet = chr($header) . $this->encodeRemainingLength(strlen($body)) . $body;
+        $written = @fwrite($this->socket, $packet);
+        if ($written === false || $written !== strlen($packet)) {
+            throw new \RuntimeException('Échec d’écriture vers le broker.');
+        }
     }
 
     private function encodeString(string $value): string
@@ -219,7 +245,12 @@ class MqttClient  // il s'agit de la classe principale du client MQTT, qui gère
         $multiplier = 1;
         $value = 0;
         do {
-            $byte = ord(fread($this->socket, 1));
+            $byteData = fread($this->socket, 1);
+            if ($byteData === '' || $byteData === false) {
+                throw new \RuntimeException('Longueur de message illisible.');
+            }
+
+            $byte = ord($byteData);
             $value += ($byte & 127) * $multiplier;
             $multiplier *= 128;
         } while (($byte & 128) !== 0);
