@@ -106,6 +106,12 @@ class Alert extends Model
             app_log('[Alert] Notification Telegram ignorée : ' . $exception->getMessage());
         }
 
+        self::notifyBot($houseId, [
+            'id'       => $alertId,
+            'severity' => (string) ($data['severity'] ?? 'info'),
+            'message'  => $message,
+        ]);
+
         try {
             Notifier::sendAlertEmail($houseId, "Alerte Vicia Home : {$label}", $text);
         } catch (\Throwable $exception) {
@@ -119,6 +125,48 @@ class Alert extends Model
         }
 
         return $alertId;
+    }
+
+    private static function notifyBot(int $houseId, array $alert): void
+    {
+        $secret = trim((string) getenv('VICIA_ALERT_WEBHOOK_SECRET'));
+        if ($secret === '' || !function_exists('curl_init')) {
+            app_log('[Alert] Notification Telegram du bot indisponible : webhook ou extension cURL non configuré.');
+            return;
+        }
+
+        $payload = json_encode([
+            'house_id' => $houseId,
+            'alert'    => $alert,
+        ], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
+        if ($payload === false) {
+            app_log('[Alert] Impossible de préparer la notification Telegram du bot.');
+            return;
+        }
+
+        $url = rtrim((string) config('base_url'), '/') . '/vicia-bot/public/webhook-alert.php';
+        $signature = hash_hmac('sha256', $payload, $secret);
+        $curl = curl_init($url);
+        curl_setopt_array($curl, [
+            CURLOPT_POST           => true,
+            CURLOPT_POSTFIELDS     => $payload,
+            CURLOPT_HTTPHEADER     => [
+                'Content-Type: application/json',
+                'X-Vicia-Signature: ' . $signature,
+            ],
+            CURLOPT_RETURNTRANSFER => true,
+            CURLOPT_CONNECTTIMEOUT => 2,
+            CURLOPT_TIMEOUT        => 5,
+        ]);
+
+        $response = curl_exec($curl);
+        $status = (int) curl_getinfo($curl, CURLINFO_HTTP_CODE);
+        $error = curl_error($curl);
+        curl_close($curl);
+
+        if ($response === false || $status < 200 || $status >= 300) {
+            app_log('[Alert] Échec de transmission au bot Telegram' . ($error !== '' ? ' : ' . $error : " (HTTP $status)"));
+        }
     }
 
     private static function sanitizeForDisplay(array $alert): array
