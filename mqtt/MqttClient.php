@@ -73,6 +73,8 @@ class MqttClient  // il s'agit de la classe principale du client MQTT, qui gère
             return false;
         }
 
+        stream_set_timeout($this->socket, 10);
+
         $packet  = "\x00\x04MQTT\x04"; // Nom + niveau de protocole (4 = MQTT 3.1.1)
         $connectFlags = 0x02; // Clean session
         if ($this->username !== '') {
@@ -94,6 +96,13 @@ class MqttClient  // il s'agit de la classe principale du client MQTT, qui gère
 
         $this->writePacket(0x10, $packet);
         $response = fread($this->socket, 4);
+
+        if ($response === false || strlen($response) !== 4) {
+            fclose($this->socket);
+            $this->socket = null;
+            app_log("[MQTT] Réponse de connexion incomplète à {$this->host}:{$this->port}.");
+            return false;
+        }
 
         // Le 4e octet du CONNACK contient le code de retour (0 = accepté)
         return isset($response[3]) && ord($response[3]) === 0;

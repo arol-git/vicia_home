@@ -195,8 +195,10 @@ function executeRule(array $rule, string $reason): void
         try {
             $equipment = \App\Models\Equipment::find((int) $rule['action_equipment_id']);
             if ($equipment) {
+                echo "[" . date('Y-m-d H:i:s') . "] → Commande équipement #{$equipment['id']}...\n";
                 \App\Models\Equipment::update($equipment['id'], ['state' => (int) $rule['action_state']]);
                 Publisher::publish($equipment['mqtt_topic'] . '/set', (string) (int) $rule['action_state']);
+                echo "[" . date('Y-m-d H:i:s') . "] ✓ Commande équipement envoyée\n";
                 $resultParts[] = "Équipement « {$equipment['name']} » mis à l'état {$rule['action_state']}";
             }
         } catch (\Throwable $exception) {
