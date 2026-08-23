@@ -143,6 +143,18 @@ class Notifier
     {
         $emails = [];
         $settings = self::settings();
+
+        if ($houseId !== null) {
+            $house = Database::query(
+                'SELECT alert_email FROM houses WHERE id = :house_id LIMIT 1',
+                ['house_id' => $houseId]
+            )->fetch();
+            $houseEmail = trim((string) ($house['alert_email'] ?? ''));
+            if ($houseEmail !== '') {
+                $emails[] = $houseEmail;
+            }
+        }
+
         foreach (self::notificationUsers($houseId) as $user) {
             $email = trim((string) (($user['notification_email'] ?? '') ?: ($settings['user_' . $user['id'] . '_notification_email'] ?? '') ?: $user['email']));
             if ($email !== '') {

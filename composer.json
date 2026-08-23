@@ -2,7 +2,8 @@
     "require": {
         "php-mqtt/client": "^2.3",
         "phpmailer/phpmailer": "^7.1",
-        "minishlink/web-push": "^11.0"
+        "minishlink/web-push": "^11.0",
+        "php-http/guzzle7-adapter": "^1.1"
     },
     "config": {
         "allow-plugins": {
