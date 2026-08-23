@@ -46,6 +46,12 @@ class Mailer
             $mail->Username = trim((string) ($settings['smtp_username'] ?? ''));
             $mail->Password = (string) ($settings['smtp_password'] ?? '');
             $mail->Timeout = 10;
+            $mail->SMTPKeepAlive = false;
+            $mail->SMTPOptions = [
+                'socket' => [
+                    'connect_timeout' => 10,
+                ],
+            ];
 
             $encryption = trim((string) ($settings['smtp_encryption'] ?? 'tls'));
             if (in_array($encryption, ['tls', 'ssl'], true)) {
