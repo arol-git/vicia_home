@@ -34,6 +34,12 @@ try {
 
     $question = App\Services\IntentClassifier::classify('quelle est la température dans la chambre ?', 1);
     assertCase($question['type'] === 'question' && ($question['topic'] ?? null) === 'temperature', 'La question de température est classée comme une demande de température');
+
+    require_once __DIR__ . '/../app/services/AIService.php';
+    $replyMethod = (new ReflectionClass('App\\Services\\AIService'))->getMethod('directFactualReply');
+    $replyMethod->setAccessible(true);
+    $reply = $replyMethod->invoke(null, 'temperature', ['sensors' => [['room' => 'Salon', 'value' => '25.3']]], 'Salon');
+    assertCase($reply === 'Température : dans Salon, elle est de 25,3 degrés Celsius.', 'La température est formatée en une valeur naturelle pour la synthèse vocale');
 } catch (Throwable $e) {
     echo "[FAIL] Erreur d’exécution : " . $e->getMessage() . "\n";
     $failed++;

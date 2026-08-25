@@ -273,7 +273,9 @@ const VoiceAssistant = (() => {
                 const reply = data.reply || data.message || 'Je n’ai pas de réponse.';
                 showMessage(reply, 'success');
                 speak(data.spoken_text || reply);
-                setTimeout(() => closeModal(), 2000);
+                if (data.intent !== 'question') {
+                    setTimeout(() => closeModal(), 2000);
+                }
             } else {
                 handleError(data.message || 'Commande non reconnue');
             }

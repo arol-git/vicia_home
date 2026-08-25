@@ -182,7 +182,7 @@ PROMPT;
         }
 
         if (empty($shortContext)) {
-            return "Le moteur IA externe n'a pas répondu. Je peux quand même exécuter les commandes locales et fournir des informations simples sur la maison.";
+            return "Je n'ai pas cette information pour le moment. Je peux quand même exécuter les commandes locales et fournir les informations disponibles sur la maison.";
         }
 
         return self::buildLocalFallbackReply($userMessage, $shortContext, $reason);
@@ -191,14 +191,14 @@ PROMPT;
     private static function buildLocalFallbackReply(string $userMessage, string $shortContext, string $reason): string
     {
         if (preg_match('/(température|temperature|humidité|humidite|énergie|energie|consommation|consomm|porte|fenêtre|fenetre|lampe|lumière|lumiere|sécurité|securite|réseau|reseau|appareils|devices)/i', $userMessage)) {
-            return "Je n'ai pas pu contacter le moteur IA externe. Voici les informations locales disponibles : " . $shortContext;
+            return "Voici les informations disponibles : " . $shortContext;
         }
 
         if (str_contains($reason, 'service unavailable')) {
-            return "Je n'ai pas pu obtenir de réponse détaillée du moteur IA externe. Informations locales : " . $shortContext;
+            return "Voici les informations disponibles : " . $shortContext;
         }
 
-        return "Le moteur IA externe n'a pas répondu. Je peux quand même fournir ces informations locales : " . $shortContext;
+        return "Voici les informations disponibles : " . $shortContext;
     }
 
     private static function summarizeContext(array $context): string

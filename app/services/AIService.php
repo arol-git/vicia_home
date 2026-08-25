@@ -124,9 +124,35 @@ class AIService
         $context = self::resolveFactualContext($intent['topic'], $houseId, $roomName);
         $recent = Conversation::recentMessages($conversation['id'], 10);
 
-        $reply = LLMService::generateReply($message, $context, $recent);
+        $reply = self::directFactualReply($intent['topic'], $context, $roomName);
+        if ($reply === null) {
+            $reply = LLMService::generateReply($message, $context, $recent);
+        }
 
         return self::respond($conversation['id'], $reply, $context, 'question');
+    }
+
+    private static function directFactualReply(string $topic, array $context, ?string $roomName): ?string
+    {
+        if (!in_array($topic, ['temperature', 'humidity'], true)) {
+            return null;
+        }
+
+        $sensors = $context['sensors'] ?? [];
+        if ($sensors === []) {
+            return $roomName
+                ? "Je n'ai pas encore de mesure disponible dans la pièce « {$roomName} »."
+                : "Je n'ai pas encore de mesure disponible pour cette information.";
+        }
+
+        $label = $topic === 'temperature' ? 'température' : 'humidité';
+        $readings = array_map(function (array $sensor) use ($topic): string {
+            $value = str_replace('.', ',', trim((string) $sensor['value']));
+            $unit = $topic === 'temperature' ? 'degrés Celsius' : 'pour cent';
+            return "dans {$sensor['room']}, elle est de {$value} {$unit}";
+        }, $sensors);
+
+        return ucfirst($label) . ' : ' . implode('; ', $readings) . '.';
     }
 
     private static function handleAnalysis(array $conversation, array $intent, int $houseId, string $message): array
