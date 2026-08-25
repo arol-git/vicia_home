@@ -3,7 +3,7 @@
  *
  * Module d'assistante vocale indépendante utilisant l'API Web Speech
  * native du navigateur. Gère la reconnaissance vocale, l'interface modale,
- * et la communication avec l'endpoint backend /api/v1/voice/command.
+ * et la communication avec l'endpoint conversationnel backend /ai/message.
  */
 
 const VoiceAssistant = (() => {
@@ -226,7 +226,8 @@ const VoiceAssistant = (() => {
     };
 
     /**
-     * Traite une commande vocale reconnue.
+    * Traite une phrase vocale reconnue. Le endpoint conversationnel
+    * accepte aussi bien les commandes que les questions factuelles.
      */
     const handleCommand = async (transcript) => {
         stopListening();
@@ -237,7 +238,7 @@ const VoiceAssistant = (() => {
 
         try {
             console.log('[VoiceAssistant] Envoi de la commande:', transcript);
-            const apiUrl = buildAppUrl('/voice/command');
+            const apiUrl = buildAppUrl('/ai/message');
             
             console.log('[VoiceAssistant] API URL:', apiUrl);
             console.log('[VoiceAssistant] House ID:', window.__vicia_house_id);
@@ -251,8 +252,7 @@ const VoiceAssistant = (() => {
                     'Accept': 'application/json',
                 },
                 body: JSON.stringify({
-                    command: transcript,
-                    house_id: window.__vicia_house_id || null,
+                    message: transcript,
                     csrf_token: csrfToken(),
                 }),
             });
@@ -269,9 +269,10 @@ const VoiceAssistant = (() => {
 
             if (response.ok && data.success) {
                 setState(STATE.SUCCESS);
-                statusEl.textContent = '✅ Commande exécutée';
-                showMessage(data.message || 'Commande exécutée', 'success');
-                speak(data.message || 'Commande exécutée');
+                statusEl.textContent = '✅ Réponse reçue';
+                const reply = data.reply || data.message || 'Je n’ai pas de réponse.';
+                showMessage(reply, 'success');
+                speak(data.spoken_text || reply);
                 setTimeout(() => closeModal(), 2000);
             } else {
                 handleError(data.message || 'Commande non reconnue');
