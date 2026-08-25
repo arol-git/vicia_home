@@ -64,18 +64,26 @@ class VoiceCommandService
         }
 
         $isBatch = self::isBatchCommand($normalized);
-        $targetType = self::detectType($normalized);
-
-        if (!$targetType) {
-            return [
-                'success' => false,
-                'message' => 'Type d\'équipement non reconnu (lampe, porte, etc.).',
-                'commands' => [],
-            ];
-        }
-
         $roomName = self::detectRoom($normalized, $houseId);
-        $equipments = self::findMatchingEquipments($houseId, $targetType, $roomName, $isBatch);
+
+        $directEquipment = self::findEquipmentByName($houseId, $normalized, $roomName);
+        if ($directEquipment) {
+            $targetType = $directEquipment['type'];
+            $roomName = $directEquipment['room_name'];
+            $equipments = [$directEquipment];
+        } else {
+            $targetType = self::detectType($normalized);
+
+            if (!$targetType) {
+                return [
+                    'success' => false,
+                    'message' => 'Type d\'équipement non reconnu (lampe, porte, etc.).',
+                    'commands' => [],
+                ];
+            }
+
+            $equipments = self::findMatchingEquipments($houseId, $targetType, $roomName, $isBatch);
+        }
 
         if (empty($equipments)) {
             return [
@@ -149,10 +157,44 @@ class VoiceCommandService
         $rooms = Room::forHouse($houseId);
         foreach ($rooms as $room) {
             $roomNormalized = self::normalize($room['name']);
-            if (str_contains($normalized, $roomNormalized)) {
+            if (str_contains($normalized, $roomNormalized) || str_contains($normalized, self::normalize(str_replace([' ', '-'], '', $room['name'])))) {
                 return $room['name'];
             }
         }
+        return null;
+    }
+
+    private static function findEquipmentByName(int $houseId, string $normalized, ?string $roomName): ?array
+    {
+        $roomFilter = $roomName ? ' AND r.name = :room_name' : '';
+        $params = ['house_id' => $houseId];
+
+        if ($roomName) {
+            $params['room_name'] = $roomName;
+        }
+
+        $sql = "SELECT e.id, e.name, e.type, r.name AS room_name, e.mqtt_topic
+                FROM equipments e
+                INNER JOIN rooms r ON r.id = e.room_id
+                WHERE r.house_id = :house_id AND e.is_active = 1" . $roomFilter . "
+                ORDER BY LENGTH(e.name) DESC, e.name ASC";
+
+        $rows = \App\Core\Database::query($sql, $params)->fetchAll();
+
+        foreach ($rows as $equipment) {
+            $candidate = self::normalize($equipment['name']);
+            if ($candidate !== '' && str_contains($normalized, $candidate)) {
+                return $equipment;
+            }
+
+            $aliases = [self::normalize($equipment['name']), self::normalize(str_replace([' ', '-'], '', $equipment['name']))];
+            foreach ($aliases as $alias) {
+                if ($alias !== '' && str_contains($normalized, $alias)) {
+                    return $equipment;
+                }
+            }
+        }
+
         return null;
     }
 

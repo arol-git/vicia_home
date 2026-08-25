@@ -3,6 +3,7 @@
 namespace App\Services;
 
 use App\Models\Room;
+use App\Models\Equipment;
 
 /**
  * Class IntentClassifier
@@ -80,6 +81,8 @@ class IntentClassifier
         'siren'     => 'sirene', 'sirens'  => 'sirene',
         
         // Caméra
+        'caméra'    => 'camera', 'caméras' => 'camera', 'camera' => 'camera', 'cameras' => 'camera',
+        'surveillance' => 'camera',
         
         // Relais/Prise
         'relais'    => 'relais', 'prise'   => 'relais', 'prises'   => 'relais',
@@ -159,15 +162,64 @@ class IntentClassifier
 
     private static function detectMode(string $normalized): ?string
     {
-        if (!str_contains($normalized, 'mode') && !preg_match('/passe en|active le|activer le/', $normalized)) {
+        $modeSignal = preg_match('/\bmode\b|\bmaison\b|\bhabitation\b|passe\s+en|mets\s+en|met\s+en|active\s+le\s+mode|activer\s+le\s+mode|passe\s+la\s+maison\s+en/i', $normalized);
+        if (!$modeSignal) {
             return null;
         }
+
         foreach (self::MODE_WORDS as $word => $mode) {
             if (str_contains($normalized, $word)) {
                 return $mode;
             }
         }
+
+        if (preg_match('/\b(confort|comfort)\b/i', $normalized)) {
+            return 'confort';
+        }
+        if (preg_match('/\b(nuit|night)\b/i', $normalized)) {
+            return 'nuit';
+        }
+        if (preg_match('/\b(absence|away)\b/i', $normalized)) {
+            return 'absence';
+        }
+        if (preg_match('/\b(urgence|emergency)\b/i', $normalized)) {
+            return 'urgence';
+        }
+
         return null;
+    }
+
+    private static function detectIntent(string $normalized): ?string
+    {
+        foreach (self::ACTION_VERBS as $verb => $state) {
+            if (str_starts_with($normalized, $verb) || str_contains($normalized, " $verb ") || str_ends_with($normalized, " $verb")) {
+                return $state === 1 ? 'on' : 'off';
+            }
+        }
+
+        foreach (['bascule', 'basculer', 'inverse', 'inverser'] as $verb) {
+            if (str_starts_with($normalized, $verb) || str_contains($normalized, " $verb ")) {
+                return 'toggle';
+            }
+        }
+
+        return null;
+    }
+
+    private static function detectType(string $normalized): ?string
+    {
+        foreach (self::TARGET_TYPES as $word => $type) {
+            if (str_contains($normalized, $word)) {
+                return $type;
+            }
+        }
+
+        return null;
+    }
+
+    private static function isBatchCommand(string $normalized): bool
+    {
+        return (bool) preg_match('/\b(tous?|toutes?|partout|partous)\b/iu', $normalized);
     }
 
     private static function detectEquipmentCommand(string $normalized, int $houseId): ?array
@@ -193,6 +245,11 @@ class IntentClassifier
                 $targetType = $type;
                 break;
             }
+        }
+
+        $targetName = self::detectEquipmentName($normalized, $houseId);
+        if ($targetType === null && $targetName !== null) {
+            $targetType = $targetName['type'];
         }
         
         if ($targetType === null) {
@@ -222,8 +279,21 @@ class IntentClassifier
             'target_state' => $verbState,
             'scope_all'   => $scopeAll,
             'room'        => $roomName,
+            'target_name' => $targetName['name'] ?? null,
             'matched_verb' => $matchedVerb, // Pour debug et logs
         ];
+    }
+
+    private static function detectEquipmentName(string $normalized, int $houseId): ?array
+    {
+        foreach (Equipment::allWithRoom($houseId) as $equipment) {
+            $name = self::normalize($equipment['name']);
+            if ($name !== '' && str_contains($normalized, $name)) {
+                return $equipment;
+            }
+        }
+
+        return null;
     }
 
     private static function questionTopic(string $normalized): string

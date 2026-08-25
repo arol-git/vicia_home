@@ -77,10 +77,15 @@ class ProfileController extends Controller
         }
 
         $userId = Auth::id();
+        $telegramValue = $data['telegram_name'];
+
         User::updateNotificationSettings($userId, $data);
         Setting::set('user_' . $userId . '_notification_email', $data['notification_email']);
-        Setting::set('user_' . $userId . '_telegram_name', $data['telegram_name']);
-        Setting::set('user_' . $userId . '_telegram_chat_id', $data['telegram_name']);
+        Setting::set('user_' . $userId . '_telegram_name', $telegramValue);
+
+        if ($telegramValue !== '') {
+            Setting::set('user_' . $userId . '_telegram_chat_id', $telegramValue);
+        }
 
         ActivityLog::record($userId, 'modification_notifications', 'Mise à jour des préférences de notification', $this->request->ip());
 

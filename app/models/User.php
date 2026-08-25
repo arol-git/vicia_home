@@ -55,10 +55,11 @@ class User extends Model
     {
         self::ensureNotificationColumns();
         $user = self::find($id) ?: [];
+        $telegramValue = trim((string) ((string) ($user['telegram_name'] ?? '') ?: (string) ($user['telegram_chat_id'] ?? '') ?: (string) Setting::get('user_' . $id . '_telegram_name', '') ?: (string) Setting::get('user_' . $id . '_telegram_chat_id', '')));
 
         return [
-            'notification_email' => ($user['notification_email'] ?? '') ?: Setting::get('user_' . $id . '_notification_email', $user['email'] ?? ''),
-            'telegram_name' => ($user['telegram_name'] ?? '') ?: ($user['telegram_chat_id'] ?? '') ?: Setting::get('user_' . $id . '_telegram_name', Setting::get('user_' . $id . '_telegram_chat_id', '')),
+            'notification_email' => trim((string) (($user['notification_email'] ?? '') ?: Setting::get('user_' . $id . '_notification_email', $user['email'] ?? ''))),
+            'telegram_name' => $telegramValue,
         ];
     }
 
@@ -69,6 +70,7 @@ class User extends Model
         return self::update($id, [
             'notification_email' => $data['notification_email'],
             'telegram_name' => $data['telegram_name'] ?? '',
+            'telegram_chat_id' => $data['telegram_name'] ?? '',
         ]);
     }
 
@@ -94,11 +96,12 @@ class User extends Model
 
         $columns = Database::query('SHOW COLUMNS FROM users')->fetchAll();
         $names = array_column($columns, 'Field');
-        $missing = array_diff(['notification_email', 'telegram_name'], $names);
+        $missing = array_diff(['notification_email', 'telegram_name', 'telegram_chat_id'], $names);
 
         foreach ($missing as $column) {
             $definition = match ($column) {
                 'notification_email' => 'VARCHAR(150) NULL',
+                'telegram_chat_id' => 'VARCHAR(100) NULL',
                 default => 'VARCHAR(100) NULL',
             };
             Database::query("ALTER TABLE users ADD COLUMN `$column` $definition");

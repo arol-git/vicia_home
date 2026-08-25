@@ -77,7 +77,9 @@ class Notifier
         $houseId = is_int($houseIdOrSubject) ? $houseIdOrSubject : null;
         $subject = $message === null ? (string) $houseIdOrSubject : $subjectOrMessage;
         $body = $message ?? $subjectOrMessage;
+        app_log('[NOTIFICATION] EMAIL préparation destinataires | maison=' . ($houseId ?? 'globale') . ' | date=' . date('c'));
         $recipients = self::emailRecipients($houseId);
+        app_log('[NOTIFICATION] EMAIL destinataires trouvés=' . count($recipients) . ' | maison=' . ($houseId ?? 'globale') . ' | date=' . date('c'));
 
         if (empty($recipients)) {
             app_log('[Notifier] E-mail ignoré : aucun destinataire configuré pour la maison ' . ($houseId ?? 'globale') . '.');
@@ -116,7 +118,7 @@ class Notifier
         }
 
         foreach (self::notificationUsers($houseId) as $user) {
-            $chatId = trim((string) (($user['telegram_name'] ?? '') ?: ($settings['user_' . $user['id'] . '_telegram_name'] ?? '') ?: ($settings['user_' . $user['id'] . '_telegram_chat_id'] ?? '')));
+            $chatId = trim((string) (($user['telegram_name'] ?? '') ?: ($user['telegram_chat_id'] ?? '') ?: ($settings['user_' . $user['id'] . '_telegram_name'] ?? '') ?: ($settings['user_' . $user['id'] . '_telegram_chat_id'] ?? '')));
             $token = $defaultToken;
             if ($token && $chatId) {
                 $recipients[] = ['token' => $token, 'chat_id' => $chatId];
@@ -143,6 +145,7 @@ class Notifier
     {
         $emails = [];
         $settings = self::settings();
+        app_log('[NOTIFICATION] EMAIL lecture configuration terminée | date=' . date('c'));
 
         if ($houseId !== null) {
             $house = Database::query(
@@ -153,6 +156,7 @@ class Notifier
             if ($houseEmail !== '') {
                 $emails[] = $houseEmail;
             }
+            app_log('[NOTIFICATION] EMAIL adresse maison lue | maison=' . $houseId . ' | date=' . date('c'));
         }
 
         foreach (self::notificationUsers($houseId) as $user) {
@@ -168,7 +172,7 @@ class Notifier
     private static function notificationUsers(?int $houseId): array
     {
         self::ensureUserNotificationColumns();
-        $select = 'u.id, u.email, u.notification_email, u.telegram_name';
+        $select = 'u.id, u.email, u.notification_email, u.telegram_name, u.telegram_chat_id';
         if ($houseId === null) {
             return Database::query("SELECT $select FROM users u WHERE u.status = 'active'")->fetchAll();
         }

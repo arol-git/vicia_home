@@ -6,7 +6,9 @@ use App\Models\Alert;
 use App\Models\Conversation;
 use App\Models\Equipment;
 use App\Models\House;
+use App\Models\Room;
 use App\Models\Sensor;
+use App\Models\Setting;
 
 /**
  * Class AIService
@@ -118,7 +120,8 @@ class AIService
 
     private static function handleQuestion(array $conversation, array $intent, int $houseId, string $message): array
     {
-        $context = self::resolveFactualContext($intent['topic'], $houseId);
+        $roomName = self::extractRoomNameFromMessage($houseId, $message);
+        $context = self::resolveFactualContext($intent['topic'], $houseId, $roomName);
         $recent = Conversation::recentMessages($conversation['id'], 10);
 
         $reply = LLMService::generateReply($message, $context, $recent);
@@ -154,28 +157,41 @@ class AIService
      * exclusivement via les modèles déjà existants — c'est la SEULE
      * source de vérité transmise au LLM (voir App\Services\LLMService).
      */
-    private static function resolveFactualContext(string $topic, int $houseId): array
+    private static function extractRoomNameFromMessage(int $houseId, string $message): ?string
+    {
+        foreach (Room::forHouse($houseId) as $room) {
+            $normalizedRoom = mb_strtolower(trim($room['name']));
+            $normalizedRoom = preg_replace('/\s+/', ' ', $normalizedRoom);
+            if (str_contains(mb_strtolower($message), $normalizedRoom)) {
+                return $room['name'];
+            }
+        }
+
+        return null;
+    }
+
+    private static function resolveFactualContext(string $topic, int $houseId, ?string $roomName = null): array
     {
         return match ($topic) {
-            'temperature' => self::sensorSummary($houseId, 'dht22_temp'),
-            'humidity'    => self::sensorSummary($houseId, 'dht22_hum'),
+            'temperature' => self::sensorSummary($houseId, 'dht22_temp', $roomName),
+            'humidity'    => self::sensorSummary($houseId, 'dht22_hum', $roomName),
             'energy'      => RecommendationEngine::energyAnalysis($houseId),
-            'doors'       => self::equipmentStateSummary($houseId, ['porte', 'fenetre']),
-            'lights'      => self::equipmentStateSummary($houseId, ['led', 'relais']),
+            'doors'       => self::equipmentStateSummary($houseId, ['porte', 'fenetre'], $roomName),
+            'lights'      => self::equipmentStateSummary($houseId, ['led', 'relais'], $roomName),
             'security'    => ['unread_critical_alerts' => count(array_filter(Alert::forHouse($houseId), fn($a) => $a['severity'] === 'critical' && !$a['is_read']))],
             default       => self::houseStateSummary($houseId),
         };
     }
 
-    private static function sensorSummary(int $houseId, string $type): array
+    private static function sensorSummary(int $houseId, string $type, ?string $roomName = null): array
     {
-        $sensors = array_values(array_filter(Sensor::allWithRoom($houseId), fn($s) => $s['type'] === $type));
+        $sensors = array_values(array_filter(Sensor::allWithRoom($houseId), fn($s) => $s['type'] === $type && (!$roomName || $s['room_name'] === $roomName)));
         return ['sensors' => array_map(fn($s) => ['name' => $s['name'], 'room' => $s['room_name'], 'value' => $s['latest_value'], 'unit' => $s['unit']], $sensors)];
     }
 
-    private static function equipmentStateSummary(int $houseId, array $types): array
+    private static function equipmentStateSummary(int $houseId, array $types, ?string $roomName = null): array
     {
-        $equipments = array_values(array_filter(Equipment::allWithRoom($houseId), fn($e) => in_array($e['type'], $types, true)));
+        $equipments = array_values(array_filter(Equipment::allWithRoom($houseId), fn($e) => in_array($e['type'], $types, true) && (!$roomName || $e['room_name'] === $roomName)));
         return ['equipments' => array_map(fn($e) => ['name' => $e['name'], 'room' => $e['room_name'], 'state' => (int) $e['state'] ? 'ouvert/allumé' : 'fermé/éteint'], $equipments)];
     }
 
@@ -183,7 +199,7 @@ class AIService
     {
         $house = House::find($houseId);
         return array_merge(
-            ['mode' => $house['mode'] ?? 'confort'],
+            ['mode' => Setting::get('dashboard_mode_' . $houseId, 'comfort')],
             RecommendationEngine::dailySummary($houseId)
         );
     }

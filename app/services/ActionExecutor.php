@@ -5,6 +5,7 @@ namespace App\Services;
 use App\Models\AIHistory;
 use App\Models\Equipment;
 use App\Models\House;
+use App\Models\Setting;
 use Mqtt\Publisher;
 
 /**
@@ -66,6 +67,11 @@ class ActionExecutor
             $equipments = array_values(array_filter($equipments, fn($e) => $e['room_name'] === $intent['room']));
         }
 
+        if (!empty($intent['target_name'])) {
+            $targetName = mb_strtolower(trim($intent['target_name']));
+            $equipments = array_values(array_filter($equipments, fn($e) => mb_strtolower(trim($e['name'])) === $targetName));
+        }
+
         if (empty($equipments)) {
             return ['success' => false, 'message' => "Aucun équipement correspondant n'a été trouvé" . ($intent['room'] ? " dans la pièce « {$intent['room']} »" : '') . "."];
         }
@@ -100,7 +106,15 @@ class ActionExecutor
 
     private static function executeSetMode(array $intent, int $houseId, ?int $userId): array
     {
-        House::update($houseId, ['mode' => $intent['mode']]);
+        $dashboardMode = match ($intent['mode']) {
+            'confort' => 'comfort',
+            'nuit' => 'night',
+            'absence' => 'away',
+            'urgence' => 'emergency',
+            default => $intent['mode'],
+        };
+
+        Setting::set('dashboard_mode_' . $houseId, $dashboardMode);
         AIHistory::record($userId, $houseId, 'mode_change', 'success', $intent['mode']);
 
         return ['success' => true, 'mode' => $intent['mode']];
