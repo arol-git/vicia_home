@@ -45,6 +45,7 @@ $attentionCount = (int) ($stats['alerts_unread'] ?? 0);
             <option value="comfort" <?= $currentMode === 'comfort' ? 'selected' : '' ?>>Confort</option>
             <option value="night" <?= $currentMode === 'night' ? 'selected' : '' ?>>Nuit</option>
             <option value="away" <?= $currentMode === 'away' ? 'selected' : '' ?>>Absence</option>
+                <option value="emergency" <?= $currentMode === 'emergency' ? 'selected' : '' ?>>Urgence</option>
         </select>
         <i class="fa-solid fa-chevron-down" aria-hidden="true"></i>
     </div>

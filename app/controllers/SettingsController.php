@@ -7,6 +7,7 @@ use App\Core\Controller;
 use App\Core\Response;
 use App\Models\ActivityLog;
 use App\Models\Setting;
+use App\Models\User;
 
 /**
  * Class SettingsController
@@ -21,8 +22,9 @@ class SettingsController extends Controller
     {
         Auth::requireLogin();
         $settings = Setting::all();
+        $notificationSettings = User::notificationSettings(Auth::id());
 
-        $this->render('settings/index', ['title' => 'Paramètres', 'settings' => $settings]);
+        $this->render('settings/index', ['title' => 'Paramètres', 'settings' => $settings, 'notificationSettings' => $notificationSettings]);
     }
 
     public function update(): void

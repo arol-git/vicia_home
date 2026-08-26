@@ -82,6 +82,9 @@ class ProfileController extends Controller
         User::updateNotificationSettings($userId, $data);
         Setting::set('user_' . $userId . '_notification_email', $data['notification_email']);
         Setting::set('user_' . $userId . '_telegram_name', $telegramValue);
+        Setting::set('user_' . $userId . '_notify_email', $this->request->input('notify_email') ? '1' : '0');
+        Setting::set('user_' . $userId . '_notify_telegram', $this->request->input('notify_telegram') ? '1' : '0');
+        Setting::set('user_' . $userId . '_notify_push', $this->request->input('notify_push') ? '1' : '0');
 
         if ($telegramValue !== '') {
             Setting::set('user_' . $userId . '_telegram_chat_id', $telegramValue);

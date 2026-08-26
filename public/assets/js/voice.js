@@ -273,7 +273,7 @@ const VoiceAssistant = (() => {
                 const reply = data.reply || data.message || 'Je n’ai pas de réponse.';
                 showMessage(reply, 'success');
                 speak(data.spoken_text || reply);
-                if (data.intent !== 'question') {
+                if (data.intent === 'command') {
                     setTimeout(() => closeModal(), 2000);
                 }
             } else {

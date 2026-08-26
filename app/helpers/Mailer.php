@@ -87,13 +87,13 @@ class Mailer
     private static function withEnvironmentSettings(array $settings): array
     {
         $environment = [
-            'smtp_host' => getenv('SMTP_HOST') ?: '',
-            'smtp_port' => getenv('SMTP_PORT') ?: '',
-            'smtp_encryption' => getenv('SMTP_ENCRYPTION') ?: '',
-            'smtp_username' => getenv('SMTP_USERNAME') ?: '',
-            'smtp_password' => getenv('SMTP_PASSWORD') ?: '',
-            'smtp_from' => getenv('SMTP_FROM') ?: '',
-            'smtp_from_name' => getenv('SMTP_FROM_NAME') ?: '',
+            'smtp_host' => self::environmentValue('SMTP_HOST', 'MAIL_HOST'),
+            'smtp_port' => self::environmentValue('SMTP_PORT', 'MAIL_PORT'),
+            'smtp_encryption' => self::environmentValue('SMTP_ENCRYPTION', 'MAIL_ENCRYPTION', 'MAIL_SECURE'),
+            'smtp_username' => self::environmentValue('SMTP_USERNAME', 'MAIL_USERNAME', 'MAIL_USER'),
+            'smtp_password' => self::environmentValue('SMTP_PASSWORD', 'MAIL_PASSWORD'),
+            'smtp_from' => self::environmentValue('SMTP_FROM', 'MAIL_FROM_ADDRESS', 'MAIL_FROM'),
+            'smtp_from_name' => self::environmentValue('SMTP_FROM_NAME', 'MAIL_FROM_NAME'),
         ];
 
         foreach ($environment as $key => $value) {
@@ -103,5 +103,17 @@ class Mailer
         }
 
         return $settings;
+    }
+
+    private static function environmentValue(string ...$names): string
+    {
+        foreach ($names as $name) {
+            $value = getenv($name);
+            if ($value !== false && trim((string) $value) !== '') {
+                return trim((string) $value);
+            }
+        }
+
+        return '';
     }
 }

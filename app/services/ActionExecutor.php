@@ -114,9 +114,29 @@ class ActionExecutor
             default => $intent['mode'],
         };
 
+        $targets = [
+            'comfort' => ['led' => 1, 'relais' => 1, 'ventilateur' => 1, 'pompe' => 0, 'porte' => 0, 'fenetre' => 0, 'sirene' => 0],
+            'night' => ['led' => 0, 'relais' => 0, 'ventilateur' => 0, 'pompe' => 0, 'porte' => 1, 'fenetre' => 1, 'sirene' => 0],
+            'away' => ['led' => 0, 'relais' => 0, 'ventilateur' => 0, 'pompe' => 0, 'porte' => 1, 'fenetre' => 1, 'sirene' => 0],
+            'emergency' => ['led' => 0, 'relais' => 0, 'ventilateur' => 0, 'pompe' => 0, 'porte' => 1, 'fenetre' => 1, 'sirene' => 1],
+        ][$dashboardMode] ?? null;
+
+        $changed = 0;
+        if ($targets !== null) {
+            foreach (Equipment::activeForHouse($houseId) as $equipment) {
+                if (!array_key_exists($equipment['type'], $targets) || (int) $equipment['state'] === $targets[$equipment['type']]) {
+                    continue;
+                }
+                $state = (int) $targets[$equipment['type']];
+                Equipment::setState((int) $equipment['id'], $state);
+                Publisher::publish($equipment['mqtt_topic'] . '/set', $state ? '1' : '0');
+                $changed++;
+            }
+        }
+
         Setting::set('dashboard_mode_' . $houseId, $dashboardMode);
         AIHistory::record($userId, $houseId, 'mode_change', 'success', $intent['mode']);
 
-        return ['success' => true, 'mode' => $intent['mode']];
+        return ['success' => true, 'mode' => $intent['mode'], 'changed' => $changed];
     }
 }

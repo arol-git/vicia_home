@@ -118,6 +118,9 @@ class Notifier
         }
 
         foreach (self::notificationUsers($houseId) as $user) {
+            if (!self::channelEnabled((int) $user['id'], 'telegram')) {
+                continue;
+            }
             $chatId = trim((string) (($user['telegram_name'] ?? '') ?: ($user['telegram_chat_id'] ?? '') ?: ($settings['user_' . $user['id'] . '_telegram_name'] ?? '') ?: ($settings['user_' . $user['id'] . '_telegram_chat_id'] ?? '')));
             $token = $defaultToken;
             if ($token && $chatId) {
@@ -160,6 +163,9 @@ class Notifier
         }
 
         foreach (self::notificationUsers($houseId) as $user) {
+            if (!self::channelEnabled((int) $user['id'], 'email')) {
+                continue;
+            }
             $email = trim((string) (($user['notification_email'] ?? '') ?: ($settings['user_' . $user['id'] . '_notification_email'] ?? '') ?: $user['email']));
             if ($email !== '') {
                 $emails[] = $email;
@@ -189,5 +195,10 @@ class Notifier
     private static function ensureUserNotificationColumns(): void
     {
         \App\Models\User::notificationSettings(0);
+    }
+
+    private static function channelEnabled(int $userId, string $channel): bool
+    {
+        return \App\Models\Setting::get('user_' . $userId . '_notify_' . $channel, '1') === '1';
     }
 }

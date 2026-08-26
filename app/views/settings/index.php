@@ -18,6 +18,21 @@ $isAdmin = Auth::role() === 'admin';
     </div>
 </div>
 
+<div class="card mb-4">
+    <div class="card__header">
+        <div>
+            <div class="card__title"><i class="fa-solid fa-bell"></i> Mes moyens de notification</div>
+            <div class="card__subtitle">Choisissez les canaux utilisés pour vos alertes personnelles.</div>
+        </div>
+        <button type="button" class="btn btn-secondary" data-open-modal="modal-notification-preferences"><i class="fa-solid fa-sliders"></i> Choisir</button>
+    </div>
+    <div class="flex items-center flex-gap-2">
+        <?php if ($notificationSettings['notify_email'] ?? true): ?><span class="badge badge-neutral">E-mail</span><?php endif; ?>
+        <?php if ($notificationSettings['notify_telegram'] ?? true): ?><span class="badge badge-info">Telegram</span><?php endif; ?>
+        <?php if ($notificationSettings['notify_push'] ?? true): ?><span class="badge badge-success">Navigateur</span><?php endif; ?>
+    </div>
+</div>
+
 <?php if ($isAdmin): ?>
 <form id="settings-form">
     <div class="grid grid-cols-2">
@@ -104,6 +119,32 @@ $isAdmin = Auth::role() === 'admin';
     </div>
 </div>
 
+<div class="modal-overlay" id="modal-notification-preferences">
+    <div class="modal">
+        <div class="modal__header">
+            <div class="modal__title">Mes moyens de notification</div>
+            <button type="button" class="modal__close" data-close-modal="modal-notification-preferences" aria-label="Fermer"><i class="fa-solid fa-xmark"></i></button>
+        </div>
+        <form id="notification-preferences-form">
+            <div class="form-group">
+                <label class="form-label">Adresse e-mail</label>
+                <input type="email" name="notification_email" class="form-control" value="<?= e($notificationSettings['notification_email'] ?? '') ?>" required>
+            </div>
+            <div class="form-group">
+                <label class="form-label">Identifiant ou chat Telegram</label>
+                <input type="text" name="telegram_name" class="form-control" value="<?= e($notificationSettings['telegram_name'] ?? '') ?>" placeholder="Ex. @mon_nom_telegram">
+            </div>
+            <label class="checkbox-row"><input type="checkbox" name="notify_email" value="1" <?= ($notificationSettings['notify_email'] ?? true) ? 'checked' : '' ?>> Recevoir les alertes par e-mail</label>
+            <label class="checkbox-row"><input type="checkbox" name="notify_telegram" value="1" <?= ($notificationSettings['notify_telegram'] ?? true) ? 'checked' : '' ?>> Recevoir les alertes par Telegram</label>
+            <label class="checkbox-row mb-4"><input type="checkbox" name="notify_push" value="1" <?= ($notificationSettings['notify_push'] ?? true) ? 'checked' : '' ?>> Recevoir les alertes dans le navigateur</label>
+            <div class="modal__footer">
+                <button type="button" class="btn btn-secondary" data-close-modal="modal-notification-preferences">Annuler</button>
+                <button type="submit" class="btn btn-primary"><i class="fa-solid fa-check"></i> Enregistrer</button>
+            </div>
+        </form>
+    </div>
+</div>
+
 <div class="card mt-4">
     <div class="card__header"><div class="card__title"><i class="fa-solid fa-mobile-screen-button"></i> Application Vicia Home</div></div>
     <p class="text-muted">Installez Vicia Home parmi les applications de votre appareil pour l’ouvrir sans barre d’adresse.</p>
@@ -115,6 +156,16 @@ document.getElementById('settings-form')?.addEventListener('submit', (e) => {
     e.preventDefault();
     ViciaAjax.post('/settings', new FormData(e.target))
         .then((res) => ViciaApp.toast(res.message, 'success'))
+        .catch((err) => ViciaApp.toast(err.message || 'Erreur lors de l’enregistrement.', 'error'));
+});
+
+document.getElementById('notification-preferences-form')?.addEventListener('submit', (e) => {
+    e.preventDefault();
+    ViciaAjax.post('/profile/notifications', new FormData(e.target))
+        .then((res) => {
+            ViciaApp.toast(res.message, 'success');
+            ViciaApp.closeModal('modal-notification-preferences');
+        })
         .catch((err) => ViciaApp.toast(err.message || 'Erreur lors de l’enregistrement.', 'error'));
 });
 </script>

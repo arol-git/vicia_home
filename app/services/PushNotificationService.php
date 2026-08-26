@@ -3,6 +3,7 @@
 namespace App\Services;
 
 use App\Models\PushSubscription;
+use App\Models\Setting;
 use Minishlink\WebPush\Subscription;
 use Minishlink\WebPush\WebPush;
 
@@ -41,6 +42,9 @@ class PushNotificationService
 
         $sent = false;
         foreach ($subscriptions as $subscription) {
+            if (Setting::get('user_' . (int) $subscription['user_id'] . '_notify_push', '1') !== '1') {
+                continue;
+            }
             try {
                 $report = $webPush->sendOneNotification(
                     Subscription::create([

@@ -60,6 +60,9 @@ class User extends Model
         return [
             'notification_email' => trim((string) (($user['notification_email'] ?? '') ?: Setting::get('user_' . $id . '_notification_email', $user['email'] ?? ''))),
             'telegram_name' => $telegramValue,
+            'notify_email' => Setting::get('user_' . $id . '_notify_email', '1') === '1',
+            'notify_telegram' => Setting::get('user_' . $id . '_notify_telegram', '1') === '1',
+            'notify_push' => Setting::get('user_' . $id . '_notify_push', '1') === '1',
         ];
     }
 

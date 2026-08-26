@@ -67,7 +67,7 @@ class DashboardController extends Controller
         $houseId = Auth::requireHouseRole(['admin', 'owner', 'technician']);
         $this->verifyCsrf();
         $mode = (string) $this->request->input('mode', '');
-        $labels = ['comfort' => 'Confort', 'night' => 'Nuit', 'away' => 'Absence'];
+        $labels = ['comfort' => 'Confort', 'night' => 'Nuit', 'away' => 'Absence', 'emergency' => 'Urgence'];
         if (!isset($labels[$mode])) {
             Response::error('Mode inconnu.', 422);
             return;
@@ -77,6 +77,7 @@ class DashboardController extends Controller
             'comfort' => ['led' => 1, 'relais' => 1, 'ventilateur' => 1, 'pompe' => 0, 'porte' => 0, 'fenetre' => 0, 'sirene' => 0],
             'night' => ['led' => 0, 'relais' => 0, 'ventilateur' => 0, 'pompe' => 0, 'porte' => 1, 'fenetre' => 1, 'sirene' => 0],
             'away' => ['led' => 0, 'relais' => 0, 'ventilateur' => 0, 'pompe' => 0, 'porte' => 1, 'fenetre' => 1, 'sirene' => 0],
+            'emergency' => ['led' => 0, 'relais' => 0, 'ventilateur' => 0, 'pompe' => 0, 'porte' => 1, 'fenetre' => 1, 'sirene' => 1],
         ][$mode];
         $changed = 0;
         foreach (Equipment::activeForHouse($houseId) as $equipment) {
