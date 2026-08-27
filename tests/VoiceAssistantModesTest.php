@@ -23,6 +23,12 @@ try {
 
     $detectMode = $ref->getMethod('detectMode');
     $detectMode->setAccessible(true);
+    $detectIntent = $ref->getMethod('detectIntent');
+    $detectIntent->setAccessible(true);
+    $detectType = $ref->getMethod('detectType');
+    $detectType->setAccessible(true);
+    $isBatch = $ref->getMethod('isBatchCommand');
+    $isBatch->setAccessible(true);
 
     assertCase($detectMode->invoke(null, 'passe la maison en mode nuit') === 'nuit', 'Le mode nuit est détecté depuis le mot maison');
     assertCase($detectMode->invoke(null, 'mets la maison en confort') === 'confort', 'Le mode confort est détecté avec une phrase naturelle');
@@ -40,6 +46,9 @@ try {
     $replyMethod->setAccessible(true);
     $reply = $replyMethod->invoke(null, 'temperature', ['sensors' => [['room' => 'Salon', 'value' => '25.3']]], 'Salon');
     assertCase($reply === 'Température : dans Salon, elle est de 25,3 degrés Celsius.', 'La température est formatée en une valeur naturelle pour la synthèse vocale');
+    assertCase($detectIntent->invoke(null, 'arret le ventilateur') === 'off', 'Une faute légère sur le verbe arrêter est tolérée');
+    assertCase($detectType->invoke(null, 'coupe l eau') === 'pompe', 'Eau est comprise comme une commande de pompe');
+    assertCase($isBatch->invoke(null, 'arrête la totalite des appareils') === true, 'Totalité est comprise comme une portée globale');
 } catch (Throwable $e) {
     echo "[FAIL] Erreur d’exécution : " . $e->getMessage() . "\n";
     $failed++;

@@ -82,7 +82,7 @@ class ActionExecutor
         // limite l'action au premier équipement trouvé plutôt que de
         // deviner une portée large — un assistant domestique ne doit
         // jamais agir plus largement que ce qui a été demandé.
-        if (!$intent['room'] && !$intent['scope_all'] && count($equipments) > 1) {
+        if (!$intent['room'] && !$intent['scope_all'] && ($intent['target_type'] ?? null) !== 'all' && count($equipments) > 1) {
             $equipments = [$equipments[0]];
         }
 

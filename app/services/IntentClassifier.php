@@ -74,6 +74,7 @@ class IntentClassifier
         'pompe'     => 'pompe', 'pompes'   => 'pompe', 'arrosage' => 'pompe', 'arroseur' => 'pompe',
         'irrigation'=> 'pompe', 'pump'     => 'pompe', 'pumps'    => 'pompe',
         'sprinkler' => 'pompe', 'sprinklers' => 'pompe',
+        'eau'       => 'pompe', 'water'    => 'pompe', 'alimentation' => 'pompe',
         
         // Sirène/Alarme
         'alarme'    => 'sirene', 'alarmes' => 'sirene', 'sirène'   => 'sirene', 'sirene'   => 'sirene',
@@ -192,13 +193,13 @@ class IntentClassifier
     private static function detectIntent(string $normalized): ?string
     {
         foreach (self::ACTION_VERBS as $verb => $state) {
-            if (str_starts_with($normalized, $verb) || str_contains($normalized, " $verb ") || str_ends_with($normalized, " $verb")) {
+            if (self::containsWordOrTypo($normalized, $verb)) {
                 return $state === 1 ? 'on' : 'off';
             }
         }
 
         foreach (['bascule', 'basculer', 'inverse', 'inverser'] as $verb) {
-            if (str_starts_with($normalized, $verb) || str_contains($normalized, " $verb ")) {
+            if (self::containsWordOrTypo($normalized, $verb)) {
                 return 'toggle';
             }
         }
@@ -209,7 +210,7 @@ class IntentClassifier
     private static function detectType(string $normalized): ?string
     {
         foreach (self::TARGET_TYPES as $word => $type) {
-            if (str_contains($normalized, $word)) {
+            if (self::containsWordOrTypo($normalized, $word)) {
                 return $type;
             }
         }
@@ -219,7 +220,7 @@ class IntentClassifier
 
     private static function isBatchCommand(string $normalized): bool
     {
-        return (bool) preg_match('/\b(tous?|toutes?|partout|partous)\b/iu', $normalized);
+        return (bool) preg_match('/\b(tous?|toutes?|partout|partous|totalité|totalite)\b/iu', $normalized);
     }
 
     private static function detectEquipmentCommand(string $normalized, int $houseId): ?array
@@ -228,7 +229,7 @@ class IntentClassifier
         $matchedVerb = null;
         
         foreach (self::ACTION_VERBS as $verb => $state) {
-            if (str_starts_with($normalized, $verb) || str_contains($normalized, " $verb ") || str_contains($normalized, " $verb")) {
+            if (self::containsWordOrTypo($normalized, $verb)) {
                 $verbState = $state;
                 $matchedVerb = $verb;
                 break; // Prendre le premier match (par ordre de déclaration)
@@ -278,6 +279,11 @@ class IntentClassifier
             $scopeAll = true;
         }
 
+        if ($targetType === null && self::containsAny($normalized, ['appareil', 'appareils', 'équipement', 'équipements', 'equipement', 'equipements', 'totalité', 'totalite'])) {
+            $targetType = 'all';
+            $scopeAll = true;
+        }
+
         if ($targetType === null) {
             return null;
         }
@@ -304,6 +310,40 @@ class IntentClassifier
         }
 
         return null;
+    }
+
+    private static function containsAny(string $text, array $words): bool
+    {
+        foreach ($words as $word) {
+            if (self::containsWordOrTypo($text, $word)) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    private static function containsWordOrTypo(string $text, string $word): bool
+    {
+        $text = self::comparisonText($text);
+        $word = self::comparisonText($word);
+        if (str_contains($text, $word)) {
+            return true;
+        }
+
+        foreach (preg_split('/\s+/', $text, -1, PREG_SPLIT_NO_EMPTY) ?: [] as $token) {
+            if (strlen($word) >= 5 && levenshtein($token, $word) <= 1) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    private static function comparisonText(string $text): string
+    {
+        $text = iconv('UTF-8', 'ASCII//TRANSLIT//IGNORE', $text) ?: $text;
+        return strtolower($text);
     }
 
     private static function questionTopic(string $normalized): string

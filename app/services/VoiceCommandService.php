@@ -30,6 +30,7 @@ class VoiceCommandService
         'fenetre'    => ['fenêtre', 'fenêtres', 'fenetre', 'fenetres', 'window', 'windows'],
         'ventilateur' => ['ventilateur', 'ventilateurs', 'climatisation', 'clim', 'climate', 'fan', 'fans'],
         'pompe'      => ['pompe', 'arrosage', 'irrigation', 'pump', 'sprinkler'],
+            'pompe'      => ['pompe', 'arrosage', 'irrigation', 'pump', 'sprinkler', 'eau', 'water', 'alimentation'],
         'sirene'     => ['alarme', 'sirène', 'sirene', 'alerte', 'alarm', 'siren'],
         'relais'     => ['relais', 'prise', 'prises', 'relay', 'plug', 'outlet'],
         'servo'      => ['servo', 'moteur', 'motor'],
@@ -76,6 +77,11 @@ class VoiceCommandService
 
             if (!$targetType && $roomName) {
                 $targetType = 'all';
+            }
+
+            if (!$targetType && self::containsAny($normalized, ['appareil', 'appareils', 'équipement', 'équipements', 'equipement', 'equipements', 'totalité', 'totalite'])) {
+                $targetType = 'all';
+                $isBatch = true;
             }
 
             if (!$targetType) {
@@ -131,7 +137,7 @@ class VoiceCommandService
     {
         foreach (self::INTENT_PATTERNS as $intent => $verbs) {
             foreach ($verbs as $verb) {
-                if (str_starts_with($normalized, $verb) || str_contains($normalized, " $verb ") || str_contains($normalized, " $verb")) {
+                if (self::containsWordOrTypo($normalized, $verb)) {
                     return $intent;
                 }
             }
@@ -143,7 +149,7 @@ class VoiceCommandService
     {
         foreach (self::TYPE_PATTERNS as $type => $keywords) {
             foreach ($keywords as $keyword) {
-                if (str_contains($normalized, $keyword)) {
+                if (self::containsWordOrTypo($normalized, $keyword)) {
                     return $type;
                 }
             }
@@ -153,7 +159,41 @@ class VoiceCommandService
 
     private static function isBatchCommand(string $normalized): bool
     {
-        return (bool) preg_match('/\b(tous?|toutes?|partout|partous)\b/i', $normalized);
+        return (bool) preg_match('/\b(tous?|toutes?|partout|partous|totalité|totalite)\b/iu', $normalized);
+    }
+
+    private static function containsAny(string $text, array $words): bool
+    {
+        foreach ($words as $word) {
+            if (self::containsWordOrTypo($text, $word)) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    private static function containsWordOrTypo(string $text, string $word): bool
+    {
+        $text = self::comparisonText($text);
+        $word = self::comparisonText($word);
+        if (str_contains($text, $word)) {
+            return true;
+        }
+
+        foreach (preg_split('/\s+/', $text, -1, PREG_SPLIT_NO_EMPTY) ?: [] as $token) {
+            if (strlen($word) >= 5 && levenshtein($token, $word) <= 1) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    private static function comparisonText(string $text): string
+    {
+        $text = iconv('UTF-8', 'ASCII//TRANSLIT//IGNORE', $text) ?: $text;
+        return strtolower($text);
     }
 
     private static function detectRoom(string $normalized, int $houseId): ?string
