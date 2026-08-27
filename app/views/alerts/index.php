@@ -35,7 +35,7 @@ $pageScripts = [];
                         <div class="alert-item__title"><?= e($alert['message']) ?></div>
                         <span class="badge <?= $badge['class'] ?>"><?= $badge['label'] ?></span>
                     </div>
-                    <div class="alert-item__meta">Type : <?= e($alert['type']) ?><?= $alert['source'] ? ' · Source : ' . e($alert['source']) : '' ?> · <?= e(format_date($alert['created_at'])) ?></div>
+                    <div class="alert-item__meta"><?= $alert['type'] === 'intrusion' ? 'Mouvement ou événement de sécurité' : 'Type : ' . e($alert['type']) ?> · <?= e(format_date($alert['created_at'])) ?></div>
                 </div>
                 <?php if (!$alert['is_read']): ?>
                 <button type="button" class="btn btn-sm btn-secondary" data-mark-read data-id="<?= (int) $alert['id'] ?>">Marquer comme lue</button>

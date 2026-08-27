@@ -13,7 +13,7 @@ $canManage = in_array($houseRole, ['admin', 'owner', 'technician'], true);
 $canDelete = in_array($houseRole, ['admin', 'owner'], true);
 
 $operatorLabels = ['>' => 'supérieur à', '<' => 'inférieur à', '>=' => 'supérieur ou égal à', '<=' => 'inférieur ou égal à', '=' => 'égal à', '!=' => 'différent de'];
-$eventLabels = ['intrusion' => 'Intrusion détectée', 'appareil_inconnu' => 'Appareil inconnu détecté'];
+$eventLabels = ['intrusion' => 'Mouvement ou événement de sécurité détecté', 'appareil_inconnu' => 'Appareil inconnu détecté'];
 ?>
 
 <div class="page-header">

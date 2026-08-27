@@ -76,6 +76,8 @@ assertTrue(!can_view_mqtt_topics('resident'), "Le rôle resident ne doit pas voi
 assertTrue(!array_key_exists('mqtt_topic', hide_mqtt_topics(['name' => 'LED', 'mqtt_topic' => 'home/demo/led'])), 'hide_mqtt_topics() doit retirer mqtt_topic sur une ligne');
 assertTrue(\App\Models\Alert::shouldNotify(['house_id' => 1, 'type' => 'intrusion', 'severity' => 'critical']), 'Les alertes critiques doivent déclencher une notification');
 assertTrue(!\App\Models\Alert::shouldNotify(['house_id' => 1, 'type' => 'test_email', 'severity' => 'warning']), 'Les alertes de test ne doivent pas envoyer de vraie notification');
+assertTrue(str_contains(file_get_contents(__DIR__ . '/../mqtt/subscriber.php'), 'hasRecentIntrusionAlert'), 'Les alertes de mouvement répétées doivent être regroupées');
+assertTrue(str_contains(file_get_contents(__DIR__ . '/../mqtt/subscriber.php'), 'Un mouvement a été détecté'), 'Le message de mouvement doit être compréhensible');
 
 echo "\n=== Résultat : $passed réussi(s), $failed échoué(s) ===\n";
 exit($failed > 0 ? 1 : 0);

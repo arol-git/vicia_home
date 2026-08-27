@@ -94,6 +94,9 @@ $client->loop(function (string $topic, string $payload) {
     }
 
     // --- Cas 2 : événement de sécurité (intrusion, PIR déclenché...) ---
+    // Un événement positif est le payload MQTT 1. Les répétitions du même
+    // topic sont regroupées pendant 15 minutes pour éviter une alerte par
+    // message lorsque le capteur reste actif ou pendant un test.
     if (str_contains(strtolower($topic), '/security/') && trim($payload) === '1') {
         echo "[" . date('Y-m-d H:i:s') . "] ⚠️  ÉVÉNEMENT SÉCURITÉ détecté sur: $topic\n";
         $houseId = resolveHouseIdFromTopic($topic);
@@ -104,12 +107,17 @@ $client->loop(function (string $topic, string $payload) {
         }
         echo "[" . date('Y-m-d H:i:s') . "] ✓ Maison trouvée #$houseId pour le topic\n";
 
+        if (\App\Models\Alert::hasRecentIntrusionAlert($houseId, $topic, 15)) {
+            echo "[" . date('Y-m-d H:i:s') . "] → Mouvement déjà signalé récemment, alerte ignorée\n";
+            return;
+        }
+
         \App\Models\Alert::create([
             'house_id' => $houseId,
             'type'     => 'intrusion',
             'severity' => 'critical',
             'source'   => $topic,
-            'message'  => "Détection de mouvement / intrusion sur le topic $topic",
+            'message'  => 'Un mouvement a été détecté dans la maison. Vérifiez les lieux si vous ne l’attendiez pas.',
         ]);
         evaluateEventRules($houseId, 'intrusion');
     }
