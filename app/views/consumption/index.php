@@ -5,7 +5,7 @@
  */
 $pageScripts = [];
 $selectedData = $selectedData ?? [];
-$selectedMonth = $selectedMonth ?? date('Y-m');
+$selectedMonth = preg_match('/^\d{4}-(0[1-9]|1[0-2])$/', (string) ($selectedMonth ?? '')) ? $selectedMonth : date('Y-m');
 $history = $history ?? [];
 $changePercent = $changePercent ?? null;
 $monthNames = ['01' => 'Janvier', '02' => 'Février', '03' => 'Mars', '04' => 'Avril', '05' => 'Mai', '06' => 'Juin', '07' => 'Juillet', '08' => 'Août', '09' => 'Septembre', '10' => 'Octobre', '11' => 'Novembre', '12' => 'Décembre'];
