@@ -11,6 +11,10 @@
 
 	if (!form || !input || !messages || typeof ViciaAjax === 'undefined') return;
 
+	const scrollToLatestMessage = () => {
+		messages.scrollTop = messages.scrollHeight;
+	};
+
 	const appendMessage = (role, text) => {
 		const wrapper = document.createElement('div');
 		wrapper.className = `ai-message ai-message--${role}`;
@@ -19,7 +23,7 @@
 		bubble.textContent = text;
 		wrapper.appendChild(bubble);
 		messages.appendChild(wrapper);
-		messages.scrollTop = messages.scrollHeight;
+		scrollToLatestMessage();
 	};
 
 	form.addEventListener('submit', async (event) => {
@@ -60,5 +64,7 @@
 		}
 	});
 
+	requestAnimationFrame(scrollToLatestMessage);
+	window.addEventListener('load', scrollToLatestMessage, { once: true });
 	input.focus();
 })();
