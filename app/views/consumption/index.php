@@ -5,13 +5,14 @@
  */
 $pageScripts = [];
 $selectedData = $selectedData ?? [];
-$selectedMonth = preg_match('/^\d{4}-(0[1-9]|1[0-2])$/', (string) ($selectedMonth ?? '')) ? $selectedMonth : date('Y-m');
+$selectedMonth = \App\Models\Energy::normalizeMonth((string) ($selectedMonth ?? ''));
 $history = $history ?? [];
 $changePercent = $changePercent ?? null;
 $monthNames = ['01' => 'Janvier', '02' => 'Février', '03' => 'Mars', '04' => 'Avril', '05' => 'Mai', '06' => 'Juin', '07' => 'Juillet', '08' => 'Août', '09' => 'Septembre', '10' => 'Octobre', '11' => 'Novembre', '12' => 'Décembre'];
 $monthLabel = static function (string $month): string {
     global $monthNames;
-    [$year, $number] = array_pad(explode('-', $month, 2), 2, '');
+    $month = \App\Models\Energy::normalizeMonth($month);
+    [$year, $number] = explode('-', $month, 2);
     return ($monthNames[$number] ?? $number) . ' ' . $year;
 };
 $currentTotal = $selectedData['total_kwh'] ?? null;

@@ -35,6 +35,8 @@ checkEnergy($toKwh->invoke(null, 2500.0, 'Wh') === 2.5, 'Une différence de 2500
 checkEnergy($extract->invoke(null, 'home/maison/energy/power', '125.5')[0]['topic'] === 'home/maison/energy/power', 'Un relevé MQTT de puissance globale conserve son topic');
 checkEnergy($extract->invoke(null, 'home/maison/energy', ['kwh' => 42.25])[0]['topic'] === 'home/maison/energy/kwh', 'Un relevé MQTT énergétique kWh est normalisé');
 checkEnergy($extract->invoke(null, 'home/maison/energy/power', 'inconnu') === [], 'Une valeur MQTT invalide est ignorée');
+checkEnergy(App\Models\Energy::normalizeMonth('02 2025') === '2025-02', 'Le format 02 2025 devient 2025-02');
+checkEnergy(App\Models\Energy::normalizeMonth('01/2025') === '2025-01', 'Le mois de janvier est reconnu');
 
 echo "\n=== Résultat : $passed réussi(s), $failed échec(s) ===\n";
 exit($failed > 0 ? 1 : 0);

@@ -63,9 +63,7 @@ class Energy
 
     public static function month(int $houseId, string $month): array
     {
-        if (!preg_match('/^\d{4}-\d{2}$/', $month)) {
-            $month = date('Y-m');
-        }
+        $month = self::normalizeMonth($month);
 
         $start = $month . '-01 00:00:00';
         $end = date('Y-m-d H:i:s', strtotime($start . ' +1 month'));
@@ -173,6 +171,18 @@ class Energy
             ];
         }
         return $items;
+    }
+
+    public static function normalizeMonth(string $month): string
+    {
+        $month = trim($month);
+        if (preg_match('/^(\d{4})[-\/]?(0[1-9]|1[0-2])$/', $month, $matches)) {
+            return $matches[1] . '-' . $matches[2];
+        }
+        if (preg_match('/^(0[1-9]|1[0-2])(?:[\s\/-]+)(\d{4})$/', $month, $matches)) {
+            return $matches[2] . '-' . $matches[1];
+        }
+        return date('Y-m');
     }
 
     private static function unitMode(array $sensor): ?string
