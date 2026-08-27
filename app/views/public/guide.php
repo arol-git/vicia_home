@@ -38,7 +38,7 @@
     <section class="public-info__section">
         <h2><i class="fa-solid fa-house"></i> VICIA HOME, c'est quoi ?</h2>
         <p>C'est un tableau de bord pour voir votre maison au même endroit. Vous pouvez contrôler des appareils, lire les mesures des capteurs, consulter les alertes et suivre la consommation d'énergie.</p>
-        <div class="public-info__screenshot">Emplacement prévu pour une future capture d'écran du tableau de bord.</div>
+        <div class="public-info__screenshot"><img src="<?= asset('img/dashboard.png') ?>" alt="Tableau de bord VICIA HOME"></div>
     </section>
 
     <section class="public-info__section">
@@ -56,13 +56,13 @@
         <h2><i class="fa-solid fa-plug-circle-bolt"></i> Contrôler les équipements</h2>
         <p>Ouvrez <strong>Équipements</strong> ou le <strong>Tableau de bord</strong>. Chaque équipement affiche son nom, sa pièce et son état. Utilisez le bouton d'action pour l'allumer, l'éteindre, l'ouvrir ou le fermer selon le type d'appareil.</p>
         <p>Vous pouvez aussi utiliser l'assistant : dites par exemple « Allume la lumière du salon » ou « Arrête tous les appareils ».</p>
-        <div class="public-info__screenshot">Emplacement prévu pour une future capture d'écran des équipements.</div>
+        <div class="public-info__screenshot"><img src="<?= asset('img/equipement.png') ?>" alt="Liste des équipements de la maison"></div>
     </section>
 
     <section class="public-info__section">
         <h2><i class="fa-solid fa-microchip"></i> Consulter les capteurs</h2>
         <p>Ouvrez <strong>Capteurs</strong> pour voir les dernières mesures. Les valeurs peuvent concerner la température, l'humidité, l'énergie ou la sécurité selon les capteurs installés.</p>
-        <div class="public-info__screenshot">Emplacement prévu pour une future capture d'écran des mesures.</div>
+        <div class="public-info__screenshot"><img src="<?= asset('img/capteur.png') ?>" alt="Mesures des capteurs de la maison"></div>
     </section>
 
     <section class="public-info__section">
@@ -73,7 +73,7 @@
     <section class="public-info__section">
         <h2><i class="fa-solid fa-bolt"></i> Voir la consommation</h2>
         <p>Ouvrez <strong>Consommation</strong> pour voir une estimation de la puissance active et de la consommation journalière, calculée à partir des équipements connus.</p>
-        <div class="public-info__screenshot">Emplacement prévu pour une future capture d'écran de la consommation.</div>
+        <div class="public-info__screenshot"><img src="<?= asset('img/consomation.png') ?>" alt="Suivi de la consommation énergétique"></div>
     </section>
 
     <section class="public-info__section">

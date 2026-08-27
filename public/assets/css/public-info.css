@@ -126,6 +126,14 @@
     padding: var(--space-4);
 }
 
+.public-info__screenshot img {
+    display: block;
+    width: 100%;
+    max-height: 360px;
+    object-fit: contain;
+    border-radius: var(--radius-sm);
+}
+
 .public-info__footer {
     padding: 0 var(--space-6) var(--space-6);
     color: var(--color-text-soft);
