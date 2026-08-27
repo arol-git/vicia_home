@@ -1,0 +1,153 @@
+/* Pages publiques d'information, construites avec les jetons VICIA HOME. */
+.public-info-page {
+    min-height: 100vh;
+    background: var(--color-bg);
+    color: var(--color-text);
+}
+
+.public-info__header {
+    background: var(--color-navy-900);
+    color: #fff;
+    padding: var(--space-5) var(--space-6);
+}
+
+.public-info__header-inner,
+.public-info__content {
+    width: min(100% - 32px, 960px);
+    margin: 0 auto;
+}
+
+.public-info__header-inner {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--space-4);
+}
+
+.public-info__brand {
+    display: flex;
+    align-items: center;
+    gap: var(--space-3);
+    font-size: var(--fs-lg);
+    font-weight: 700;
+}
+
+.public-info__brand-icon {
+    width: 40px;
+    height: 40px;
+    display: grid;
+    place-items: center;
+    border-radius: var(--radius-md);
+    background: var(--color-primary);
+}
+
+.public-info__nav {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--space-3);
+}
+
+.public-info__nav a {
+    color: rgba(255, 255, 255, 0.86);
+    font-size: var(--fs-sm);
+}
+
+.public-info__nav a:hover,
+.public-info__nav a:focus-visible {
+    color: #fff;
+    text-decoration: underline;
+}
+
+.public-info__content {
+    padding: var(--space-7) 0;
+}
+
+.public-info__intro {
+    margin-bottom: var(--space-6);
+}
+
+.public-info__intro h1 {
+    font-size: 2.4rem;
+    margin-bottom: var(--space-3);
+}
+
+.public-info__intro p {
+    max-width: 680px;
+    color: var(--color-text-muted);
+    font-size: var(--fs-md);
+}
+
+.public-info__section {
+    background: var(--color-surface);
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-md);
+    box-shadow: var(--shadow-sm);
+    padding: var(--space-5);
+    margin-bottom: var(--space-4);
+}
+
+.public-info__section h2 {
+    display: flex;
+    align-items: center;
+    gap: var(--space-2);
+    font-size: var(--fs-lg);
+    margin-bottom: var(--space-3);
+}
+
+.public-info__section h2 i {
+    color: var(--color-primary);
+}
+
+.public-info__section p,
+.public-info__section li {
+    color: var(--color-text-muted);
+    line-height: 1.65;
+}
+
+.public-info__section ul,
+.public-info__section ol {
+    padding-left: 1.25rem;
+}
+
+.public-info__section li + li {
+    margin-top: var(--space-2);
+}
+
+.public-info__screenshot {
+    min-height: 120px;
+    display: grid;
+    place-items: center;
+    margin-top: var(--space-4);
+    border: 1px dashed var(--color-border);
+    border-radius: var(--radius-sm);
+    background: var(--color-surface-alt);
+    color: var(--color-text-soft);
+    text-align: center;
+    padding: var(--space-4);
+}
+
+.public-info__footer {
+    padding: 0 var(--space-6) var(--space-6);
+    color: var(--color-text-soft);
+    text-align: center;
+    font-size: var(--fs-sm);
+}
+
+@media (max-width: 600px) {
+    .public-info__header-inner {
+        align-items: flex-start;
+        flex-direction: column;
+    }
+
+    .public-info__content {
+        padding: var(--space-5) 0;
+    }
+
+    .public-info__section {
+        padding: var(--space-4);
+    }
+
+    .public-info__intro h1 {
+        font-size: 1.7rem;
+    }
+}

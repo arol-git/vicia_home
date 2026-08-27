@@ -101,7 +101,11 @@ use App\Core\Session;
                 </button>
             </form>
 
-            <p class="auth-footer-link">Vicia Home &mdash; Plateforme de maison intelligente sécurisée</p>
+            <p class="auth-footer-link">VICIA HOME — Gérez et contrôlez votre maison intelligente simplement.</p>
+            <nav class="auth-public-links" aria-label="Informations publiques">
+                <a href="<?= url('/guide') ?>"><i class="fa-solid fa-book-open"></i> Guide d'utilisation</a>
+                <a href="<?= url('/privacy') ?>"><i class="fa-solid fa-shield-halved"></i> Politique de confidentialité</a>
+            </nav>
         </div>
     </div>
 </div>

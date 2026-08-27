@@ -42,6 +42,8 @@ $router = new Router();
 // ------------------------- Authentification -----------------------------
 $router->get('/', 'AuthController@showLogin');
 $router->get('/login', 'AuthController@showLogin');
+$router->get('/guide', 'PublicController@guide');
+$router->get('/privacy', 'PublicController@privacy');
 $router->post('/login', 'AuthController@login');
 $router->post('/logout', 'AuthController@logout');
 $router->get('/forgot-password', 'AuthController@showForgotPassword');

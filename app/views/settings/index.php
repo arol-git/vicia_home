@@ -19,6 +19,15 @@ $isAdmin = Auth::role() === 'admin';
 </div>
 
 <div class="card mb-4">
+    <div class="card__header"><div class="card__title"><i class="fa-solid fa-circle-info"></i> Aide et informations</div></div>
+    <div class="flex items-center flex-gap-3">
+        <a href="<?= url('/guide') ?>" class="btn btn-secondary"><i class="fa-solid fa-book-open"></i> Guide d'utilisation</a>
+        <a href="<?= url('/privacy') ?>" class="btn btn-secondary"><i class="fa-solid fa-shield-halved"></i> Politique de confidentialité</a>
+        <a href="<?= url('/guide#about') ?>" class="btn btn-secondary"><i class="fa-solid fa-circle-info"></i> À propos de VICIA HOME</a>
+    </div>
+</div>
+
+<div class="card mb-4">
     <div class="card__header">
         <div>
             <div class="card__title"><i class="fa-solid fa-bell"></i> Mes moyens de notification</div>
