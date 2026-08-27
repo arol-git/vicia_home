@@ -46,6 +46,10 @@ try {
     $replyMethod->setAccessible(true);
     $reply = $replyMethod->invoke(null, 'temperature', ['sensors' => [['room' => 'Salon', 'value' => '25.3']]], 'Salon');
     assertCase($reply === 'Température : dans Salon, elle est de 25,3 degrés Celsius.', 'La température est formatée en une valeur naturelle pour la synthèse vocale');
+    $stateReply = $replyMethod->invoke(null, 'doors', ['equipments' => [['name' => 'Porte principale', 'state' => 'ouvert']]], null);
+    assertCase($stateReply === 'Porte principale est ouvert.', 'Une porte reçoit la formulation ouvert');
+    $houseReply = $replyMethod->invoke(null, 'house_state', ['mode' => 'night', 'equipments_active_now' => 2, 'equipments_total' => 5, 'alerts_today' => 0], null);
+    assertCase($houseReply === "La maison est en mode nuit. 2 équipement(s) sur 5 sont actuellement en marche. Il n'y a aucune alerte aujourd'hui.", 'L’état de la maison reçoit une réponse locale complète');
     assertCase($detectIntent->invoke(null, 'arret le ventilateur') === 'off', 'Une faute légère sur le verbe arrêter est tolérée');
     assertCase($detectType->invoke(null, 'coupe l eau') === 'pompe', 'Eau est comprise comme une commande de pompe');
     assertCase($isBatch->invoke(null, 'arrête la totalite des appareils') === true, 'Totalité est comprise comme une portée globale');

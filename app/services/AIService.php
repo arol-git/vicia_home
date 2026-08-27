@@ -73,7 +73,7 @@ class AIService
             app_log('[AIService] Erreur interne : ' . $e->getMessage());
             return self::respond(
                 $conversation['id'],
-                "Je suis désolé, le module IA rencontre un problème interne. Essaie de nouveau plus tard.",
+                "Je rencontre un problème technique. Vérifiez votre connexion à la maison, puis réessayez.",
                 null,
                 'error'
             );
@@ -89,13 +89,13 @@ class AIService
             // d'interpréter un texte qui n'est ni oui ni non comme une
             // confirmation implicite — une commande sensible ne
             // souffre aucune ambiguïté.
-            return self::respond($conversation['id'], "Je n'ai pas compris : confirmez-vous ? (oui / non)\n\n" . $pending['question'], null, 'command');
+            return self::respond($conversation['id'], "Répondez simplement oui pour continuer ou non pour annuler.\n\n" . $pending['question'], null, 'command');
         }
 
         ConversationMemory::clearPendingAction($conversation['id']);
 
         if ($decision === 'confirmation_no') {
-            return self::respond($conversation['id'], "D'accord, action annulée.", null, 'command');
+            return self::respond($conversation['id'], "D'accord, rien n'a été changé.", null, 'command');
         }
 
         $result = ActionExecutor::execute($pending['intent'], (int) $houseId, $userId);
@@ -134,25 +134,58 @@ class AIService
 
     private static function directFactualReply(string $topic, array $context, ?string $roomName): ?string
     {
-        if (!in_array($topic, ['temperature', 'humidity'], true)) {
-            return null;
+        if (in_array($topic, ['temperature', 'humidity'], true)) {
+            $sensors = $context['sensors'] ?? [];
+            if ($sensors === []) {
+                return $roomName
+                    ? "Je n'ai pas encore de mesure disponible dans la pièce « {$roomName} »."
+                    : "Je n'ai pas encore de mesure disponible pour cette information.";
+            }
+
+            $label = $topic === 'temperature' ? 'Température' : 'Humidité';
+            $readings = array_map(function (array $sensor) use ($topic): string {
+                $value = str_replace('.', ',', trim((string) $sensor['value']));
+                $unit = $topic === 'temperature' ? 'degrés Celsius' : 'pour cent';
+                return "dans {$sensor['room']}, elle est de {$value} {$unit}";
+            }, $sensors);
+
+            return $label . ' : ' . implode('; ', $readings) . '.';
         }
 
-        $sensors = $context['sensors'] ?? [];
-        if ($sensors === []) {
-            return $roomName
-                ? "Je n'ai pas encore de mesure disponible dans la pièce « {$roomName} »."
-                : "Je n'ai pas encore de mesure disponible pour cette information.";
+        if (in_array($topic, ['doors', 'lights'], true)) {
+            $equipments = $context['equipments'] ?? [];
+            if ($equipments === []) {
+                return $roomName
+                    ? "Je ne trouve pas d'équipement correspondant dans la pièce « {$roomName} »."
+                    : "Je ne trouve pas d'équipement correspondant.";
+            }
+
+            $readings = array_map(fn(array $equipment): string => "{$equipment['name']} est {$equipment['state']}", $equipments);
+            return implode('. ', $readings) . '.';
         }
 
-        $label = $topic === 'temperature' ? 'température' : 'humidité';
-        $readings = array_map(function (array $sensor) use ($topic): string {
-            $value = str_replace('.', ',', trim((string) $sensor['value']));
-            $unit = $topic === 'temperature' ? 'degrés Celsius' : 'pour cent';
-            return "dans {$sensor['room']}, elle est de {$value} {$unit}";
-        }, $sensors);
+        if ($topic === 'house_state') {
+            return self::houseStateReply($context);
+        }
 
-        return ucfirst($label) . ' : ' . implode('; ', $readings) . '.';
+        if ($topic === 'energy') {
+            $watts = (int) ($context['total_active_watts'] ?? 0);
+            $daily = str_replace('.', ',', (string) ($context['estimated_daily_kwh'] ?? 0));
+            return "La puissance actuellement estimée est de {$watts} watts. La consommation estimée sur une journée est de {$daily} kilowattheures.";
+        }
+
+        return null;
+    }
+
+    private static function houseStateReply(array $context): string
+    {
+        $mode = self::modeLabel((string) ($context['mode'] ?? 'comfort'));
+        $active = (int) ($context['equipments_active_now'] ?? 0);
+        $total = (int) ($context['equipments_total'] ?? 0);
+        $alerts = (int) ($context['alerts_today'] ?? 0);
+
+        return "La maison est en mode {$mode}. {$active} équipement(s) sur {$total} sont actuellement en marche. "
+            . ($alerts === 0 ? "Il n'y a aucune alerte aujourd'hui." : "Il y a {$alerts} alerte(s) aujourd'hui.");
     }
 
     private static function handleAnalysis(array $conversation, array $intent, int $houseId, string $message): array
@@ -165,7 +198,10 @@ class AIService
         };
 
         $recent = Conversation::recentMessages($conversation['id'], 10);
-        $reply = LLMService::generateReply($message, $context, $recent);
+        $reply = self::directAnalysisReply($intent['topic'], $context);
+        if ($reply === null) {
+            $reply = LLMService::generateReply($message, $context, $recent);
+        }
 
         return self::respond($conversation['id'], $reply, $context, 'analysis');
     }
@@ -230,6 +266,19 @@ class AIService
         );
     }
 
+    private static function directAnalysisReply(string $topic, array $context): ?string
+    {
+        if ($topic === 'daily') {
+            $active = (int) ($context['equipments_active_now'] ?? 0);
+            $total = (int) ($context['equipments_total'] ?? 0);
+            $alerts = (int) ($context['alerts_today'] ?? 0);
+            return "La maison compte {$total} équipement(s), dont {$active} actuellement en marche. "
+                . ($alerts === 0 ? "Aucune alerte n'a été enregistrée aujourd'hui." : "{$alerts} alerte(s) ont été enregistrées aujourd'hui.");
+        }
+
+        return null;
+    }
+
     private static function confirmationQuestionFor(array $intent): string
     {
         if ($intent['action'] === 'set_mode' && $intent['mode'] !== 'urgence') {
@@ -256,15 +305,44 @@ class AIService
         }
 
         if ($intent['action'] === 'set_mode') {
-            return "Mode « {$result['mode']} » activé.";
+            return "Le mode « " . self::modeLabel((string) $result['mode']) . " » est maintenant activé. "
+                . ((int) ($result['changed'] ?? 0) > 0 ? ((int) $result['changed'] . " équipement(s) ont été ajusté(s).") : "Aucun équipement n'avait besoin d'être modifié.");
         }
 
         if (empty($result['affected'])) {
             return "C'était déjà dans l'état demandé, aucune action n'était nécessaire.";
         }
 
-        $verb = (int) $result['state'] === 1 ? 'activé(s)/ouvert(s)' : 'désactivé(s)/fermé(s)';
-        return implode(', ', $result['affected']) . " $verb.";
+        $labels = [];
+        foreach ($result['affected'] as $equipment) {
+            $labels[] = $equipment;
+        }
+
+        $verb = self::equipmentStateLabel($intent['target_type'] ?? '', (int) $result['state']);
+        return implode(', ', $labels) . " : {$verb}.";
+    }
+
+    private static function modeLabel(string $mode): string
+    {
+        return match ($mode) {
+            'comfort', 'confort' => 'confort',
+            'night', 'nuit' => 'nuit',
+            'away', 'absence' => 'absence',
+            'emergency', 'urgence' => 'urgence',
+            default => $mode,
+        };
+    }
+
+    private static function equipmentStateLabel(string $type, int $state): string
+    {
+        return match ($type) {
+            'porte', 'fenetre' => $state === 1 ? 'ouvert' : 'fermé',
+            'led' => $state === 1 ? 'allumé' : 'éteint',
+            'ventilateur', 'pompe', 'relais', 'servo' => $state === 1 ? 'en marche' : 'arrêté',
+            'camera' => $state === 1 ? 'activée' : 'désactivée',
+            'sirene' => $state === 1 ? 'activée' : 'désactivée',
+            default => $state === 1 ? 'activé' : 'désactivé',
+        };
     }
 
     private static function respond(int $conversationId, string $text, ?array $context, string $intent): array
