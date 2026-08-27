@@ -30,6 +30,12 @@ class ActionExecutor
 
     public static function isSensitive(array $intent): bool
     {
+        if ($intent['action'] === 'toggle_equipment'
+            && ($intent['target_type'] ?? null) === 'all'
+            && (int) ($intent['target_state'] ?? 0) === 0) {
+            return true;
+        }
+
         if ($intent['action'] === 'set_mode' && $intent['mode'] === 'urgence') {
             return false; // passer EN mode urgence n'est pas sensible ; en sortir (désarmer) l'est
         }
@@ -51,11 +57,27 @@ class ActionExecutor
      */
     public static function execute(array $intent, int $houseId, ?int $userId): array
     {
+        if (self::isOffline($houseId)) {
+            return [
+                'success' => false,
+                'message' => 'Le pont de la maison est hors ligne. Reconnectez-le avant de commander les équipements.',
+                'offline' => true,
+            ];
+        }
+
         return match ($intent['action']) {
             'toggle_equipment' => self::executeToggleEquipment($intent, $houseId, $userId),
             'set_mode'          => self::executeSetMode($intent, $houseId, $userId),
             default             => ['success' => false, 'message' => "Action inconnue."],
         };
+    }
+
+    private static function isOffline(int $houseId): bool
+    {
+        $status = Setting::get('esp32_status_' . $houseId, 'unknown');
+        $lastSeen = (int) Setting::get('esp32_last_seen_' . $houseId, '0');
+
+        return $status === 'offline' || ($lastSeen > 0 && (time() - $lastSeen) > 45);
     }
 
     private static function executeToggleEquipment(array $intent, int $houseId, ?int $userId): array

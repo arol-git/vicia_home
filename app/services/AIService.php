@@ -236,6 +236,10 @@ class AIService
             return "Confirmez-vous vouloir désactiver le mode urgence et repasser en mode « {$intent['mode']} » ?";
         }
 
+        if ($intent['action'] === 'toggle_equipment' && ($intent['target_type'] ?? null) === 'all' && (int) ($intent['target_state'] ?? 0) === 0) {
+            return "Attention : cette action va arrêter tous les équipements de la maison. Confirmez-vous ? (oui / non)";
+        }
+
         $verb = match ($intent['target_type']) {
             'porte', 'fenetre' => 'ouvrir/déverrouiller',
             'sirene'           => "désactiver l'alarme sur",

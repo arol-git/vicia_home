@@ -49,6 +49,14 @@ try {
     assertCase($detectIntent->invoke(null, 'arret le ventilateur') === 'off', 'Une faute légère sur le verbe arrêter est tolérée');
     assertCase($detectType->invoke(null, 'coupe l eau') === 'pompe', 'Eau est comprise comme une commande de pompe');
     assertCase($isBatch->invoke(null, 'arrête la totalite des appareils') === true, 'Totalité est comprise comme une portée globale');
+
+    require_once __DIR__ . '/../app/services/ActionExecutor.php';
+    assertCase(App\Services\ActionExecutor::isSensitive([
+        'action' => 'toggle_equipment', 'target_type' => 'all', 'target_state' => 0,
+    ]), 'L’arrêt global nécessite une confirmation');
+    assertCase(!App\Services\ActionExecutor::isSensitive([
+        'action' => 'toggle_equipment', 'target_type' => 'all', 'target_state' => 1,
+    ]), 'L’activation globale ne demande pas de confirmation');
 } catch (Throwable $e) {
     echo "[FAIL] Erreur d’exécution : " . $e->getMessage() . "\n";
     $failed++;
