@@ -37,6 +37,8 @@ checkEnergy($extract->invoke(null, 'home/maison/energy', ['kwh' => 42.25])[0]['t
 checkEnergy($extract->invoke(null, 'home/maison/energy/power', 'inconnu') === [], 'Une valeur MQTT invalide est ignorée');
 checkEnergy(App\Models\Energy::normalizeMonth('02 2025') === '2025-02', 'Le format 02 2025 devient 2025-02');
 checkEnergy(App\Models\Energy::normalizeMonth('01/2025') === '2025-01', 'Le mois de janvier est reconnu');
+$historyMethod = $reflection->getMethod('history');
+checkEnergy($historyMethod->getParameters()[1]->getDefaultValue() === 12, 'L’historique est limité à douze mois');
 
 echo "\n=== Résultat : $passed réussi(s), $failed échec(s) ===\n";
 exit($failed > 0 ? 1 : 0);

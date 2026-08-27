@@ -20,7 +20,7 @@ class ConsumptionController extends Controller
         $houseId = Auth::requireHouseRole(['admin', 'owner', 'resident', 'technician']);
         $month = (string) $this->request->query('month', date('Y-m'));
         $selected = Energy::month($houseId, $month);
-        $history = Energy::history($houseId, 24);
+        $history = Energy::history($houseId, 12);
         $previous = null;
         foreach ($history as $index => $item) {
             if ($item['month'] === Energy::normalizeMonth($month)) {

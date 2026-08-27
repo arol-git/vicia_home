@@ -158,7 +158,8 @@ class Energy
 
     public static function history(int $houseId, int $months = 12): array
     {
-        $months = max(1, min($months, 24));
+        $months = max(1, min($months, 12));
+        self::purgeOlderThanYear($houseId);
         $items = [];
         $cursor = new \DateTimeImmutable('first day of this month');
         for ($index = 0; $index < $months; $index++) {
@@ -171,6 +172,20 @@ class Energy
             ];
         }
         return $items;
+    }
+
+    public static function purgeOlderThanYear(int $houseId): void
+    {
+        $sensor = self::globalSensor($houseId);
+        if (!$sensor) {
+            return;
+        }
+
+        Database::query(
+            'DELETE FROM sensor_readings
+             WHERE sensor_id = :sensor_id AND recorded_at < DATE_SUB(NOW(), INTERVAL 12 MONTH)',
+            ['sensor_id' => $sensor['id']]
+        );
     }
 
     public static function normalizeMonth(string $month): string

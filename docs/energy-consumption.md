@@ -31,4 +31,6 @@ La page `/consumption` affiche uniquement :
 - une indication en baisse, stable ou hausse ;
 - des conseils généraux d'économie d'énergie.
 
+L'historique affiché est limité aux douze derniers mois. Les relevés du compteur global datant de plus de douze mois sont supprimés lors de l'ouverture du module; les relevés des autres capteurs ne sont pas concernés.
+
 Aucune puissance individuelle par équipement n'est calculée ou affichée.
