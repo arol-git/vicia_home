@@ -89,6 +89,7 @@ $router->get('/sensors/{id}/history', 'SensorController@history');
 
 // ------------------------- Consommation ---------------------------------------
 $router->get('/consumption', 'ConsumptionController@index');
+$router->get('/consumption/data', 'ConsumptionController@data');
 
 // ------------------------- Automatisation -------------------------------------
 $router->get('/automation', 'AutomationController@index');

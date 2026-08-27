@@ -4,7 +4,8 @@ namespace App\Controllers;
 
 use App\Core\Auth;
 use App\Core\Controller;
-use App\Models\Equipment;
+use App\Core\Response;
+use App\Models\Energy;
 
 /**
  * Class ConsumptionController
@@ -14,35 +15,39 @@ use App\Models\Equipment;
  */
 class ConsumptionController extends Controller
 {
-    private const POWER_WATTS = [
-        'led' => 9, 'relais' => 5, 'ventilateur' => 45, 'pompe' => 60,
-        'servo' => 3, 'porte' => 3, 'fenetre' => 3, 'sirene' => 4,
-    ];
-
     public function index(): void
     {
         $houseId = Auth::requireHouseRole(['admin', 'owner', 'resident', 'technician']);
-
-        $equipments = Equipment::allWithRoom($houseId);
-
-        $totalActiveWatts = 0;
-        foreach ($equipments as $eq) {
-            if ((int) $eq['state'] === 1) {
-                $totalActiveWatts += self::POWER_WATTS[$eq['type']] ?? 10;
+        $month = (string) $this->request->query('month', date('Y-m'));
+        $selected = Energy::month($houseId, $month);
+        $history = Energy::history($houseId);
+        $previous = null;
+        foreach ($history as $index => $item) {
+            if ($item['month'] === $month) {
+                $previous = $history[$index + 1] ?? null;
+                break;
             }
         }
 
-        $byType = [];
-        foreach ($equipments as $eq) {
-            $byType[$eq['type']] = ($byType[$eq['type']] ?? 0) + ((int) $eq['state'] === 1 ? (self::POWER_WATTS[$eq['type']] ?? 10) : 0);
+        $change = null;
+        if ($selected['total_kwh'] !== null && $previous && $previous['total_kwh'] !== null && (float) $previous['total_kwh'] > 0) {
+            $change = round((($selected['total_kwh'] - $previous['total_kwh']) / $previous['total_kwh']) * 100, 1);
         }
 
         $this->render('consumption/index', [
-            'title'             => 'Consommation électrique',
-            'totalActiveWatts'  => $totalActiveWatts,
-            'estimatedDailyKwh' => round(($totalActiveWatts * 24) / 1000, 2),
-            'byType'            => $byType,
-            'equipments'        => $equipments,
+            'title' => 'Consommation énergétique',
+            'selectedMonth' => $month,
+            'selectedData' => $selected,
+            'history' => $history,
+            'previousData' => $previous,
+            'changePercent' => $change,
         ]);
+    }
+
+    public function data(): void
+    {
+        $houseId = Auth::requireHouseRole(['admin', 'owner', 'resident', 'technician']);
+        $month = (string) $this->request->query('month', date('Y-m'));
+        Response::json(['success' => true, 'data' => Energy::month($houseId, $month)]);
     }
 }

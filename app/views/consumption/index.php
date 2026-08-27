@@ -1,114 +1,142 @@
 <?php
 /**
- * app/views/consumption/index.php
- *
- * Suivi de la consommation électrique estimée, avec répartition par
- * type d'équipement (graphique en anneau Chart.js).
+ * Suivi de la consommation globale de la maison.
+ * Les valeurs viennent exclusivement du capteur énergétique global.
  */
 $pageScripts = [];
-
-$typeLabels = [
-    'led' => 'LED', 'relais' => 'Relais', 'ventilateur' => 'Ventilateur', 'pompe' => 'Pompe',
-    'servo' => 'Servo-moteur', 'porte' => 'Porte', 'fenetre' => 'Fenêtre', 'sirene' => 'Sirène',
-];
-$colors = ['#2f5fa8', '#2e7d5b', '#c98a1c', '#c1442f', '#2f80a8', '#8a6d3b', '#5c85c4', '#7c5cc4', '#c45c9e'];
+$selectedData = $selectedData ?? [];
+$selectedMonth = $selectedMonth ?? date('Y-m');
+$history = $history ?? [];
+$changePercent = $changePercent ?? null;
+$monthNames = ['01' => 'Janvier', '02' => 'Février', '03' => 'Mars', '04' => 'Avril', '05' => 'Mai', '06' => 'Juin', '07' => 'Juillet', '08' => 'Août', '09' => 'Septembre', '10' => 'Octobre', '11' => 'Novembre', '12' => 'Décembre'];
+$monthLabel = static function (string $month): string {
+    global $monthNames;
+    [$year, $number] = array_pad(explode('-', $month, 2), 2, '');
+    return ($monthNames[$number] ?? $number) . ' ' . $year;
+};
+$currentTotal = $selectedData['total_kwh'] ?? null;
+$status = $changePercent === null ? 'stable' : ($changePercent < -2 ? 'down' : ($changePercent > 2 ? 'up' : 'stable'));
 ?>
+<link rel="stylesheet" href="<?= asset('css/consumption.css') ?>">
 
 <div class="page-header">
     <div>
-        <div class="page-header__title">Consommation électrique</div>
-        <div class="page-header__subtitle">Estimation en temps réel basée sur l'état des équipements actifs</div>
+        <div class="page-header__title">Consommation énergétique</div>
+        <div class="page-header__subtitle">Mesure globale de toute la maison</div>
     </div>
 </div>
 
-<div class="grid grid-cols-3 mb-4">
-    <div class="stat-card">
-        <div class="stat-card__icon is-orange"><i class="fa-solid fa-bolt"></i></div>
-        <div><div class="stat-card__value"><?= (int) $totalActiveWatts ?> W</div><div class="stat-card__label">Puissance instantanée</div></div>
+<div class="card consumption-overview mb-4">
+    <div class="consumption-overview__heading">
+        <div>
+            <div class="card__title">Consommation du mois</div>
+            <div class="card__subtitle"><?= e($monthLabel($selectedMonth)) ?></div>
+        </div>
+        <i class="fa-solid fa-house-signal" aria-hidden="true"></i>
     </div>
-    <div class="stat-card">
-        <div class="stat-card__icon is-blue"><i class="fa-solid fa-gauge"></i></div>
-        <div><div class="stat-card__value"><?= e($estimatedDailyKwh) ?> kWh</div><div class="stat-card__label">Estimation journalière</div></div>
+    <div class="consumption-overview__value">
+        <?= $currentTotal !== null ? e(number_format((float) $currentTotal, 1, ',', ' ')) . ' kWh' : 'Aucune donnée disponible' ?>
     </div>
-    <div class="stat-card">
-        <div class="stat-card__icon is-green"><i class="fa-solid fa-leaf"></i></div>
-        <div><div class="stat-card__value"><?= count(array_filter($equipments, fn($e) => $e['state'])) ?></div><div class="stat-card__label">Équipements actifs</div></div>
-    </div>
+    <?php if (empty($selectedData['sensor'])): ?>
+        <p class="text-muted">Aucun capteur de consommation globale actif n'est configuré pour cette maison.</p>
+    <?php elseif (($selectedData['unit_mode'] ?? null) === 'power'): ?>
+        <p class="text-muted">Calcul établi à partir de la puissance instantanée en watts et de l'intervalle entre les relevés.</p>
+    <?php elseif (($selectedData['unit_mode'] ?? null) === 'cumulative'): ?>
+        <p class="text-muted">Calcul établi à partir des variations du compteur énergétique global.</p>
+    <?php endif; ?>
 </div>
 
-<div class="grid grid-cols-2">
-    <div class="chart-card">
-        <div class="card__header"><div class="card__title">Répartition par type d'équipement</div></div>
-        <div class="chart-card__canvas-wrap"><canvas id="consumption-doughnut"></canvas></div>
-    </div>
-
-    <div class="card">
-        <div class="card__header"><div class="card__title">Équipements actifs</div></div>
-        <div class="table-wrapper">
-            <table class="data-table">
-                <thead><tr><th>Équipement</th><th>Pièce</th><th>Type</th></tr></thead>
-                <tbody>
-                <?php $active = array_filter($equipments, fn($e) => $e['state']); ?>
-                <?php if (empty($active)): ?>
-                    <tr><td colspan="3"><div class="empty-state"><i class="fa-solid fa-plug"></i><p>Aucun équipement actif actuellement.</p></div></td></tr>
-                <?php endif; ?>
-                <?php foreach ($active as $eq): ?>
-                    <tr>
-                        <td data-label="Équipement"><?= e($eq['name']) ?></td>
-                        <td data-label="Pièce"><?= e($eq['room_name']) ?></td>
-                        <td data-label="Type"><span class="badge badge-neutral"><?= e($typeLabels[$eq['type']] ?? $eq['type']) ?></span></td>
-                    </tr>
+<div class="card mb-4">
+    <div class="card__header consumption-toolbar">
+        <div>
+            <div class="card__title">Évolution de votre consommation</div>
+            <div class="card__subtitle">Choisissez un mois pour voir son évolution quotidienne.</div>
+        </div>
+        <label class="consumption-month-select">
+            <span class="sr-only">Mois à consulter</span>
+            <select class="form-control" id="consumption-month">
+                <?php foreach ($history as $item): ?>
+                    <option value="<?= e($item['month']) ?>" <?= $item['month'] === $selectedMonth ? 'selected' : '' ?>><?= e($monthLabel($item['month'])) ?></option>
                 <?php endforeach; ?>
-                </tbody>
-            </table>
+            </select>
+        </label>
+    </div>
+    <div class="consumption-trend consumption-trend--<?= e($status) ?>">
+        <span class="consumption-trend__icon" aria-hidden="true"><i class="fa-solid <?= $status === 'down' ? 'fa-arrow-down' : ($status === 'up' ? 'fa-arrow-up' : 'fa-minus') ?>"></i></span>
+        <div>
+            <strong><?= $status === 'down' ? 'Consommation en baisse' : ($status === 'up' ? 'Consommation en hausse' : 'Consommation stable') ?></strong>
+            <?php if ($changePercent !== null): ?>
+                <span><?= e(number_format(abs($changePercent), 1, ',', ' ')) ?> % par rapport au mois précédent</span>
+            <?php else: ?>
+                <span>La comparaison sera affichée lorsque deux mois auront des données.</span>
+            <?php endif; ?>
         </div>
     </div>
+    <div class="consumption-chart-area">
+        <div class="consumption-chart-unit">kWh</div>
+        <div class="chart-card__canvas-wrap consumption-chart-wrap"><canvas id="consumption-line"></canvas></div>
+    </div>
+    <div class="consumption-empty" id="consumption-empty" <?= !empty($selectedData['daily']) ? 'hidden' : '' ?>>Aucune donnée disponible pour cette période.</div>
 </div>
 
-<div class="grid grid-cols-1 mt-4">
-    <div class="card">
-        <div class="card__header"><div class="card__title">Détail par équipement</div></div>
-        <div class="table-wrapper">
-            <table class="data-table">
-                <thead><tr><th>Équipement</th><th>Pièce</th><th>Type</th><th>État</th><th>Puissance</th></tr></thead>
-                <tbody>
-                <?php if (empty($equipments)): ?>
-                    <tr><td colspan="5"><div class="empty-state"><i class="fa-solid fa-plug"></i><p>Aucun équipement.</p></div></td></tr>
-                <?php endif; ?>
-                <?php   // cette estimation est basée sur des valeurs par défaut pour chaque type d'équipement, car la puissance réelle peut varier selon le modèle et l'utilisation.
-                    $powerWatts = [
-                        'led' => 9,
-                        'relais' => 5,
-                        'ventilateur' => 45,
-                        'pompe' => 60,
-                        'servo' => 3,
-                        'porte' => 3,
-                        'fenetre' => 3,
-                        'sirene' => 4,
-                    ];
-                ?>
-                <?php foreach ($equipments as $eq): ?>
-                    <tr class="<?= $eq['state'] ? 'is-active-row' : '' ?>">
-                        <td data-label="Équipement"><?= e($eq['name']) ?></td>
-                        <td data-label="Pièce"><?= e($eq['room_name']) ?></td>
-                        <td data-label="Type"><span class="badge badge-neutral"><?= e($typeLabels[$eq['type']] ?? $eq['type']) ?></span></td>
-                        <td data-label="État"><span class="badge <?= $eq['state'] ? 'badge-success' : 'badge-neutral' ?>"><?= $eq['state'] ? 'Actif' : 'Inactif' ?></span></td>
-                        <td data-label="Puissance"><strong><?= (int) ($powerWatts[$eq['type']] ?? 10) ?></strong> W</td>
-                    </tr>
-                <?php endforeach; ?>
-                </tbody>
-            </table>
-        </div>
+<div class="card mb-4">
+    <div class="card__header"><div class="card__title">Comparaison avec le mois précédent</div></div>
+    <?php if ($currentTotal !== null && $previousData && $previousData['total_kwh'] !== null): ?>
+        <p><?= e($monthLabel($selectedMonth)) ?> : <strong><?= e(number_format((float) $currentTotal, 1, ',', ' ')) ?> kWh</strong></p>
+        <p><?= e($monthLabel($previousData['month'])) ?> : <strong><?= e(number_format((float) $previousData['total_kwh'], 1, ',', ' ')) ?> kWh</strong></p>
+        <p class="consumption-comparison <?= $status === 'down' ? 'is-down' : ($status === 'up' ? 'is-up' : '') ?>">
+            <?= $changePercent < 0 ? 'Votre consommation a diminué.' : ($changePercent > 0 ? 'Votre consommation a augmenté.' : 'Votre consommation est restée stable.') ?>
+        </p>
+    <?php else: ?>
+        <p class="text-muted">La comparaison n'est pas disponible pour le moment.</p>
+    <?php endif; ?>
+</div>
+
+<div class="card mb-4">
+    <div class="card__header"><div class="card__title"><i class="fa-solid fa-leaf"></i> Conseils pour économiser l'énergie</div></div>
+    <ul class="consumption-tips">
+        <li>Éteignez les lumières inutilisées.</li>
+        <li>Évitez de laisser les équipements en marche sans raison.</li>
+        <li>Comparez votre consommation avec celle des mois précédents.</li>
+        <li>Une mesure globale ne permet pas de connaître la consommation d'un appareil particulier.</li>
+    </ul>
+</div>
+
+<div class="card">
+    <div class="card__header"><div class="card__title">Historique de consommation</div></div>
+    <div class="table-wrapper">
+        <table class="data-table">
+            <thead><tr><th>Mois</th><th>Consommation</th><th>Évolution</th></tr></thead>
+            <tbody>
+            <?php foreach ($history as $index => $item): ?>
+                <?php $older = $history[$index + 1] ?? null; $evolution = ($item['total_kwh'] !== null && $older && $older['total_kwh'] !== null && (float) $older['total_kwh'] > 0) ? (($item['total_kwh'] - $older['total_kwh']) / $older['total_kwh']) * 100 : null; ?>
+                <tr>
+                    <td data-label="Mois"><a href="<?= url('/consumption?month=' . urlencode($item['month'])) ?>"><?= e($monthLabel($item['month'])) ?></a></td>
+                    <td data-label="Consommation"><?= $item['total_kwh'] !== null ? e(number_format((float) $item['total_kwh'], 1, ',', ' ')) . ' kWh' : 'Aucune donnée' ?></td>
+                    <td data-label="Évolution"><?= $evolution !== null ? ($evolution < 0 ? '↓ ' : '↑ ') . e(number_format(abs($evolution), 1, ',', ' ')) . ' %' : '—' ?></td>
+                </tr>
+            <?php endforeach; ?>
+            </tbody>
+        </table>
     </div>
 </div>
 
 <script>
 document.addEventListener('DOMContentLoaded', () => {
-    const labels = <?= json_encode(array_map(fn($t) => $typeLabels[$t] ?? $t, array_keys($byType))) ?>;
-    const values = <?= json_encode(array_values($byType)) ?>;
-    const colors = <?= json_encode(array_slice($colors, 0, count($byType))) ?>;
-    if (values.some(v => v > 0)) {
-        ViciaCharts.doughnutChart('consumption-doughnut', labels, values, colors);
+    const canvas = document.getElementById('consumption-line');
+    const empty = document.getElementById('consumption-empty');
+    const select = document.getElementById('consumption-month');
+    const selectedData = <?= json_encode(['daily' => $selectedData['daily'] ?? []], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES) ?>;
+    const monthLabel = <?= json_encode($monthLabel($selectedMonth), JSON_UNESCAPED_UNICODE) ?>;
+    if (Object.keys(selectedData.daily).length > 0 && canvas) {
+        const labels = Object.keys(selectedData.daily).map((day) => day.slice(-2));
+        const values = Object.values(selectedData.daily);
+        ViciaCharts.lineChart('consumption-line', labels, values, `Consommation globale — ${monthLabel}`);
+    } else if (canvas) {
+        canvas.hidden = true;
     }
+    select?.addEventListener('change', () => {
+        window.location.href = `${window.location.pathname}?month=${encodeURIComponent(select.value)}`;
+    });
 });
 </script>

@@ -1,0 +1,27 @@
+.consumption-overview { padding: var(--space-6); }
+.consumption-overview__heading,
+.consumption-toolbar { display: flex; align-items: flex-start; justify-content: space-between; gap: var(--space-4); }
+.consumption-overview__heading > i { color: var(--color-primary); font-size: 1.8rem; }
+.consumption-overview__value { margin: var(--space-5) 0 var(--space-2); font-size: var(--fs-xxl); font-weight: 800; }
+.consumption-month-select { width: min(100%, 220px); }
+.consumption-trend { display: flex; align-items: center; gap: var(--space-3); margin: var(--space-4) 0; padding: var(--space-3); border-radius: var(--radius-sm); background: var(--color-surface-alt); }
+.consumption-trend__icon { width: 34px; height: 34px; display: grid; place-items: center; border-radius: 50%; }
+.consumption-trend strong, .consumption-trend span { display: block; }
+.consumption-trend span { margin-top: 2px; color: var(--color-text-muted); font-size: var(--fs-sm); }
+.consumption-trend--down .consumption-trend__icon { color: var(--color-success); background: var(--color-success-soft); }
+.consumption-trend--up .consumption-trend__icon { color: var(--color-danger); background: var(--color-danger-soft); }
+.consumption-trend--stable .consumption-trend__icon { color: var(--color-warning); background: var(--color-warning-soft); }
+.consumption-chart-wrap { min-height: 300px; }
+.consumption-chart-area { position: relative; padding-left: var(--space-5); }
+.consumption-chart-unit { position: absolute; top: 0; left: 0; color: var(--color-text-muted); font-size: var(--fs-xs); font-weight: 700; }
+.consumption-empty { padding: var(--space-6); color: var(--color-text-muted); text-align: center; }
+.consumption-comparison.is-down { color: var(--color-success); }
+.consumption-comparison.is-up { color: var(--color-danger); }
+.consumption-tips { margin: 0; padding-left: 1.25rem; }
+.consumption-tips li + li { margin-top: var(--space-2); }
+@media (max-width: 640px) {
+    .consumption-overview { padding: var(--space-5); }
+    .consumption-toolbar { align-items: stretch; flex-direction: column; }
+    .consumption-month-select { width: 100%; }
+    .consumption-chart-wrap { min-height: 240px; }
+}

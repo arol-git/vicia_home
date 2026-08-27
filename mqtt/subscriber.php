@@ -44,6 +44,7 @@ if (!$client->connect()) {
 $baseTopic = $config['base_topic'];
 $client->subscribe([
     "$baseTopic/+/+/+/+",        // télémétrie des capteurs
+    "$baseTopic/+/+/+",          // compteur global, ex. home/maison/energy/power
     "$baseTopic/+/security/#",   // événements de sécurité
 ]);
 
