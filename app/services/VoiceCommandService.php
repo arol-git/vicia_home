@@ -74,6 +74,10 @@ class VoiceCommandService
         } else {
             $targetType = self::detectType($normalized);
 
+            if (!$targetType && $roomName) {
+                $targetType = 'all';
+            }
+
             if (!$targetType) {
                 return [
                     'success' => false,
@@ -157,8 +161,14 @@ class VoiceCommandService
         $rooms = Room::forHouse($houseId);
         foreach ($rooms as $room) {
             $roomNormalized = self::normalize($room['name']);
-            if (str_contains($normalized, $roomNormalized) || str_contains($normalized, self::normalize(str_replace([' ', '-'], '', $room['name'])))) {
-                return $room['name'];
+            $aliases = [$roomNormalized, self::normalize(str_replace([' ', '-'], '', $room['name']))];
+            if (in_array($room['type'] ?? '', ['jardin', 'terrasse'], true)) {
+                $aliases = array_merge($aliases, ['dehors', 'extérieur', 'exterieur', 'à l’extérieur', 'a l exterieur']);
+            }
+            foreach ($aliases as $alias) {
+                if ($alias !== '' && str_contains($normalized, self::normalize($alias))) {
+                    return $room['name'];
+                }
             }
         }
         return null;
@@ -203,9 +213,14 @@ class VoiceCommandService
         $sql = "SELECT e.id, e.name, e.type, r.name AS room_name
                 FROM equipments e
                 INNER JOIN rooms r ON r.id = e.room_id
-                WHERE r.house_id = :house_id AND e.type = :type AND e.is_active = 1";
+                WHERE r.house_id = :house_id AND e.is_active = 1";
 
-        $params = ['house_id' => $houseId, 'type' => $type];
+            $params = ['house_id' => $houseId];
+
+            if ($type !== 'all') {
+                $sql .= ' AND e.type = :type';
+                $params['type'] = $type;
+            }
 
         if ($roomName && !$isBatch) {
             $sql .= " AND r.name = :room_name";

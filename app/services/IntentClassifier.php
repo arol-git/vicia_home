@@ -252,24 +252,34 @@ class IntentClassifier
             $targetType = $targetName['type'];
         }
         
-        if ($targetType === null) {
-            return null;
-        }
-
         // Détection de commande batch : "tous/toutes/partout"
         $scopeAll = (bool) preg_match('/\b(tous?|toutes?|partout|partous)\b/iu', $normalized);
 
-        // Détection de la pièce (seulement si ce n'est pas une commande batch)
         $roomName = null;
         if (!$scopeAll) {
             $rooms = Room::forHouse($houseId); // Optimisation possible : cache
             foreach ($rooms as $room) {
                 $roomNormalized = self::normalize($room['name']);
-                if (str_contains($normalized, $roomNormalized)) {
-                    $roomName = $room['name'];
-                    break;
+                $aliases = [$roomNormalized];
+                if (in_array($room['type'] ?? '', ['jardin', 'terrasse'], true)) {
+                    $aliases = array_merge($aliases, ['dehors', 'extérieur', 'exterieur', 'à l’extérieur', 'a l exterieur']);
+                }
+                foreach ($aliases as $alias) {
+                    if ($alias !== '' && str_contains($normalized, self::normalize($alias))) {
+                        $roomName = $room['name'];
+                        break 2;
+                    }
                 }
             }
+        }
+
+        if ($targetType === null && $roomName !== null) {
+            $targetType = 'all';
+            $scopeAll = true;
+        }
+
+        if ($targetType === null) {
+            return null;
         }
 
         return [

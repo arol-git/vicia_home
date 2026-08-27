@@ -61,7 +61,9 @@ class ActionExecutor
     private static function executeToggleEquipment(array $intent, int $houseId, ?int $userId): array
     {
         $equipments = Equipment::allWithRoom($houseId);
-        $equipments = array_values(array_filter($equipments, fn($e) => $e['type'] === $intent['target_type']));
+        if (($intent['target_type'] ?? null) !== 'all') {
+            $equipments = array_values(array_filter($equipments, fn($e) => $e['type'] === $intent['target_type']));
+        }
 
         if ($intent['room']) {
             $equipments = array_values(array_filter($equipments, fn($e) => $e['room_name'] === $intent['room']));
