@@ -275,6 +275,12 @@ PROMPT;
     private static function baseUrl(string $provider): string
     {
         $aiConfig = config('ai') ?: [];
-        return ($aiConfig['base_url'] ?? '') ?: self::DEFAULT_BASE_URLS[$provider];
+        $url = trim((string) ($aiConfig['base_url'] ?? '')) ?: self::DEFAULT_BASE_URLS[$provider];
+
+        if ($provider === 'openai' && preg_match('#/v1/?$#', $url)) {
+            $url = rtrim($url, '/') . '/chat/completions';
+        }
+
+        return $url;
     }
 }
