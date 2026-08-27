@@ -9,7 +9,7 @@
 	const status = document.getElementById('ai-status');
 	const resetButton = document.getElementById('ai-reset-btn');
 
-	if (!form || !input || !messages || !window.ViciaAjax) return;
+	if (!form || !input || !messages || typeof ViciaAjax === 'undefined') return;
 
 	const appendMessage = (role, text) => {
 		const wrapper = document.createElement('div');
