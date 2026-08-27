@@ -136,6 +136,17 @@ document.addEventListener('DOMContentLoaded', () => {
     const select = document.getElementById('consumption-month');
     const selectedData = <?= json_encode(['daily' => $selectedData['daily'] ?? []], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES) ?>;
     const monthLabel = <?= json_encode($monthLabel($selectedMonth), JSON_UNESCAPED_UNICODE) ?>;
+    const monthNames = ['Janvier', 'Février', 'Mars', 'Avril', 'Mai', 'Juin', 'Juillet', 'Août', 'Septembre', 'Octobre', 'Novembre', 'Décembre'];
+    const readableMonth = (value) => {
+        const match = String(value).trim().match(/^(0[1-9]|1[0-2])\s+([0-9]{4})$/);
+        return match ? `${monthNames[Number(match[1]) - 1]} ${match[2]}` : value;
+    };
+    select?.querySelectorAll('option').forEach((option) => {
+        option.textContent = readableMonth(option.textContent);
+    });
+    document.querySelectorAll('[data-label="Mois"] a').forEach((link) => {
+        link.textContent = readableMonth(link.textContent);
+    });
     if (Object.keys(selectedData.daily).length > 0 && canvas) {
         const labels = Object.keys(selectedData.daily).map((day) => day.slice(-2));
         const values = Object.values(selectedData.daily);
