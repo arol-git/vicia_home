@@ -15,6 +15,8 @@ class Energy
 
     public static function globalSensor(int $houseId): ?array
     {
+        self::ensureEnergyTypes();
+
         $sql = "SELECT s.*, r.name AS room_name
                 FROM sensors s
                 INNER JOIN rooms r ON r.id = s.room_id
@@ -25,6 +27,38 @@ class Energy
                 LIMIT 1";
         $sensor = Database::query($sql, ['house_id' => $houseId])->fetch();
         return $sensor ?: null;
+    }
+
+    private static function ensureEnergyTypes(): void
+    {
+        static $checked = false;
+        if ($checked) {
+            return;
+        }
+
+        $row = Database::query(
+            "SELECT COLUMN_TYPE FROM INFORMATION_SCHEMA.COLUMNS
+             WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'sensors' AND COLUMN_NAME = 'type'"
+        )->fetch();
+        $columnType = (string) ($row['COLUMN_TYPE'] ?? '');
+        $required = ['energy_power', 'energy_kwh', 'energy_consumption'];
+
+        if ($columnType !== '' && array_diff($required, self::enumValues($columnType)) !== []) {
+            Database::query(
+                "ALTER TABLE sensors MODIFY type ENUM('pir','dht22_temp','dht22_hum','mq2','mq135','ldr','rfid','humidite_sol','energy_power','energy_kwh','energy_consumption') NOT NULL"
+            );
+        }
+
+        $checked = true;
+    }
+
+    private static function enumValues(string $columnType): array
+    {
+        if (!str_starts_with($columnType, 'enum(')) {
+            return [];
+        }
+
+        return str_getcsv(substr($columnType, 5, -1), ',', "'");
     }
 
     public static function month(int $houseId, string $month): array
