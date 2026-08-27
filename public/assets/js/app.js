@@ -183,12 +183,9 @@ const ViciaApp = (() => {
     }
 
     function initMobileSidebar() {
-        console.log('[App] 📱 Initialisation sidebar mobile...');
         const sidebar = document.querySelector('.sidebar');
         const toggleBtns = document.querySelectorAll('[data-toggle-sidebar]');
-        console.log('[App] → Sidebar trouvée:', !!sidebar, '| Boutons toggle:', toggleBtns.length);
         if (!sidebar || toggleBtns.length === 0) {
-            console.warn('[App] ⚠️  Sidebar ou boutons toggle manquants');
             return;
         }
 
@@ -201,9 +198,7 @@ const ViciaApp = (() => {
         document.body.appendChild(edge);
 
         function openSidebar() {
-            console.log('[App] 🔓 Ouverture sidebar (width=' + window.innerWidth + ')');
             if (window.innerWidth > 640) {
-                console.log('[App] → Écran trop large, ignoré');
                 return;
             }
             sidebar.classList.add('is-open');
@@ -212,7 +207,6 @@ const ViciaApp = (() => {
             backdrop.classList.add('is-visible');
             document.body.style.overflow = 'hidden';
             document.documentElement.style.overflow = 'hidden';
-            console.log('[App] ✓ Sidebar ouverte');
             const focusable = sidebar.querySelector('a,button,input,select,textarea,[tabindex]:not([tabindex="-1"])');
             if (focusable) focusable.focus();
             trapFocus(sidebar);
@@ -221,7 +215,6 @@ const ViciaApp = (() => {
         }
 
         function closeSidebar() {
-            console.log('[App] 🔒 Fermeture sidebar');
             sidebar.classList.remove('is-open');
             sidebar.setAttribute('aria-hidden', 'true');
             toggleBtns.forEach(b => b.setAttribute('aria-expanded', 'false'));
@@ -232,27 +225,21 @@ const ViciaApp = (() => {
         }
 
         toggleBtns.forEach((btn) => btn.addEventListener('click', (e) => {
-            console.log('[App] 🖱️  Clic sur toggle sidebar');
             e.preventDefault();
             e.stopPropagation();
             if (window.innerWidth > 640) {
-                console.log('[App] → Écran trop large, ignoré');
                 return;
             }
             if (sidebar.classList.contains('is-open')) {
-                console.log('[App] → Sidebar ouverte, fermeture...');
                 closeSidebar();
             } else {
-                console.log('[App] → Sidebar fermée, ouverture...');
                 openSidebar();
             }
         }));
 
         document.querySelectorAll('.sidebar__link').forEach((link) => {
             link.addEventListener('click', () => {
-                console.log('[App] 🔗 Clic sur lien sidebar:', link.textContent);
                 if (window.innerWidth <= 640) {
-                    console.log('[App] → Mobile, fermeture sidebar après clic');
                     closeSidebar();
                 }
             });

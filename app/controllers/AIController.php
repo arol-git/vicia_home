@@ -56,15 +56,9 @@ class AIController extends Controller
         $houseId = Auth::currentHouseId();
 
         try {
-            // Enregistrer le contenu brut de la requête pour diagnostic
-            $rawInput = @file_get_contents('php://input');
-            app_log('[AIController] Requête entrante raw: ' . substr((string) $rawInput, 0, 1000));
-
             $result = AIService::handle(Auth::id(), $houseId, $message);
         } catch (\Throwable $e) {
             app_log('[AIController] Erreur IA : ' . $e->getMessage());
-            // Pour aider au diagnostic côté client, loggons aussi le stacktrace succinct
-            app_log('[AIController] Trace: ' . substr((string) $e->getTraceAsString(), 0, 2000));
             Response::error('Le module IA a rencontré une erreur interne. Consultez les logs.', 500);
             return;
         }
@@ -86,9 +80,6 @@ class AIController extends Controller
             'intent' => (string) ($result['intent'] ?? 'unknown'),
             'conversation_id' => (int) ($result['conversation_id'] ?? 0),
         ];
-
-        // Log payload envoyé (truncated) pour débogage si nécessaire
-        app_log('[AIController] Payload JSON: ' . substr(json_encode($payload, JSON_UNESCAPED_UNICODE), 0, 2000));
 
         Response::json($payload);
     }

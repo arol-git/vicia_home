@@ -50,7 +50,6 @@ const VoiceAssistant = (() => {
 
         recognition = new SpeechRecognition();
         setupRecognition();
-        console.log('[VoiceAssistant] Initialisation OK');
     };
 
     /**
@@ -237,11 +236,7 @@ const VoiceAssistant = (() => {
         showMessage(`Vous avez dit: « ${transcript} »`, 'info');
 
         try {
-            console.log('[VoiceAssistant] Envoi de la commande:', transcript);
             const apiUrl = buildAppUrl('/ai/message');
-            
-            console.log('[VoiceAssistant] API URL:', apiUrl);
-            console.log('[VoiceAssistant] House ID:', window.__vicia_house_id);
 
             const response = await fetch(apiUrl, {
                 method: 'POST',
@@ -257,7 +252,6 @@ const VoiceAssistant = (() => {
                 }),
             });
 
-            console.log('[VoiceAssistant] Réponse HTTP:', response.status, response.statusText);
             const contentType = response.headers.get('content-type') || '';
             if (!contentType.includes('application/json')) {
                 const text = await response.text();

@@ -26,7 +26,6 @@
 #### 3. Tests & Documentation
 - **VoiceServiceOfflineTest.php**: 10+ validation tests (76.9% pass rate)
 - **voice-assistant-optimization.md**: Complete technical documentation
-- **deploy-voice.sh**: Automated validation script
 
 ---
 
@@ -50,9 +49,6 @@ git push origin main  # Triggers auto-deploy
 ```
 
 ### Option 2: Manual Validation
-```bash
-bash deploy-voice.sh  # Runs all checks
-```
 
 ### Option 3: Direct Push
 ```bash
@@ -217,7 +213,6 @@ tail -f storage/logs/api-voice.log
 ✓ Modified: api/v1/voice.php
 ✓ Created: tests/VoiceServiceOfflineTest.php
 ✓ Created: docs/voice-assistant-optimization.md
-✓ Created: deploy-voice.sh (this file)
 ```
 
 **Total**: 8 files changed, 986 insertions, 108 deletions

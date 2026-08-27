@@ -1,4 +1,8 @@
 {
+    "name": "arol-git/vicia-home",
+    "description": "Plateforme MVC de supervision et de pilotage d'une maison intelligente.",
+    "type": "project",
+    "license": "proprietary",
     "require": {
         "php-mqtt/client": "^2.3",
         "phpmailer/phpmailer": "^7.1",

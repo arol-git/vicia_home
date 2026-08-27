@@ -33,7 +33,7 @@ class AIService
 {
     public static function handle(int $userId, ?int $houseId, string $message): array
     {
-        app_log('[AIService] Nouveau message IA reçu. user=' . $userId . ' house=' . ($houseId ?? 'null') . ' message=' . substr($message, 0, 240));
+        app_log('[AIService] Nouveau message reçu. user=' . $userId . ' house=' . ($houseId ?? 'null'));
 
         $conversation = Conversation::currentFor($userId, $houseId);
         if (empty($conversation['id'])) {

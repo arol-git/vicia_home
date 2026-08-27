@@ -9,41 +9,28 @@
  *   POST   /api/v1/voice/command   Traiter une commande vocale
  */
 
-use App\Core\Auth;
-use App\Core\Database;
-use App\Models\Equipment;
 use App\Services\VoiceCommandService;
 use App\Services\BatchCommandExecutor;
-use Mqtt\Publisher;
 
 function handle_voice(string $method, ?string $id, ?string $subaction): void
 {
-    $logfile = __DIR__ . '/../../../storage/logs/api-voice.log';
-    @file_put_contents($logfile, "[voice] HANDLER CALLED: method=$method, id=$id, subaction=$subaction\n", FILE_APPEND);
     $action = $subaction ?? ($id === 'command' ? 'command' : null);
 
     // Authentifier via bearer token OU session HTTP
-    @file_put_contents($logfile, "[voice] Attempting authentication...\n", FILE_APPEND);
     $user = api_authenticate_or_session();
     if (!$user) {
-        @file_put_contents($logfile, "[voice] Authentication FAILED\n", FILE_APPEND);
         api_response(['success' => false, 'message' => 'Authentification requise'], 401);
     }
-    @file_put_contents($logfile, "[voice] Authentication SUCCESS: user_id={$user['id']}, email={$user['email']}\n", FILE_APPEND);
 
     $input = api_input();
-    @file_put_contents($logfile, "[voice] Input received: " . json_encode($input) . "\n", FILE_APPEND);
     
     $houseId = api_authorize_house($user, $input);
-    @file_put_contents($logfile, "[voice] House authorized: house_id=$houseId\n", FILE_APPEND);
 
     if ($method === 'POST' && $action === 'command') {
-        @file_put_contents($logfile, "[voice] Processing voice command...\n", FILE_APPEND);
         handleVoiceCommand($user, $houseId, $input);
         return;
     }
 
-    @file_put_contents($logfile, "[voice] Invalid endpoint: method=$method, id=$id, subaction=$subaction, action=$action\n", FILE_APPEND);
     api_response(['success' => false, 'message' => 'Endpoint non reconnu.'], 400);
 }
 
@@ -104,32 +91,23 @@ function api_authenticate_token(): ?array
  */
 function handleVoiceCommand(array $user, int $houseId, array $input): void
 {
-    $logfile = __DIR__ . '/../../../storage/logs/api-voice.log';
     $command = trim((string) ($input['command'] ?? ''));
 
-    @file_put_contents($logfile, "[handleVoiceCommand] START: command='$command', house_id=$houseId\n", FILE_APPEND);
-
     if (strlen($command) === 0) {
-        @file_put_contents($logfile, "[handleVoiceCommand] ERROR: Empty command\n", FILE_APPEND);
         api_response(['success' => false, 'message' => 'Commande vide'], 400);
         return;
     }
 
     // Limiter la longueur pour éviter les abus
     if (strlen($command) > 500) {
-        @file_put_contents($logfile, "[handleVoiceCommand] ERROR: Command too long (" . strlen($command) . " chars)\n", FILE_APPEND);
         api_response(['success' => false, 'message' => 'Commande trop longue'], 400);
         return;
     }
 
     // Parser la commande vocale
-    @file_put_contents($logfile, "[handleVoiceCommand] Parsing command...\n", FILE_APPEND);
     $parsed = VoiceCommandService::parse($command, $houseId);
 
-    @file_put_contents($logfile, "[handleVoiceCommand] Parse result: " . json_encode($parsed) . "\n", FILE_APPEND);
-
     if (!$parsed['success']) {
-        @file_put_contents($logfile, "[handleVoiceCommand] ERROR: Parse failed\n", FILE_APPEND);
         api_response([
             'success' => false,
             'message' => $parsed['message'] ?? 'Erreur de traitement',
@@ -138,14 +116,11 @@ function handleVoiceCommand(array $user, int $houseId, array $input): void
     }
 
     // Exécuter toutes les commandes en batch
-    @file_put_contents($logfile, "[handleVoiceCommand] Executing " . count($parsed['commands']) . " command(s)\n", FILE_APPEND);
     $result = BatchCommandExecutor::execute(
         $parsed['commands'],
         $houseId,
         $user['id']
     );
-
-    @file_put_contents($logfile, "[handleVoiceCommand] Result: executed={$result['executed']}, failed={$result['failed']}\n", FILE_APPEND);
 
     if (!$result['success']) {
         api_response([

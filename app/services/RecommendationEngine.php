@@ -66,10 +66,10 @@ class RecommendationEngine
             }
             $hoursOn = (time() - strtotime($eq['last_state_change'])) / 3600;
             if (in_array($eq['type'], ['led', 'relais'], true) && $hoursOn >= 6) {
-                $suggestions[] = "« {$eq['name']} » ({$eq['room_name']}) est allumé depuis plus de 6 heures.";
+                $suggestions[] = "« {$eq['name']} » est allumé depuis plus de 6 heures.";
             }
             if (in_array($eq['type'], ['porte', 'fenetre'], true) && $hoursOn >= 2) {
-                $suggestions[] = "« {$eq['name']} » ({$eq['room_name']}) est ouvert(e) depuis plus de 2 heures.";
+                $suggestions[] = "« {$eq['name']} » est ouvert(e) depuis plus de 2 heures.";
             }
         }
 
