@@ -17,6 +17,7 @@ require __DIR__ . '/../app/core/bootstrap.php';
 
 use App\Core\Database;
 use App\Models\AutomationRule;
+use App\Models\Setting;
 use App\Services\TelemetryService;
 use Mqtt\MqttClient;
 use Mqtt\Publisher;
@@ -91,7 +92,13 @@ $client->loop(function (string $topic, string $payload) {
             evaluateSensorRules((int) $reading['sensor_id'], (float) $reading['value']);
             evaluateSensorThreshold($reading);
         }
-        return;
+
+        // Un PIR connu est aussi un événement de sécurité lorsqu'il vaut 1.
+        // On laisse donc passer ce cas vers le bloc d'alerte ci-dessous.
+        $isSecurityActivation = str_contains(strtolower($topic), '/security/') && trim($payload) === '1';
+        if (!$isSecurityActivation) {
+            return;
+        }
     }
 
     // --- Cas 2 : événement de sécurité (intrusion, PIR déclenché...) ---
@@ -107,6 +114,13 @@ $client->loop(function (string $topic, string $payload) {
             return;
         }
         echo "[" . date('Y-m-d H:i:s') . "] ✓ Maison trouvée #$houseId pour le topic\n";
+
+        $topicSegments = explode('/', trim($topic, '/'));
+        $deviceName = strtolower((string) end($topicSegments));
+        if ($deviceName === 'pir' && Setting::get('dashboard_mode_' . $houseId, 'comfort') !== 'away') {
+            echo "[" . date('Y-m-d H:i:s') . "] → PIR ignoré : la maison n'est pas en mode absence\n";
+            return;
+        }
 
         if (\App\Models\Alert::hasRecentIntrusionAlert($houseId, $topic, 15)) {
             echo "[" . date('Y-m-d H:i:s') . "] → Mouvement déjà signalé récemment, alerte ignorée\n";
