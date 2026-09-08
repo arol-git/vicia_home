@@ -28,6 +28,13 @@ function handle_equipments(string $method, ?string $id, ?string $subaction): voi
         if (!Equipment::belongsToHouse((int) $id, $houseId)) {
             api_response(['success' => false, 'message' => 'Équipement introuvable.'], 404);
         }
+        if (is_house_manual_mode($houseId)) {
+            api_response([
+                'success' => false,
+                'message' => 'Le mode manuel est actif : les commandes distantes sont désactivées.',
+                'data' => ['mode' => 'manual'],
+            ], 409);
+        }
         $equipment = Equipment::find((int) $id);
         $newState = Equipment::toggleState((int) $id);
         Publisher::publish($equipment['mqtt_topic'] . '/set', $newState ? '1' : '0');

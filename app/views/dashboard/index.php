@@ -45,7 +45,8 @@ $attentionCount = (int) ($stats['alerts_unread'] ?? 0);
             <option value="comfort" <?= $currentMode === 'comfort' ? 'selected' : '' ?>>Confort</option>
             <option value="night" <?= $currentMode === 'night' ? 'selected' : '' ?>>Nuit</option>
             <option value="away" <?= $currentMode === 'away' ? 'selected' : '' ?>>Absence</option>
-                <option value="emergency" <?= $currentMode === 'emergency' ? 'selected' : '' ?>>Urgence</option>
+            <option value="emergency" <?= $currentMode === 'emergency' ? 'selected' : '' ?>>Urgence</option>
+            <option value="manual" <?= $currentMode === 'manual' ? 'selected' : '' ?>>Manuel</option>
         </select>
         <i class="fa-solid fa-chevron-down" aria-hidden="true"></i>
     </div>
@@ -119,7 +120,7 @@ $attentionCount = (int) ($stats['alerts_unread'] ?? 0);
                         <?= e(equipment_state_label($equipment['type'], $equipment['state'])) ?>
                     </span>
                 </div>
-                <button type="button" class="btn btn-primary home-equipment-card__button" data-dashboard-toggle-equipment data-id="<?= (int) $equipment['id'] ?>" data-state="<?= (int) $equipment['state'] ?>" aria-pressed="<?= (int) $equipment['state'] ? 'true' : 'false' ?>" aria-label="Changer l'état de <?= e($equipment['name']) ?>">
+                <button type="button" class="btn btn-primary home-equipment-card__button" data-dashboard-toggle-equipment data-id="<?= (int) $equipment['id'] ?>" data-state="<?= (int) $equipment['state'] ?>" aria-pressed="<?= (int) $equipment['state'] ? 'true' : 'false' ?>" aria-label="Changer l'état de <?= e($equipment['name']) ?>" <?= $currentMode === 'manual' ? 'disabled title="Mode manuel actif"' : '' ?>>
                     <i class="fa-solid fa-power-off"></i><span>Changer</span>
                 </button>
             </article>

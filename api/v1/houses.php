@@ -86,6 +86,7 @@ function api_house_internal_mode(string $botMode): ?string
         'nuit' => 'night',
         'absence' => 'away',
         'urgence' => 'emergency',
+        'manuel' => 'manual',
     ][$botMode] ?? null;
 }
 
@@ -96,6 +97,7 @@ function api_house_bot_mode(string $internalMode): string
         'night' => 'nuit',
         'away' => 'absence',
         'emergency' => 'urgence',
+        'manual' => 'manuel',
     ][$internalMode] ?? 'confort';
 }
 
@@ -106,6 +108,14 @@ function api_house_bot_mode(string $internalMode): string
  */
 function api_house_apply_mode(int $houseId, string $mode): int
 {
+    if ($mode === 'manual') {
+        $house = House::find($houseId);
+        if ($house && !empty($house['slug'])) {
+            Publisher::publish('home/' . $house['slug'] . '/system/mode/set', 'manual');
+        }
+        return 0;
+    }
+
     $targets = [
         'comfort' => ['led' => 1, 'relais' => 1, 'ventilateur' => 1, 'pompe' => 0, 'porte' => 0, 'fenetre' => 0, 'sirene' => 0],
         'night' => ['led' => 0, 'relais' => 0, 'ventilateur' => 0, 'pompe' => 0, 'porte' => 1, 'fenetre' => 1, 'sirene' => 0],
@@ -153,6 +163,11 @@ function api_house_apply_mode(int $houseId, string $mode): int
 
         \App\Models\Sensor::setActive((int) $sensor['id'], (bool) $state);
         $changed++;
+    }
+
+    $house = House::find($houseId);
+    if ($house && !empty($house['slug'])) {
+        Publisher::publish('home/' . $house['slug'] . '/system/mode/set', $mode);
     }
 
     return $changed;

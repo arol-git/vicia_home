@@ -47,6 +47,7 @@ $client->subscribe([
     "$baseTopic/+/+/+/+",        // télémétrie des capteurs
     "$baseTopic/+/+/+",          // compteur global, ex. home/maison/energy/power
     "$baseTopic/+/security/#",   // événements de sécurité
+    "$baseTopic/+/system/mode",  // accusé d'état du mode envoyé par l'ESP32
 ]);
 
 echo "Abonnement actif. En attente de messages...\n";
@@ -80,6 +81,22 @@ $client->loop(function (string $topic, string $payload) {
         'INSERT INTO mqtt_logs (topic, payload, direction, created_at) VALUES (:topic, :payload, :direction, NOW())',
         ['topic' => $topic, 'payload' => $payload, 'direction' => 'in']
     );
+
+    // L'ESP32 confirme ici le mode réellement appliqué localement.
+    if (preg_match('#^home/[^/]+/system/mode$#', $topic) === 1) {
+        $mode = strtolower(trim($payload));
+        if (!in_array($mode, ['comfort', 'night', 'away', 'emergency', 'manual'], true)) {
+            app_log('[MQTT Subscriber] Mode ESP32 ignoré : valeur inconnue ' . $payload);
+            return;
+        }
+
+        $houseId = resolveHouseIdFromTopic($topic);
+        if ($houseId !== null) {
+            Setting::set('dashboard_mode_' . $houseId, $mode);
+            app_log('[MQTT Subscriber] Mode maison confirmé par ESP32 : ' . $mode);
+        }
+        return;
+    }
 
     // --- Cas 1 : message de télémétrie d'un capteur connu ---
     // Accepte un payload numérique brut ou JSON, ex. {"value":25.4}.
@@ -215,6 +232,10 @@ function executeRule(array $rule, string $reason): void
     $resultParts = [$reason];
 
     if ($rule['action_equipment_id'] && $rule['action_state'] !== null) {
+        if (is_house_manual_mode((int) $rule['house_id'])) {
+            echo "[" . date('Y-m-d H:i:s') . "] → Commande d'automatisation ignorée : mode manuel actif\n";
+            $resultParts[] = 'Commande équipement ignorée (mode manuel)';
+        } else {
         try {
             $equipment = \App\Models\Equipment::find((int) $rule['action_equipment_id']);
             if ($equipment) {
@@ -227,6 +248,7 @@ function executeRule(array $rule, string $reason): void
         } catch (\Throwable $exception) {
             $resultParts[] = 'Commande équipement échouée';
             app_log('[Automation] Commande équipement échouée : ' . $exception->getMessage());
+        }
         }
     }
 

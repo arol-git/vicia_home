@@ -75,6 +75,7 @@ class RealtimeController extends Controller
 
         return [
             'esp32' => $this->esp32Status($houseId),
+            'mode' => Setting::get('dashboard_mode_' . $houseId, 'comfort'),
             'equipments' => $equipments,
             'equipmentsActive' => $active,
             'equipmentsCount' => count($equipments),
@@ -88,6 +89,7 @@ class RealtimeController extends Controller
             Equipment::stateVersion($houseId),
             Setting::get('esp32_status_' . $houseId, 'unknown'),
             Setting::get('esp32_last_seen_' . $houseId, '0'),
+            Setting::get('dashboard_mode_' . $houseId, 'comfort'),
         ]);
     }
 

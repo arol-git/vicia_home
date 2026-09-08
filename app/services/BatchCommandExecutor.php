@@ -29,6 +29,16 @@ class BatchCommandExecutor
      */
     public static function execute(array $commands, int $houseId, int $userId): array
     {
+        if (is_house_manual_mode($houseId)) {
+            return [
+                'success' => false,
+                'executed' => 0,
+                'failed' => count($commands),
+                'message' => 'Le mode manuel est actif : les commandes distantes sont désactivées.',
+                'commands' => [],
+            ];
+        }
+
         if (empty($commands)) {
             return [
                 'success' => false,

@@ -180,6 +180,11 @@ class EquipmentController extends Controller
             return;
         }
 
+        if (is_house_manual_mode($houseId)) {
+            Response::error('Le mode manuel est actif : les commandes distantes sont désactivées.', 409, ['mode' => 'manual']);
+            return;
+        }
+
         $newState = Equipment::toggleState($id);
 
         // Publication de la commande vers le module ESP32 concerné, sur

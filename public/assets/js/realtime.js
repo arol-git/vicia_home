@@ -10,6 +10,7 @@ const ViciaRealtime = (() => {
     let pollTimer = null;
     let reconnectTimer = null;
     let lastOnline = null;
+    let manualMode = false;
 
     function init() {
         refreshState(true);
@@ -93,6 +94,7 @@ const ViciaRealtime = (() => {
         if (!snapshot) return;
         setBrowserConnection(true);
         applyEsp32Status(snapshot.esp32 || { status: 'unknown', online: false, last_seen: 0 }, false);
+        applyHouseMode(snapshot.mode || 'comfort');
         updateEquipmentCounter(snapshot);
 
         (snapshot.equipments || []).forEach((equipment) => {
@@ -109,7 +111,7 @@ const ViciaRealtime = (() => {
             checkbox.checked = Number(equipment.state) === 1;
             checkbox.dataset.realState = String(equipment.state);
             checkbox.classList.remove('is-pending');
-            checkbox.disabled = !canSendCommands() || Number(equipment.is_active) !== 1;
+            checkbox.disabled = manualMode || !canSendCommands() || Number(equipment.is_active) !== 1;
         });
     }
 
@@ -118,12 +120,31 @@ const ViciaRealtime = (() => {
             const isOn = Number(equipment.state) === 1;
             button.dataset.state = isOn ? '1' : '0';
             button.setAttribute('aria-pressed', isOn ? 'true' : 'false');
+            button.disabled = manualMode || !canSendCommands();
         });
         document.querySelectorAll(`[data-equipment-state="${equipment.id}"]`).forEach((state) => {
             const isOn = Number(equipment.state) === 1;
             state.textContent = isOn ? 'Allumé' : 'Éteint';
             state.classList.toggle('is-on', isOn);
             state.classList.toggle('is-off', !isOn);
+        });
+    }
+
+    function applyHouseMode(mode) {
+        manualMode = mode === 'manual';
+        document.documentElement.dataset.houseMode = mode;
+        document.querySelectorAll('[data-current-mode]').forEach((control) => {
+            control.dataset.currentMode = mode;
+        });
+        document.querySelectorAll('[data-dashboard-mode]').forEach((select) => {
+            select.value = mode;
+        });
+        document.querySelectorAll('[data-toggle-equipment]').forEach((checkbox) => {
+            checkbox.disabled = manualMode || !canSendCommands() || checkbox.dataset.active === '0';
+        });
+        document.querySelectorAll('[data-dashboard-toggle-equipment]').forEach((button) => {
+            button.disabled = manualMode || !canSendCommands();
+            button.title = manualMode ? 'Mode manuel actif' : '';
         });
     }
 
@@ -170,7 +191,7 @@ const ViciaRealtime = (() => {
         });
 
         document.querySelectorAll('[data-toggle-equipment]').forEach((checkbox) => {
-            checkbox.disabled = !canSendCommands() || checkbox.dataset.active === '0';
+            checkbox.disabled = manualMode || !canSendCommands() || checkbox.dataset.active === '0';
         });
 
         if (changed && isOnline) {

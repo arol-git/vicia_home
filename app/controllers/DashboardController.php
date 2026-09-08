@@ -67,7 +67,7 @@ class DashboardController extends Controller
         $houseId = Auth::requireHouseRole(['admin', 'owner', 'technician']);
         $this->verifyCsrf();
         $mode = (string) $this->request->input('mode', '');
-        $labels = ['comfort' => 'Confort', 'night' => 'Nuit', 'away' => 'Absence', 'emergency' => 'Urgence'];
+        $labels = ['comfort' => 'Confort', 'night' => 'Nuit', 'away' => 'Absence', 'emergency' => 'Urgence', 'manual' => 'Manuel'];
         if (!isset($labels[$mode])) {
             Response::error('Mode inconnu.', 422);
             return;
@@ -78,23 +78,34 @@ class DashboardController extends Controller
             'night' => ['led' => 0, 'relais' => 0, 'ventilateur' => 0, 'pompe' => 0, 'porte' => 1, 'fenetre' => 1, 'sirene' => 0],
             'away' => ['led' => 0, 'relais' => 0, 'ventilateur' => 0, 'pompe' => 0, 'porte' => 1, 'fenetre' => 1, 'sirene' => 0],
             'emergency' => ['led' => 0, 'relais' => 0, 'ventilateur' => 0, 'pompe' => 0, 'porte' => 1, 'fenetre' => 1, 'sirene' => 1],
-        ][$mode];
+        ][$mode] ?? null;
         $changed = 0;
-        foreach (Equipment::activeForHouse($houseId) as $equipment) {
-            if (!array_key_exists($equipment['type'], $targets) || (int) $equipment['state'] === $targets[$equipment['type']]) {
-                continue;
+        if ($targets !== null) {
+            foreach (Equipment::activeForHouse($houseId) as $equipment) {
+                if (!array_key_exists($equipment['type'], $targets) || (int) $equipment['state'] === $targets[$equipment['type']]) {
+                    continue;
+                }
+                $state = (int) $targets[$equipment['type']];
+                Equipment::setState((int) $equipment['id'], $state);
+                if (!empty($equipment['mqtt_topic'])) {
+                    Publisher::publish($equipment['mqtt_topic'] . '/set', $state ? '1' : '0');
+                }
+                $changed++;
             }
-            $state = (int) $targets[$equipment['type']];
-            Equipment::setState((int) $equipment['id'], $state);
-            if (!empty($equipment['mqtt_topic'])) {
-                Publisher::publish($equipment['mqtt_topic'] . '/set', $state ? '1' : '0');
-            }
-            $changed++;
         }
         Setting::set('dashboard_mode_' . $houseId, $mode);
+        $house = House::find($houseId);
+        $modePublished = false;
+        if ($house && !empty($house['slug'])) {
+            $modePublished = Publisher::publish(
+                'home/' . $house['slug'] . '/system/mode/set',
+                $mode
+            );
+        }
         Response::success("Mode {$labels[$mode]} activé.", [
             'mode' => $mode,
             'changed' => $changed,
+            'mode_published' => $modePublished,
             'equipmentsActive' => Equipment::countActive($houseId),
             'equipmentsCount' => Equipment::countForHouse($houseId),
         ]);

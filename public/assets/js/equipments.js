@@ -8,9 +8,15 @@
  */
 
 document.addEventListener('DOMContentLoaded', () => {
+    const isManualMode = () => document.documentElement.dataset.houseMode === 'manual';
     // Bascule d'état d'un équipement via l'interrupteur de la liste
     document.querySelectorAll('[data-toggle-equipment]').forEach((checkbox) => {
         checkbox.addEventListener('change', () => {
+            if (isManualMode()) {
+                checkbox.checked = !checkbox.checked;
+                ViciaApp.toast('Le mode manuel est actif : commande distante désactivée.', 'error');
+                return;
+            }
             const id = checkbox.dataset.id;
             checkbox.disabled = true;
 

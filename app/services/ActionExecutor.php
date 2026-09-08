@@ -82,6 +82,14 @@ class ActionExecutor
 
     private static function executeToggleEquipment(array $intent, int $houseId, ?int $userId): array
     {
+        if (is_house_manual_mode($houseId)) {
+            return [
+                'success' => false,
+                'message' => 'Le mode manuel est actif : les commandes distantes sont désactivées.',
+                'manual_mode' => true,
+            ];
+        }
+
         $equipments = Equipment::allWithRoom($houseId);
         if (($intent['target_type'] ?? null) !== 'all') {
             $equipments = array_values(array_filter($equipments, fn($e) => $e['type'] === $intent['target_type']));
@@ -159,6 +167,10 @@ class ActionExecutor
         }
 
         Setting::set('dashboard_mode_' . $houseId, $dashboardMode);
+        $house = House::find($houseId);
+        if ($house && !empty($house['slug'])) {
+            Publisher::publish('home/' . $house['slug'] . '/system/mode/set', $dashboardMode);
+        }
         AIHistory::record($userId, $houseId, 'mode_change', 'success', $intent['mode']);
 
         return ['success' => true, 'mode' => $intent['mode'], 'changed' => $changed];

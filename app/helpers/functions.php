@@ -190,6 +190,14 @@ function can_view_mqtt_topics(?string $role): bool
 }
 
 /**
+ * Le mode manuel remet le pilotage des équipements à l'installation locale.
+ */
+function is_house_manual_mode(int $houseId): bool
+{
+    return \App\Models\Setting::get('dashboard_mode_' . $houseId, 'comfort') === 'manual';
+}
+
+/**
  * Retire la clé "mqtt_topic" d'une ligne ou d'une liste de lignes.
  *
  * Cette fonction sert de filet de sécurité avant de renvoyer des

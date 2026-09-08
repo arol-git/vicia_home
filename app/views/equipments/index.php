@@ -15,6 +15,7 @@ $equipmentTypes = [
     'servo' => 'Servo-moteur', 'porte' => 'Porte', 'fenetre' => 'Fenêtre', 'sirene' => 'Sirène',
 ];
 $houseRole = Auth::roleOnHouse(Auth::currentHouseId() ?? 0);
+$currentMode = \App\Models\Setting::get('dashboard_mode_' . (Auth::currentHouseId() ?? 0), 'comfort');
 // Les opérations d'inventaire matériel sont réservées aux admins.
 // Un résident ou technicien peut consulter/piloter si son rôle l'autorise,
 // mais il ne doit pas pouvoir créer, supprimer ou voir les topics MQTT.
@@ -73,7 +74,7 @@ $columnsCount = $canSeeMqttTopics ? 7 : 6;
                 <td data-label="Dernier changement" class="text-xs text-muted"><?= e(time_ago($eq['last_state_change'])) ?></td>
                 <td data-label="État">
                     <label class="switch">
-                        <input type="checkbox" data-toggle-equipment data-id="<?= (int) $eq['id'] ?>" <?= $eq['state'] ? 'checked' : '' ?> <?= $eq['is_active'] ? '' : 'disabled' ?>>
+                        <input type="checkbox" data-toggle-equipment data-id="<?= (int) $eq['id'] ?>" <?= $eq['state'] ? 'checked' : '' ?> <?= $eq['is_active'] && $currentMode !== 'manual' ? '' : 'disabled' ?> <?= $currentMode === 'manual' ? 'title="Mode manuel actif"' : '' ?>>
                         <span class="switch__track"></span>
                     </label>
                 </td>
